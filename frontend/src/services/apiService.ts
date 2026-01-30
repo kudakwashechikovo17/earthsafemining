@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { mockDocuments, mockCompliance, mockCurrentUser, mockSites } from '../utils/mockData';
 
 // Create API service with axios
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://earthsafe-api.onrender.com/api';
 const APP_MODE = process.env.EXPO_PUBLIC_APP_MODE || 'normal';
 
 const api = axios.create({
