@@ -6,6 +6,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 // Import screens
 import MinerDashboardScreen from '../screens/miner/MinerDashboardScreen';
 import ProductionScreen from '../screens/miner/ProductionScreen';
+import ShiftLogScreen from '../screens/miner/ShiftLogScreen';
 import SalesScreen from '../screens/miner/SalesScreen';
 import ComplianceScreen from '../screens/miner/ComplianceScreen';
 import LoansScreen from '../screens/miner/LoansScreen';
@@ -27,6 +28,7 @@ const DashboardStack = () => (
 const ProductionStack = () => (
   <Stack.Navigator>
     <Stack.Screen name="Production" component={ProductionScreen} options={{ title: 'Production' }} />
+    <Stack.Screen name="ShiftLog" component={ShiftLogScreen} options={{ title: 'Log Daily Shift' }} />
   </Stack.Navigator>
 );
 

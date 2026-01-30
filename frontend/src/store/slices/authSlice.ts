@@ -18,7 +18,14 @@ export enum SubscriptionPlan {
   ENTERPRISE = 'enterprise'
 }
 
-// Define user interface
+// Define Organization interface (simplified for frontend)
+export interface Organization {
+  _id: string;
+  name: string;
+  role: string; // The user's role in this org
+}
+
+// Define matches User interface from backend
 export interface User {
   id: string;
   email: string;
@@ -36,6 +43,8 @@ export interface User {
 // Define auth state interface
 interface AuthState {
   user: User | null;
+  organizations: Organization[];
+  currentOrg: Organization | null;
   isLoading: boolean;
   error: string | null;
 }
@@ -43,6 +52,8 @@ interface AuthState {
 // Define initial state
 const initialState: AuthState = {
   user: null,
+  organizations: [],
+  currentOrg: null,
   isLoading: false,
   error: null,
 };
@@ -67,12 +78,20 @@ const authSlice = createSlice({
     },
     logout: (state) => {
       state.user = null;
+      state.organizations = [];
+      state.currentOrg = null;
       state.error = null;
     },
     updateUser: (state, action: PayloadAction<Partial<User>>) => {
       if (state.user) {
         state.user = { ...state.user, ...action.payload };
       }
+    },
+    setOrganizations: (state, action: PayloadAction<Organization[]>) => {
+      state.organizations = action.payload;
+    },
+    setCurrentOrg: (state, action: PayloadAction<Organization | null>) => {
+      state.currentOrg = action.payload;
     },
   },
 });
@@ -84,6 +103,8 @@ export const {
   loginFailure,
   logout,
   updateUser,
+  setOrganizations,
+  setCurrentOrg,
 } = authSlice.actions;
 
 // Export reducer

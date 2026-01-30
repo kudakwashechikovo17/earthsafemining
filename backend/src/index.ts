@@ -16,6 +16,10 @@ import financialInstitutionRoutes from './routes/financialInstitutionRoutes';
 import governmentRoutes from './routes/governmentRoutes';
 import buyerRoutes from './routes/buyerRoutes';
 import adminRoutes from './routes/adminRoutes';
+import orgRoutes from './routes/orgRoutes';
+import shiftRoutes from './routes/shiftRoutes';
+import financeRoutes from './routes/financeRoutes';
+import creditRoutes from './routes/creditRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -35,6 +39,12 @@ app.use(morgan('dev'));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Routes
+// Mount specific org sub-routes FIRST to ensure they are matched before generic org routes
+app.use('/api/orgs', shiftRoutes);
+app.use('/api/orgs', financeRoutes);
+app.use('/api/orgs', creditRoutes);
+app.use('/api/orgs', orgRoutes); // Generic org routes last
+
 app.use('/api/users', userRoutes);
 app.use('/api/miners', minerRoutes);
 app.use('/api/cooperatives', cooperativeRoutes);

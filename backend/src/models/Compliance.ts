@@ -5,30 +5,32 @@ export enum ComplianceStatus {
   PENDING = 'pending',
   APPROVED = 'approved',
   REJECTED = 'rejected',
-  EXPIRED = 'expired'
+  EXPIRED = 'expired',
+  MISSING = 'missing'
 }
 
 // Compliance type enum
 export enum ComplianceType {
-  MINING_PERMIT = 'mining_permit',
+  MINING_LICENSE = 'mining_license',
   ENVIRONMENTAL_PERMIT = 'environmental_permit',
+  EMA_CERTIFICATE = 'ema_certificate',
   TAX_CLEARANCE = 'tax_clearance',
-  BUSINESS_REGISTRATION = 'business_registration',
-  SAFETY_CERTIFICATION = 'safety_certification',
+  SITE_PLAN = 'site_plan',
+  SAFETY_POLICY = 'safety_policy',
   OTHER = 'other'
 }
 
 // Compliance interface
 export interface ICompliance extends Document {
-  entityId: mongoose.Types.ObjectId;
-  entityType: string;
+  orgId: mongoose.Types.ObjectId;
   type: ComplianceType;
-  documentNumber: string;
-  issuedBy: string;
-  issuedDate: Date;
-  expiryDate: Date;
+  title: string;
+  documentNumber?: string;
+  issuedBy?: string;
+  issuedDate?: Date;
+  expiryDate?: Date;
   status: ComplianceStatus;
-  documentUrl?: string;
+  fileUrl?: string; // S3 or local path
   notes?: string;
   verifiedBy?: mongoose.Types.ObjectId;
   verificationDate?: Date;
@@ -40,72 +42,45 @@ export interface ICompliance extends Document {
 // Compliance schema
 const complianceSchema = new Schema<ICompliance>(
   {
-    entityId: {
+    orgId: {
       type: Schema.Types.ObjectId,
-      refPath: 'entityType',
-      required: [true, 'Entity ID is required']
-    },
-    entityType: {
-      type: String,
-      required: [true, 'Entity type is required'],
-      enum: ['MinerProfile', 'Cooperative']
+      ref: 'Organization',
+      required: true,
     },
     type: {
       type: String,
       enum: Object.values(ComplianceType),
-      required: [true, 'Compliance type is required']
+      required: true,
     },
-    documentNumber: {
+    title: {
       type: String,
-      required: [true, 'Document number is required'],
-      trim: true
+      required: true, // e.g., "2024 Mining License"
     },
-    issuedBy: {
-      type: String,
-      required: [true, 'Issuing authority is required'],
-      trim: true
-    },
-    issuedDate: {
-      type: Date,
-      required: [true, 'Issue date is required']
-    },
-    expiryDate: {
-      type: Date,
-      required: [true, 'Expiry date is required']
-    },
+    documentNumber: String,
+    issuedBy: String,
+    issuedDate: Date,
+    expiryDate: Date,
     status: {
       type: String,
       enum: Object.values(ComplianceStatus),
-      default: ComplianceStatus.PENDING
+      default: ComplianceStatus.PENDING,
     },
-    documentUrl: {
-      type: String
-    },
-    notes: {
-      type: String
-    },
+    fileUrl: String,
+    notes: String,
     verifiedBy: {
       type: Schema.Types.ObjectId,
-      ref: 'User'
+      ref: 'User',
     },
-    verificationDate: {
-      type: Date
-    },
-    rejectionReason: {
-      type: String
-    }
+    verificationDate: Date,
+    rejectionReason: String,
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 );
 
-// Create indexes for efficient querying
-complianceSchema.index({ entityId: 1, type: 1 });
-complianceSchema.index({ status: 1 });
+complianceSchema.index({ orgId: 1, type: 1 });
 complianceSchema.index({ expiryDate: 1 });
-complianceSchema.index({ type: 1, issuedBy: 1 });
 
-// Create and export the Compliance model
-const Compliance = mongoose.model<ICompliance>('Compliance', complianceSchema);
-export default Compliance; 
+export const Compliance = mongoose.model<ICompliance>('Compliance', complianceSchema);
+export default Compliance;
