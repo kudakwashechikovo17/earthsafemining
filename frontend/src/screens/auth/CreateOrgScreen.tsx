@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { TextInput, Button, Title, Paragraph, List, RadioButton } from 'react-native-paper';
 import { useDispatch } from 'react-redux';
 import { setOrganizations, setCurrentOrg, Organization } from '../../store/slices/authSlice';
@@ -28,6 +28,7 @@ export const CreateOrgScreen = ({ navigation }: any) => {
             // AppNavigator handles redirect
         } catch (error) {
             console.error('Failed to create org', error);
+            Alert.alert('Error', 'Failed to create organization. Please check your connection.');
             setLoading(false);
         }
     };

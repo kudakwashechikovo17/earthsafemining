@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { Text, Button, Card, Title, Paragraph, ActivityIndicator } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store';
@@ -32,6 +32,7 @@ export const OrgSelectionScreen = ({ navigation }: any) => {
             dispatch(setOrganizations(orgs));
         } catch (error) {
             console.error('Failed to fetch orgs', error);
+            Alert.alert('Error', 'Failed to load organizations.');
         }
     };
 

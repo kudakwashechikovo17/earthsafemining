@@ -1,0 +1,36 @@
+﻿
+> earthsafe-backend@1.0.0 build
+> tsc
+
+src/routes/creditRoutes.ts(22,61): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '(req: Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>, res: Response<any, Record<string, any>, number>) => Promise<...>' is not assignable to parameter of type 'RequestHandlerParams<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+      Type '(req: Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>, res: Response<any, Record<string, any>, number>) => Promise<...>' is not assignable to type 'RequestHandler<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+        Type 'Promise<Response<any, Record<string, any>, number> | undefined>' is not assignable to type 'void | Promise<void>'.
+          Type 'Promise<Response<any, Record<string, any>, number> | undefined>' is not assignable to type 'Promise<void>'.
+            Type 'Response<any, Record<string, any>, number> | undefined' is not assignable to type 'void'.
+              Type 'Response<any, Record<string, any>, number>' is not assignable to type 'void'.
+src/routes/orgRoutes.ts(103,78): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '(req: Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>, res: Response<any, Record<string, any>, number>) => Promise<...>' is not assignable to parameter of type 'RequestHandlerParams<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+      Type '(req: Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>, res: Response<any, Record<string, any>, number>) => Promise<...>' is not assignable to type 'RequestHandler<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+        Type 'Promise<Response<any, Record<string, any>, number> | undefined>' is not assignable to type 'void | Promise<void>'.
+          Type 'Promise<Response<any, Record<string, any>, number> | undefined>' is not assignable to type 'Promise<void>'.
+            Type 'Response<any, Record<string, any>, number> | undefined' is not assignable to type 'void'.
+              Type 'Response<any, Record<string, any>, number>' is not assignable to type 'void'.
+src/routes/shiftRoutes.ts(83,58): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '(req: any, res: Response<any, Record<string, any>, number>) => Promise<Response<any, Record<string, any>, number> | undefined>' is not assignable to parameter of type 'RequestHandlerParams<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+      Type '(req: any, res: Response<any, Record<string, any>, number>) => Promise<Response<any, Record<string, any>, number> | undefined>' is not assignable to type 'RequestHandler<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+        Type 'Promise<Response<any, Record<string, any>, number> | undefined>' is not assignable to type 'void | Promise<void>'.
+          Type 'Promise<Response<any, Record<string, any>, number> | undefined>' is not assignable to type 'Promise<void>'.
+            Type 'Response<any, Record<string, any>, number> | undefined' is not assignable to type 'void'.
+              Type 'Response<any, Record<string, any>, number>' is not assignable to type 'void'.
+src/routes/shiftRoutes.ts(115,56): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '(req: any, res: Response<any, Record<string, any>, number>) => Promise<Response<any, Record<string, any>, number> | undefined>' is not assignable to parameter of type 'RequestHandlerParams<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+      Type '(req: any, res: Response<any, Record<string, any>, number>) => Promise<Response<any, Record<string, any>, number> | undefined>' is not assignable to type 'RequestHandler<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+        Type 'Promise<Response<any, Record<string, any>, number> | undefined>' is not assignable to type 'void | Promise<void>'.
+          Type 'Promise<Response<any, Record<string, any>, number> | undefined>' is not assignable to type 'Promise<void>'.
+            Type 'Response<any, Record<string, any>, number> | undefined' is not assignable to type 'void'.
+              Type 'Response<any, Record<string, any>, number>' is not assignable to type 'void'.

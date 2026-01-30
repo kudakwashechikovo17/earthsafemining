@@ -10,7 +10,10 @@ const checkAuth = async (req: any, res: any, next: any) => {
     try {
         const orgId = req.params.orgId;
         const membership = await Membership.findOne({ userId: req.user.id, orgId });
-        if (!membership) return res.status(403).json({ message: 'Not authorized' });
+        if (!membership) {
+            res.status(403).json({ message: 'Not authorized' });
+            return;
+        }
         next();
     } catch (e) { res.status(500).json({ message: 'Error' }); }
 };
@@ -25,7 +28,8 @@ router.get('/:orgId/credit-score', authenticate, checkAuth, async (req, res) => 
             .sort({ calculatedAt: -1 });
 
         if (!score) {
-            return res.json({ message: 'No score calculated yet', score: null });
+            res.json({ message: 'No score calculated yet', score: null });
+            return;
         }
         res.json(score);
     } catch (error) {

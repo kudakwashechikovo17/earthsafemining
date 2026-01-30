@@ -84,11 +84,17 @@ router.post('/shifts/:shiftId/timesheets', authenticate, async (req: any, res) =
     try {
         // First get shift to know Org
         const shift = await Shift.findById(req.params.shiftId);
-        if (!shift) return res.status(404).json({ message: 'Shift not found' });
+        if (!shift) {
+            res.status(404).json({ message: 'Shift not found' });
+            return;
+        }
 
         // Check auth against shift's org
         const membership = await Membership.findOne({ userId: req.user.id, orgId: shift.orgId });
-        if (!membership) return res.status(403).json({ message: 'Not authorized' });
+        if (!membership) {
+            res.status(403).json({ message: 'Not authorized' });
+            return;
+        }
 
         const { workerName, role, hoursWorked, notes } = req.body;
 
@@ -115,10 +121,16 @@ router.post('/shifts/:shiftId/timesheets', authenticate, async (req: any, res) =
 router.post('/shifts/:shiftId/material', authenticate, async (req: any, res) => {
     try {
         const shift = await Shift.findById(req.params.shiftId);
-        if (!shift) return res.status(404).json({ message: 'Shift not found' });
+        if (!shift) {
+            res.status(404).json({ message: 'Shift not found' });
+            return;
+        }
 
         const membership = await Membership.findOne({ userId: req.user.id, orgId: shift.orgId });
-        if (!membership) return res.status(403).json({ message: 'Not authorized' });
+        if (!membership) {
+            res.status(403).json({ message: 'Not authorized' });
+            return;
+        }
 
         const { type, quantity, unit, source, destination } = req.body;
 

@@ -18,11 +18,13 @@ const checkMembership = (role?: OrgRole) => {
             });
 
             if (!membership || membership.status !== 'active') {
-                return res.status(403).json({ message: 'Not a member of this organization' });
+                res.status(403).json({ message: 'Not a member of this organization' });
+                return;
             }
 
             if (role && membership.role !== role && membership.role !== OrgRole.OWNER) {
-                return res.status(403).json({ message: 'Insufficient permissions' });
+                res.status(403).json({ message: 'Insufficient permissions' });
+                return;
             }
 
             (req as any).membership = membership;
@@ -107,12 +109,14 @@ router.post('/:orgId/members', authenticate, checkMembership(OrgRole.ADMIN), asy
         // Find user by email
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(404).json({ message: 'User not found with this email' });
+            res.status(404).json({ message: 'User not found with this email' });
+            return;
         }
 
         const exists = await Membership.findOne({ userId: user._id, orgId: req.params.orgId });
         if (exists) {
-            return res.status(400).json({ message: 'User already a member' });
+            res.status(400).json({ message: 'User already a member' });
+            return;
         }
 
         const member = await Membership.create({
