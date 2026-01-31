@@ -108,9 +108,12 @@ const RegisterScreen = () => {
   };
 
   const handleRegister = async () => {
+    console.log('Register button pressed');
     if (!validateForm()) {
+      console.log('Validation failed', { firstNameError, lastNameError, emailError, passwordError });
       return;
     }
+    console.log('Validation passed, starting registration...');
 
     setIsLoading(true);
     setRegisterError('');
