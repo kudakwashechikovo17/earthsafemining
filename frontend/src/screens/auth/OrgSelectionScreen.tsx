@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export const OrgSelectionScreen = ({ navigation }: any) => {
     const dispatch = useDispatch();
-    const { organizations, isLoading } = useSelector((state: RootState) => state.auth);
+    const { organizations = [], isLoading } = useSelector((state: RootState) => state.auth);
 
     useEffect(() => {
         fetchOrgs();
