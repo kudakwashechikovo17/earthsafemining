@@ -2,6 +2,7 @@ services:
   - type: web
     name: earthsafe-backend
     env: node
+    rootDirectory: backend
     region: frankfurt
     plan: free
     buildCommand: npm install && npm run build
