@@ -15,16 +15,22 @@ export const CreateOrgScreen = ({ navigation }: any) => {
     const handleCreate = async () => {
         if (!name) return;
 
+        console.log('handleCreate called, starting...');
         setLoading(true);
         try {
+            console.log('Calling apiService.createOrg with:', { name, location, type: 'mine' });
             // Mock API call again - need to update apiService
             const newOrg = await (apiService as any).createOrg({
                 name,
                 location: { address: location },
                 type: 'mine'
             });
+            console.log('apiService.createOrg success. Response:', newOrg);
 
+            console.log('Dispatching setCurrentOrg...');
             dispatch(setCurrentOrg(newOrg));
+            console.log('Dispatch complete.');
+
             // AppNavigator handles redirect
         } catch (error) {
             console.error('Failed to create org', error);
