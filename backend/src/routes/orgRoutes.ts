@@ -132,4 +132,89 @@ router.post('/:orgId/members', authenticate, checkMembership(OrgRole.ADMIN), asy
     }
 });
 
+/**
+ * @route   GET /api/orgs/:orgId/members
+ * @desc    Get all members of an organization
+ * @access  Private (Member+)
+ */
+router.get('/:orgId/members', authenticate, checkMembership(), async (req: any, res) => {
+    try {
+        const members = await Membership.find({ orgId: req.params.orgId, status: 'active' })
+            .populate('userId', 'firstName lastName email profilePicture');
+
+        res.json(members);
+    } catch (error: any) {
+        res.status(500).json({ message: 'Server error retrieving members', error: error.message });
+    }
+});
+
+/**
+ * @route   DELETE /api/orgs/:orgId/members/:userId
+ * @desc    Remove a member
+ * @access  Private (Admin/Owner only)
+ */
+router.delete('/:orgId/members/:userId', authenticate, checkMembership(OrgRole.ADMIN), async (req: any, res) => {
+    try {
+        const { orgId, userId } = req.params;
+
+        // Prevent removing self (use leave endpoint for that)
+        if (userId === req.user.id) {
+            return res.status(400).json({ message: 'Cannot remove yourself. Use "Leave Organization" instead.' });
+        }
+
+        const membership = await Membership.findOne({ orgId, userId });
+        if (!membership) {
+            return res.status(404).json({ message: 'Member not found' });
+        }
+
+        // Only Owner can remove Admins
+        if (membership.role === OrgRole.ADMIN || membership.role === OrgRole.OWNER) {
+            const requesterMembership = await Membership.findOne({ orgId, userId: req.user.id });
+            if (requesterMembership?.role !== OrgRole.OWNER) {
+                return res.status(403).json({ message: 'Only Owners can remove Admins' });
+            }
+        }
+
+        // Soft delete (set status to disabled)
+        membership.status = 'disabled';
+        // If schema is strictly 'active' | 'suspended' | 'pending', use deleteOne()
+        // Checking Membership.ts... assuming deleteOne for now to be safe or updating status if schema allows.
+        // Let's use findOneAndDelete for clean removal in this iteration.
+        await Membership.findOneAndDelete({ orgId, userId });
+
+        res.json({ message: 'Member removed successfully' });
+    } catch (error: any) {
+        res.status(500).json({ message: 'Server error removing member', error: error.message });
+    }
+});
+
+/**
+ * @route   PATCH /api/orgs/:orgId
+ * @desc    Update organization settings
+ * @access  Private (Admin/Owner only)
+ */
+router.patch('/:orgId', authenticate, checkMembership(OrgRole.ADMIN), async (req: any, res) => {
+    try {
+        const { name, location, contactEmail, contactPhone, miningLicenseNumber } = req.body;
+
+        const org = await Organization.findByIdAndUpdate(
+            req.params.orgId,
+            {
+                $set: {
+                    name,
+                    location,
+                    contactEmail,
+                    contactPhone,
+                    miningLicenseNumber
+                }
+            },
+            { new: true }
+        );
+
+        res.json(org);
+    } catch (error: any) {
+        res.status(500).json({ message: 'Server error updating organization', error: error.message });
+    }
+});
+
 export default router;

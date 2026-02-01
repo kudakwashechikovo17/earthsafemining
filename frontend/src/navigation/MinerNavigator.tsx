@@ -12,6 +12,7 @@ import ComplianceScreen from '../screens/miner/ComplianceScreen';
 import LoansScreen from '../screens/miner/LoansScreen';
 import ProfileScreen from '../screens/miner/ProfileScreen';
 import BuyersListScreen from '../screens/miner/BuyersListScreen';
+import OrgMembersScreen from '../screens/miner/OrgMembersScreen';
 
 // Create navigators
 const Tab = createBottomTabNavigator();
@@ -53,6 +54,7 @@ const LoansStack = () => (
 const ProfileStack = () => (
   <Stack.Navigator>
     <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
+    <Stack.Screen name="OrgMembers" component={OrgMembersScreen} options={{ title: 'Team Members' }} />
   </Stack.Navigator>
 );
 

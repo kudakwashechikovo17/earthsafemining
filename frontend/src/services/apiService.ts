@@ -137,6 +137,22 @@ export const apiService = {
     return response.data;
   },
 
+  // Org Management
+  getOrgMembers: async (orgId: string) => {
+    const response = await api.get(`/orgs/${orgId}/members`);
+    return response.data;
+  },
+
+  removeMember: async (orgId: string, userId: string) => {
+    const response = await api.delete(`/orgs/${orgId}/members/${userId}`);
+    return response.data;
+  },
+
+  updateOrg: async (orgId: string, data: any) => {
+    const response = await api.patch(`/orgs/${orgId}`, data);
+    return response.data;
+  },
+
   // Generic Helpers (for direct access to new routes)
   get: async (url: string) => {
     return api.get(url); // Returns full response object to keep consistency with usage

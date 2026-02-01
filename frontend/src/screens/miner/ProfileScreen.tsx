@@ -16,10 +16,13 @@ import {
 } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
+import { useNavigation } from '@react-navigation/native';
+
 const ProfileScreen = () => {
+  const navigation = useNavigation();
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [currentSection, setCurrentSection] = useState('');
-  
+
   // Mock miner data - would come from API in real implementation
   const [minerProfile, setMinerProfile] = useState({
     name: 'John Doe',
@@ -62,19 +65,19 @@ const ProfileScreen = () => {
       totalDebt: 3500, // USD
     }
   });
-  
+
   // Define types for the form state
   interface EditFormState {
     // Personal information
     name?: string;
     nationalId?: string;
-    
+
     // Address information
     street?: string;
     city?: string;
     province?: string;
     postalCode?: string;
-    
+
     // Mining information
     locationName?: string;
     district?: string;
@@ -82,20 +85,20 @@ const ProfileScreen = () => {
     miningType?: string;
     yearsOfExperience?: string;
     employeeCount?: string;
-    
+
     // Banking information
     bankName?: string;
     accountNumber?: string;
     branchCode?: string;
   }
-  
+
   const [editForm, setEditForm] = useState<EditFormState>({});
-  
+
   const showEditModal = (section: string) => {
     setCurrentSection(section);
-    
+
     // Set initial form values based on section
-    switch(section) {
+    switch (section) {
       case 'personal':
         setEditForm({
           name: minerProfile.name,
@@ -129,19 +132,19 @@ const ProfileScreen = () => {
         });
         break;
     }
-    
+
     setEditModalVisible(true);
   };
-  
+
   const hideEditModal = () => {
     setEditModalVisible(false);
   };
-  
+
   const handleUpdateProfile = () => {
     // In a real app, this would make an API call
     // For now, just update the local state
-    
-    switch(currentSection) {
+
+    switch (currentSection) {
       case 'personal':
         setMinerProfile({
           ...minerProfile,
@@ -170,14 +173,14 @@ const ProfileScreen = () => {
             district: editForm.district || minerProfile.miningLocation.district,
           },
           permitNumber: editForm.permitNumber || minerProfile.permitNumber,
-          miningType: editForm.miningType 
-            ? editForm.miningType.split(',').map(type => type.trim()) 
+          miningType: editForm.miningType
+            ? editForm.miningType.split(',').map(type => type.trim())
             : minerProfile.miningType,
-          yearsOfExperience: editForm.yearsOfExperience 
-            ? parseInt(editForm.yearsOfExperience) 
+          yearsOfExperience: editForm.yearsOfExperience
+            ? parseInt(editForm.yearsOfExperience)
             : minerProfile.yearsOfExperience,
-          employeeCount: editForm.employeeCount 
-            ? parseInt(editForm.employeeCount) 
+          employeeCount: editForm.employeeCount
+            ? parseInt(editForm.employeeCount)
             : minerProfile.employeeCount,
         });
         break;
@@ -192,10 +195,10 @@ const ProfileScreen = () => {
         });
         break;
     }
-    
+
     hideEditModal();
   };
-  
+
   const handleFormChange = (key: string, value: string) => {
     setEditForm({
       ...editForm,
@@ -207,6 +210,13 @@ const ProfileScreen = () => {
     <ScrollView style={styles.container}>
       {/* Profile Header */}
       <View style={styles.profileHeader}>
+        <View style={styles.headerButtons}>
+          <IconButton
+            icon="account-group"
+            size={24}
+            onPress={() => (navigation as any).navigate('OrgMembers')}
+          />
+        </View>
         <View style={styles.avatarContainer}>
           <Image
             source={require('../../assets/adaptive-icon.png')}
@@ -221,7 +231,7 @@ const ProfileScreen = () => {
         </View>
         <Text style={styles.name}>{minerProfile.name}</Text>
         <Text style={styles.role}>Artisanal Miner</Text>
-        
+
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{minerProfile.stats.totalProduction}g</Text>
@@ -237,7 +247,7 @@ const ProfileScreen = () => {
           </View>
         </View>
       </View>
-      
+
       {/* Credit Score Card */}
       <Card style={styles.card}>
         <Card.Content>
@@ -255,20 +265,20 @@ const ProfileScreen = () => {
           </Text>
         </Card.Content>
       </Card>
-      
+
       {/* Personal Information Card */}
       <Card style={styles.card}>
         <Card.Content>
           <View style={styles.cardHeaderRow}>
             <Title>Personal Information</Title>
-            <IconButton 
-              icon="pencil" 
-              size={20} 
-              onPress={() => showEditModal('personal')} 
+            <IconButton
+              icon="pencil"
+              size={20}
+              onPress={() => showEditModal('personal')}
             />
           </View>
           <Divider style={styles.divider} />
-          
+
           <List.Item
             title="National ID"
             description={minerProfile.nationalId}
@@ -281,20 +291,20 @@ const ProfileScreen = () => {
           />
         </Card.Content>
       </Card>
-      
+
       {/* Address Card */}
       <Card style={styles.card}>
         <Card.Content>
           <View style={styles.cardHeaderRow}>
             <Title>Address</Title>
-            <IconButton 
-              icon="pencil" 
-              size={20} 
-              onPress={() => showEditModal('address')} 
+            <IconButton
+              icon="pencil"
+              size={20}
+              onPress={() => showEditModal('address')}
             />
           </View>
           <Divider style={styles.divider} />
-          
+
           <List.Item
             title="Street"
             description={minerProfile.address.street}
@@ -317,20 +327,20 @@ const ProfileScreen = () => {
           />
         </Card.Content>
       </Card>
-      
+
       {/* Mining Information Card */}
       <Card style={styles.card}>
         <Card.Content>
           <View style={styles.cardHeaderRow}>
             <Title>Mining Information</Title>
-            <IconButton 
-              icon="pencil" 
-              size={20} 
-              onPress={() => showEditModal('mining')} 
+            <IconButton
+              icon="pencil"
+              size={20}
+              onPress={() => showEditModal('mining')}
             />
           </View>
           <Divider style={styles.divider} />
-          
+
           <List.Item
             title="Mining Location"
             description={minerProfile.miningLocation.name}
@@ -370,20 +380,20 @@ const ProfileScreen = () => {
           )}
         </Card.Content>
       </Card>
-      
+
       {/* Banking Details Card */}
       <Card style={styles.card}>
         <Card.Content>
           <View style={styles.cardHeaderRow}>
             <Title>Banking Details</Title>
-            <IconButton 
-              icon="pencil" 
-              size={20} 
-              onPress={() => showEditModal('banking')} 
+            <IconButton
+              icon="pencil"
+              size={20}
+              onPress={() => showEditModal('banking')}
             />
           </View>
           <Divider style={styles.divider} />
-          
+
           <List.Item
             title="Bank Name"
             description={minerProfile.bankDetails.bankName}
@@ -401,13 +411,13 @@ const ProfileScreen = () => {
           />
         </Card.Content>
       </Card>
-      
+
       {/* Monthly Stats Card */}
       <Card style={styles.card}>
         <Card.Content>
           <Title>This Month</Title>
           <Divider style={styles.divider} />
-          
+
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{minerProfile.stats.productionThisMonth}g</Text>
@@ -424,7 +434,7 @@ const ProfileScreen = () => {
           </View>
         </Card.Content>
       </Card>
-      
+
       {/* Edit Modal */}
       <Portal>
         <Modal
@@ -439,7 +449,7 @@ const ProfileScreen = () => {
               {currentSection === 'mining' && 'Edit Mining Information'}
               {currentSection === 'banking' && 'Edit Banking Details'}
             </Title>
-            
+
             {currentSection === 'personal' && (
               <>
                 <TextInput
@@ -456,7 +466,7 @@ const ProfileScreen = () => {
                 />
               </>
             )}
-            
+
             {currentSection === 'address' && (
               <>
                 <TextInput
@@ -485,7 +495,7 @@ const ProfileScreen = () => {
                 />
               </>
             )}
-            
+
             {currentSection === 'mining' && (
               <>
                 <TextInput
@@ -534,7 +544,7 @@ const ProfileScreen = () => {
                 />
               </>
             )}
-            
+
             {currentSection === 'banking' && (
               <>
                 <TextInput
@@ -557,7 +567,7 @@ const ProfileScreen = () => {
                 />
               </>
             )}
-            
+
             <View style={styles.modalActions}>
               <Button onPress={hideEditModal} style={styles.modalButton}>
                 Cancel
@@ -601,6 +611,12 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#ffffff',
     marginBottom: 8,
+  },
+  headerButtons: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    flexDirection: 'row',
   },
   avatarContainer: {
     position: 'relative',
