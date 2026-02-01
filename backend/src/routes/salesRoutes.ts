@@ -1,7 +1,7 @@
 import express from 'express';
 import { authenticate } from '../middleware/auth';
 import { Membership, OrgRole } from '../models/Membership';
-import SalesTransaction, { SaleStatus } from '../models/SalesTransaction';
+import SalesTransaction, { SaleStatus, SaleSource } from '../models/SalesTransaction';
 import Organization from '../models/Organization';
 
 const router = express.Router({ mergeParams: true });

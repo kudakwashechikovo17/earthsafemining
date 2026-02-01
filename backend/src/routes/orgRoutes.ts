@@ -159,19 +159,22 @@ router.delete('/:orgId/members/:userId', authenticate, checkMembership(OrgRole.A
 
         // Prevent removing self (use leave endpoint for that)
         if (userId === req.user.id) {
-            return res.status(400).json({ message: 'Cannot remove yourself. Use "Leave Organization" instead.' });
+            res.status(400).json({ message: 'Cannot remove yourself. Use "Leave Organization" instead.' });
+            return;
         }
 
         const membership = await Membership.findOne({ orgId, userId });
         if (!membership) {
-            return res.status(404).json({ message: 'Member not found' });
+            res.status(404).json({ message: 'Member not found' });
+            return;
         }
 
         // Only Owner can remove Admins
         if (membership.role === OrgRole.ADMIN || membership.role === OrgRole.OWNER) {
             const requesterMembership = await Membership.findOne({ orgId, userId: req.user.id });
             if (requesterMembership?.role !== OrgRole.OWNER) {
-                return res.status(403).json({ message: 'Only Owners can remove Admins' });
+                res.status(403).json({ message: 'Only Owners can remove Admins' });
+                return;
             }
         }
 
