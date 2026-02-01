@@ -139,9 +139,10 @@ const SalesScreen = () => {
       Alert.alert('Success', 'Sale recorded successfully');
       hideModal();
       fetchSales();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Create Sale Error:', error);
-      Alert.alert('Error', 'Failed to record sale');
+      const msg = error.response?.data?.message || error.message || 'Failed to record sale';
+      Alert.alert('Error', msg);
     } finally {
       setSubmitting(false);
     }
