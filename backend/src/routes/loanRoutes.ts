@@ -3,6 +3,7 @@ import { authenticate } from '../middleware/auth';
 import { Membership, OrgRole } from '../models/Membership';
 import { Loan, LoanStatus } from '../models/Loan';
 import { CreditScore } from '../models/CreditScore';
+import { FinancialInstitution } from '../models/FinancialInstitution';
 import { SalesTransaction, SaleStatus } from '../models/SalesTransaction';
 import mongoose from 'mongoose';
 
@@ -26,6 +27,58 @@ const checkMembership = () => {
         }
     };
 };
+
+/**
+ * @route   GET /api/orgs/:orgId/loans/institutions
+ * @desc    Get list of financial institutions
+ * @access  Private
+ */
+router.get('/:orgId/loans/institutions', authenticate, checkMembership(), async (req, res) => {
+    try {
+        let institutions = await FinancialInstitution.find({ isActive: true });
+
+        // Seed if empty (Demo purposes)
+        if (institutions.length === 0) {
+            institutions = await FinancialInstitution.insertMany([
+                {
+                    name: 'EarthSafe Microfinance',
+                    description: 'Specialized loans for small-scale miners. Friendly terms for beginner miners.',
+                    minCreditScore: 40,
+                    maxLoanAmount: 2000,
+                    interestRateRange: '8% - 12%',
+                    supportedLoanTypes: ['Equipment', 'Working Capital'],
+                    requirements: ['Valid ID', '3 months production data'],
+                    logoUrl: 'https://cdn-icons-png.flaticon.com/512/2534/2534204.png' // Generic icon
+                },
+                {
+                    name: 'MineGrow Bank',
+                    description: 'Institutional partner for larger operations. Requires higher production volume.',
+                    minCreditScore: 70,
+                    maxLoanAmount: 50000,
+                    interestRateRange: '5% - 9%',
+                    supportedLoanTypes: ['Heavy Machinery', 'Site Development'],
+                    requirements: ['Business License', '6 months production data', 'Collateral'],
+                    logoUrl: 'https://cdn-icons-png.flaticon.com/512/2830/2830284.png'
+                },
+                {
+                    name: 'Agri-Mining Coop',
+                    description: 'Community-backed loans for cooperative members.',
+                    minCreditScore: 50,
+                    maxLoanAmount: 5000,
+                    interestRateRange: '10% fixed',
+                    supportedLoanTypes: ['Inputs', 'Processing'],
+                    requirements: ['Coop Membership'],
+                    logoUrl: 'https://cdn-icons-png.flaticon.com/512/4140/4140047.png'
+                }
+            ]);
+        }
+
+        res.json(institutions);
+    } catch (error: any) {
+        console.error('Fetch Institutions Error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
 
 /**
  * @route   POST /api/orgs/:orgId/loans
@@ -59,7 +112,7 @@ router.post('/:orgId/loans', authenticate, checkMembership(), async (req: any, r
             purpose,
             termMonths: parseInt(term),
             collateral,
-            institution,
+            institution, // Now passed from frontend selection
             documents,
             notes,
             status,

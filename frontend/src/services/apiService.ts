@@ -179,6 +179,11 @@ export const apiService = {
     return response.data;
   },
 
+  getInstitutions: async (orgId: string) => {
+    const response = await api.get(`/orgs/${orgId}/loans/institutions`);
+    return response.data;
+  },
+
   applyLoan: async (orgId: string, data: any) => {
     const response = await api.post(`/orgs/${orgId}/loans`, data);
     return response.data;

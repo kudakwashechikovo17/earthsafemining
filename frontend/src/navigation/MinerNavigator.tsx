@@ -17,6 +17,8 @@ import SettingsScreen from '../screens/SettingsScreen';
 import ShiftDetailsScreen from '../screens/miner/ShiftDetailsScreen';
 import IncidentReportScreen from '../screens/miner/IncidentReportScreen';
 import SafetyChecklistScreen from '../screens/miner/SafetyChecklistScreen';
+import LoanPreparationScreen from '../screens/miner/LoanPreparationScreen';
+import FinancialMarketplaceScreen from '../screens/miner/FinancialMarketplaceScreen';
 
 // Create navigators
 const Tab = createBottomTabNavigator();

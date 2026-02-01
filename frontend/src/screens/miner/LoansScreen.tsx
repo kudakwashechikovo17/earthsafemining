@@ -24,9 +24,10 @@ import { RootState } from '../../store';
 import { apiService } from '../../services/apiService';
 import ScreenWrapper from '../../components/ScreenWrapper';
 
-const LoansScreen = () => {
+const LoansScreen = ({ route }: any) => {
   const { currentOrg } = useSelector((state: RootState) => state.auth);
   const navigation = useNavigation();
+  const { prefillInstitution, openModal } = route.params || {};
 
   const [visible, setVisible] = useState(false);
   const [loans, setLoans] = useState<any[]>([]);
@@ -44,6 +45,15 @@ const LoansScreen = () => {
     documents: [] as string[],
     notes: '',
   });
+
+  useEffect(() => {
+    if (openModal) {
+      setVisible(true);
+    }
+    if (prefillInstitution) {
+      setNewLoan(prev => ({ ...prev, institution: prefillInstitution }));
+    }
+  }, [route.params]);
 
   useEffect(() => {
     fetchData();
@@ -250,11 +260,12 @@ const LoansScreen = () => {
         </Card>
       </ScrollView>
 
-      {/* Add Loan Application FAB */}
+      {/* Add Loan Application FAB -> Now Prep Step */}
       <FAB
-        icon="plus"
+        icon="bank-plus"
+        label="Get Loan"
         style={styles.fab}
-        onPress={showModal}
+        onPress={() => navigation.navigate('LoanPreparation' as never)}
       />
 
       {/* Add Loan Application Modal */}
