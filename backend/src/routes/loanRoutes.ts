@@ -3,7 +3,7 @@ import { authenticate } from '../middleware/auth';
 import { Membership, OrgRole } from '../models/Membership';
 import { Loan, LoanStatus } from '../models/Loan';
 import { CreditScore } from '../models/CreditScore';
-import SalesTransaction, { SaleStatus } from '../models/SalesTransaction';
+import { SalesTransaction, SaleStatus } from '../models/SalesTransaction';
 import mongoose from 'mongoose';
 
 const router = express.Router({ mergeParams: true });

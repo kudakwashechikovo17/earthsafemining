@@ -49,7 +49,7 @@ app.use('/api/orgs', financeRoutes);
 app.use('/api/orgs', creditRoutes);
 app.use('/api/orgs', salesRoutes); // Base route involves orgs
 app.use('/api/orgs', complianceRoutes);
-// app.use('/api/orgs', loanRoutes); // TEMPORARY DISABLE DEBUG
+app.use('/api/orgs', loanRoutes);
 app.use('/api/orgs', orgRoutes); // Generic org routes last
 
 app.use('/api/users', userRoutes);
