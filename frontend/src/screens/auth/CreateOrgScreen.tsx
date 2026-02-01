@@ -11,12 +11,14 @@ export const CreateOrgScreen = ({ navigation }: any) => {
     const [name, setName] = useState('');
     const [location, setLocation] = useState('');
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
     const handleCreate = async () => {
         if (!name) return;
 
         console.log('handleCreate called, starting...');
         setLoading(true);
+        setError(''); // Clear previous errors
         try {
             console.log('Calling apiService.createOrg with:', { name, location, type: 'mine' });
             // Mock API call again - need to update apiService
@@ -32,9 +34,12 @@ export const CreateOrgScreen = ({ navigation }: any) => {
             console.log('Dispatch complete.');
 
             // AppNavigator handles redirect
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to create org', error);
-            Alert.alert('Error', 'Failed to create organization. Please check your connection.');
+            const msg = error.response?.data?.message || error.message || 'Failed to create organization.';
+            setError(msg);
+            Alert.alert('Error', msg);
+        } finally {
             setLoading(false);
         }
     };
@@ -60,6 +65,8 @@ export const CreateOrgScreen = ({ navigation }: any) => {
                     mode="outlined"
                     style={styles.input}
                 />
+
+                {error ? <Paragraph style={{ color: 'red', marginBottom: 10 }}>{error}</Paragraph> : null}
 
                 <Button
                     mode="contained"
