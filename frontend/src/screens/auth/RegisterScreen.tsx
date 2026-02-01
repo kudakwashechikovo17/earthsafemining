@@ -143,13 +143,14 @@ const RegisterScreen = () => {
           { text: 'OK', onPress: () => navigation.navigate('Login') }
         ]
       );
-    } catch (error: any) {
-      console.error('Registration error:', error);
+      console.error('Registration error details:', error);
 
       // Handle API error
       let errorMessage = 'An error occurred during registration. Please try again.';
 
-      if (error.response) {
+      if (error.code === 'ECONNABORTED') {
+        errorMessage = 'Request timed out. Please check your internet connection.';
+      } else if (error.response) {
         // The request was made and the server responded with a status code
         // that falls out of the range of 2xx
         console.log('Error response data:', error.response.data);
@@ -171,9 +172,11 @@ const RegisterScreen = () => {
       } else {
         // Something happened in setting up the request that triggered an Error
         console.log('Error message:', error.message);
+        errorMessage = error.message || errorMessage;
       }
 
       setRegisterError(errorMessage);
+      Alert.alert('Registration Failed', errorMessage);
     } finally {
       setIsLoading(false);
     }
