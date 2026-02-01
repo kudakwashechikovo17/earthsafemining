@@ -39,7 +39,8 @@ router.get('/dashboard', authenticate, authorize(['miner', 'cooperative', 'admin
       monthlySales,
       productionStats,
       recentTransactions,
-      orgDetails
+      orgDetails,
+      recentShifts
     ] = await Promise.all([
       // 1. Daily Earnings
       SalesTransaction.aggregate([
@@ -152,12 +153,12 @@ router.get('/dashboard', authenticate, authorize(['miner', 'cooperative', 'admin
         unit: 'g',
         status: t.status
       })),
-      recentProduction: productionStats[6]?.map((s: any) => ({
+      recentProduction: recentShifts.map((s: any) => ({
         id: s._id,
         type: s.type,
         date: new Date(s.date).toLocaleDateString(),
         status: s.status
-      })) || [], // Map the 7th result (index 6)
+      })),
       complianceAlerts: alerts
     });
 
