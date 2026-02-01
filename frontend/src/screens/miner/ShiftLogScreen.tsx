@@ -57,6 +57,9 @@ const ShiftLogScreen = ({ navigation }: any) => {
     };
 
     const submitShift = async () => {
+        // DEBUG: Force alert to prove button works
+        Alert.alert('DEBUG', `Pressed! Org: ${currentOrg?._id ? 'Yes' : 'No'}, Items: ${materialMovements.length + timesheets.length}`);
+
         if (!currentOrg) {
             Alert.alert('Error', 'Organization not validated. Please restart the app.');
             return;
