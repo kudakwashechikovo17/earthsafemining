@@ -86,14 +86,13 @@ const OrgMembersScreen = ({ navigation }: any) => {
             return;
         }
 
+        if (!currentOrg) return;
+
         setInviting(true);
         try {
             // Need to add this method to apiService/backend first or use existing member add
             // For now, assuming invite functionality or direct add if user exists
-            await apiService.post(`/orgs/${currentOrg._id}/members`, {
-                email: inviteEmail,
-                role: 'miner' // Default role
-            });
+            await apiService.addMember(currentOrg._id, inviteEmail, 'miner');
 
             Alert.alert('Success', 'User added to organization');
             setInviteVisible(false);

@@ -212,6 +212,11 @@ const ProfileScreen = () => {
       <View style={styles.profileHeader}>
         <View style={styles.headerButtons}>
           <IconButton
+            icon="cog"
+            size={24}
+            onPress={() => (navigation as any).navigate('Settings')}
+          />
+          <IconButton
             icon="account-group"
             size={24}
             onPress={() => (navigation as any).navigate('OrgMembers')}

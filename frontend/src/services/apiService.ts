@@ -143,6 +143,11 @@ export const apiService = {
     return response.data;
   },
 
+  addMember: async (orgId: string, email: string, role: string = 'miner') => {
+    const response = await api.post(`/orgs/${orgId}/members`, { email, role });
+    return response.data;
+  },
+
   removeMember: async (orgId: string, userId: string) => {
     const response = await api.delete(`/orgs/${orgId}/members/${userId}`);
     return response.data;
