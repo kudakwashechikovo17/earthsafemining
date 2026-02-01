@@ -40,6 +40,12 @@ router.post('/:orgId/sales', authenticate, checkMembership([OrgRole.MINER, OrgRo
         const { buyerName, quantity, pricePerUnit, unit, receiptNumber, notes, date } = req.body;
         const orgId = req.params.orgId;
 
+        console.log('Received sale request:', {
+            orgId,
+            body: req.body,
+            user: req.user
+        });
+
         const totalValue = parseFloat(quantity) * parseFloat(pricePerUnit);
 
         const sale = await SalesTransaction.create({

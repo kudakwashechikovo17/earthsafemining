@@ -108,16 +108,33 @@ const SalesScreen = () => {
     }
 
     setSubmitting(true);
+    console.log('Submitting sale:', {
+      orgId: currentOrg?._id,
+      buyer,
+      quantity,
+      pricePerUnit
+    });
+
     try {
-      await apiService.createSale(currentOrg._id, {
+      if (!currentOrg?._id) {
+        throw new Error('No organization selected');
+      }
+
+      const finalReceiptNumber = receiptNumber || `REC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+      const payload = {
         buyerName: buyer,
         quantity: parseFloat(quantity),
         pricePerUnit: parseFloat(pricePerUnit),
         unit: 'grams',
-        receiptNumber,
+        receiptNumber: finalReceiptNumber,
         notes,
         // receiptImage todo: upload logic
-      });
+      };
+
+      console.log('Sale payload:', payload);
+
+      await apiService.createSale(currentOrg._id, payload);
 
       Alert.alert('Success', 'Sale recorded successfully');
       hideModal();
