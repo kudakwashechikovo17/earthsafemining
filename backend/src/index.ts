@@ -20,6 +20,7 @@ import orgRoutes from './routes/orgRoutes';
 import shiftRoutes from './routes/shiftRoutes';
 import financeRoutes from './routes/financeRoutes';
 import creditRoutes from './routes/creditRoutes';
+import salesRoutes from './routes/salesRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -43,10 +44,11 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/orgs', shiftRoutes);
 app.use('/api/orgs', financeRoutes);
 app.use('/api/orgs', creditRoutes);
+app.use('/api/orgs', salesRoutes); // Base route involves orgs
 app.use('/api/orgs', orgRoutes); // Generic org routes last
 
 app.use('/api/users', userRoutes);
-app.use('/api/miners', minerRoutes);
+app.use('/api/miner', minerRoutes); // Changed from /api/miners to /api/miner as per instruction
 app.use('/api/cooperatives', cooperativeRoutes);
 app.use('/api/financial-institutions', financialInstitutionRoutes);
 app.use('/api/government', governmentRoutes);

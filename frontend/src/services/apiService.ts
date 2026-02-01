@@ -126,6 +126,17 @@ export const apiService = {
     return response.data;
   },
 
+  // Sales
+  getSales: async (orgId: string) => {
+    const response = await api.get(`/orgs/${orgId}/sales`);
+    return response.data;
+  },
+
+  createSale: async (orgId: string, data: any) => {
+    const response = await api.post(`/orgs/${orgId}/sales`, data);
+    return response.data;
+  },
+
   // Generic Helpers (for direct access to new routes)
   get: async (url: string) => {
     return api.get(url); // Returns full response object to keep consistency with usage

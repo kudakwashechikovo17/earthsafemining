@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, StyleSheet, ScrollView, Alert, TouchableOpacity, RefreshControl, Image } from 'react-native';
 import {
   Card,
   Title,
@@ -13,69 +13,79 @@ import {
   Avatar,
   Divider,
   SegmentedButtons,
-  Chip,
+  Surface,
+  useTheme,
+  ActivityIndicator
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as ImagePicker from 'expo-image-picker';
-import * as DocumentPicker from 'expo-document-picker';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
+import { apiService } from '../../services/apiService';
+import ScreenWrapper from '../../components/ScreenWrapper';
 
 const SalesScreen = () => {
-  const [visible, setVisible] = useState(false);
-  const [timeFilter, setTimeFilter] = useState('week');
-  const [transactions, setTransactions] = useState([
-    {
-      id: '1',
-      date: '2023-11-15',
-      buyer: 'FPR Harare',
-      quantity: 25,
-      unit: 'grams',
-      pricePerUnit: 58.5,
-      totalAmount: 1462.5,
-      status: 'completed',
-      receiptNumber: 'FPR-2023-1125',
-    },
-    {
-      id: '2',
-      date: '2023-11-14',
-      buyer: 'ABC Minerals',
-      quantity: 18,
-      unit: 'grams',
-      pricePerUnit: 57.8,
-      totalAmount: 1040.4,
-      status: 'pending',
-      receiptNumber: 'ABC-2023-0892',
-    },
-    {
-      id: '3',
-      date: '2023-11-13',
-      buyer: 'FPR Bulawayo',
-      quantity: 32,
-      unit: 'grams',
-      pricePerUnit: 58.2,
-      totalAmount: 1862.4,
-      status: 'completed',
-      receiptNumber: 'FPR-2023-1120',
-    },
-  ]);
+  const theme = useTheme();
+  const navigation = useNavigation();
+  const { currentOrg } = useSelector((state: RootState) => state.auth);
 
-  const [newTransaction, setNewTransaction] = useState({
-    buyer: '',
-    quantity: '',
-    pricePerUnit: '',
-    receiptNumber: '',
-    notes: '',
-    receiptImage: null as string | null,
-  });
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [visible, setVisible] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  // New Sale Form State
+  const [buyer, setBuyer] = useState('Fidelity Printers');
+  const [quantity, setQuantity] = useState('');
+  const [pricePerUnit, setPricePerUnit] = useState('');
+  const [receiptNumber, setReceiptNumber] = useState('');
+  const [notes, setNotes] = useState('');
+  const [receiptImage, setReceiptImage] = useState<string | null>(null);
+
+  const fetchSales = useCallback(async () => {
+    if (!currentOrg) return;
+    try {
+      const data = await apiService.getSales(currentOrg._id);
+      setTransactions(data);
+    } catch (error) {
+      console.error('Fetch sales error:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [currentOrg]);
+
+  useEffect(() => {
+    fetchSales();
+  }, [fetchSales]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchSales();
+  }, [fetchSales]);
 
   const showModal = () => setVisible(true);
-  const hideModal = () => setVisible(false);
+  const hideModal = () => {
+    setVisible(false);
+    resetForm();
+  }
+
+  const resetForm = () => {
+    setBuyer('Fidelity Printers');
+    setQuantity('');
+    setPricePerUnit('');
+    setReceiptNumber('');
+    setNotes('');
+    setReceiptImage(null);
+  }
 
   const handleImagePicker = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
+
     if (permissionResult.granted === false) {
-      alert('Permission to access camera roll is required!');
+      Alert.alert('Permission Required', 'Permission to access camera roll is required!');
       return;
     }
 
@@ -83,149 +93,152 @@ const SalesScreen = () => {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 1,
+      quality: 0.8,
     });
 
     if (!result.canceled) {
-      setNewTransaction({
-        ...newTransaction,
-        receiptImage: result.assets[0].uri,
-      });
+      setReceiptImage(result.assets[0].uri);
     }
   };
 
-  const handleSubmit = () => {
-    // TODO: Implement API call to save transaction
-    const transaction = {
-      id: Date.now().toString(),
-      date: new Date().toISOString().split('T')[0],
-      unit: 'grams',
-      quantity: parseFloat(newTransaction.quantity),
-      pricePerUnit: parseFloat(newTransaction.pricePerUnit),
-      totalAmount: parseFloat(newTransaction.quantity) * parseFloat(newTransaction.pricePerUnit),
-      status: 'pending',
-      buyer: newTransaction.buyer,
-      receiptNumber: newTransaction.receiptNumber,
-      notes: newTransaction.notes,
-      receiptImage: newTransaction.receiptImage,
-    };
+  const handleSubmit = async () => {
+    if (!buyer || !quantity || !pricePerUnit) {
+      Alert.alert('Missing Fields', 'Please fill in Buyer, Quantity, and Price.');
+      return;
+    }
 
-    setTransactions([transaction, ...transactions]);
-    setNewTransaction({
-      buyer: '',
-      quantity: '',
-      pricePerUnit: '',
-      receiptNumber: '',
-      notes: '',
-      receiptImage: null,
-    });
-    hideModal();
+    setSubmitting(true);
+    try {
+      await apiService.createSale(currentOrg._id, {
+        buyerName: buyer,
+        quantity: parseFloat(quantity),
+        pricePerUnit: parseFloat(pricePerUnit),
+        unit: 'grams',
+        receiptNumber,
+        notes,
+        // receiptImage todo: upload logic
+      });
+
+      Alert.alert('Success', 'Sale recorded successfully');
+      hideModal();
+      fetchSales();
+    } catch (error) {
+      console.error('Create Sale Error:', error);
+      Alert.alert('Error', 'Failed to record sale');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
+      case 'verified':
       case 'completed':
-        return '#2E7D32';
+        return theme.colors.primary;
       case 'pending':
-        return '#FFA000';
+        return theme.colors.tertiary; // Orange/Gold-ish
       case 'rejected':
-        return '#D32F2F';
+        return theme.colors.error;
       default:
-        return '#757575';
+        return theme.colors.outline;
     }
   };
 
   const calculateTotalSales = () => {
-    return transactions.reduce((total, transaction) => {
-      return transaction.status === 'completed' ? total + transaction.totalAmount : total;
-    }, 0);
+    return transactions.reduce((total, t) => total + (t.totalValue || 0), 0);
   };
 
+  const calculateTotalWeight = () => {
+    return transactions.reduce((total, t) => total + (t.grams || 0), 0);
+  };
+
+  if (loading && !refreshing) {
+    return (
+      <ScreenWrapper>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      </ScreenWrapper>
+    )
+  }
+
   return (
-    <View style={styles.container}>
-      <ScrollView>
+    <ScreenWrapper>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+
         {/* Sales Summary Card */}
-        <Card style={styles.card}>
-          <Card.Content>
-            <Title>Sales Summary</Title>
-            <SegmentedButtons
-              value={timeFilter}
-              onValueChange={setTimeFilter}
-              buttons={[
-                { value: 'week', label: 'Week' },
-                { value: 'month', label: 'Month' },
-                { value: 'year', label: 'Year' },
-              ]}
-              style={styles.filterButtons}
-            />
-            <View style={styles.summaryContainer}>
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryValue}>
-                  ${calculateTotalSales().toFixed(2)}
-                </Text>
-                <Text style={styles.summaryLabel}>Total Sales</Text>
-              </View>
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryValue}>75g</Text>
-                <Text style={styles.summaryLabel}>Quantity Sold</Text>
-              </View>
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryValue}>$58.2</Text>
-                <Text style={styles.summaryLabel}>Avg. Price/g</Text>
-              </View>
+        <Surface style={[styles.summaryCard, { backgroundColor: theme.colors.secondaryContainer }]} elevation={2}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
+            <View>
+              <Text variant="titleMedium" style={{ fontWeight: 'bold', color: theme.colors.secondary }}>Total Revenue</Text>
+              <Text variant="headlineMedium" style={{ fontWeight: 'bold', color: theme.colors.primary }}>
+                ${calculateTotalSales().toLocaleString()}
+              </Text>
             </View>
-          </Card.Content>
-        </Card>
+            <Avatar.Icon size={48} icon="cash-multiple" style={{ backgroundColor: theme.colors.background }} color={theme.colors.primary} />
+          </View>
+          <Divider style={{ backgroundColor: theme.colors.outline, opacity: 0.2, marginBottom: 12 }} />
+          <View style={{ flexDirection: 'row', gap: 24 }}>
+            <View>
+              <Text variant="labelMedium" style={{ opacity: 0.7 }}>Gold Sold</Text>
+              <Text variant="titleMedium" style={{ fontWeight: 'bold' }}>{calculateTotalWeight()}g</Text>
+            </View>
+            <View>
+              <Text variant="labelMedium" style={{ opacity: 0.7 }}>Transactions</Text>
+              <Text variant="titleMedium" style={{ fontWeight: 'bold' }}>{transactions.length}</Text>
+            </View>
+          </View>
+        </Surface>
 
         {/* Transactions List */}
-        <Card style={styles.card}>
-          <Card.Content>
-            <Title>Recent Transactions</Title>
-            {transactions.map((transaction) => (
-              <View key={transaction.id}>
-                <List.Item
-                  title={transaction.buyer}
-                  description={`Receipt: ${transaction.receiptNumber}\n${transaction.quantity} ${transaction.unit} at $${transaction.pricePerUnit}/${transaction.unit}`}
-                  left={() => (
-                    <Avatar.Icon
-                      size={40}
-                      icon="cash"
-                      style={{
-                        backgroundColor: getStatusColor(transaction.status),
-                      }}
-                    />
-                  )}
-                  right={() => (
-                    <View style={styles.transactionMetadata}>
-                      <Text style={styles.transactionDate}>{transaction.date}</Text>
-                      <Text style={styles.transactionAmount}>
-                        ${transaction.totalAmount.toFixed(2)}
-                      </Text>
-                      <View
-                        style={[
-                          styles.statusBadge,
-                          { borderColor: getStatusColor(transaction.status), 
-                            backgroundColor: `${getStatusColor(transaction.status)}20` },
-                        ]}
-                      >
-                        <Text style={[styles.statusText, { color: getStatusColor(transaction.status) }]}>
-                          {transaction.status}
-                        </Text>
-                      </View>
-                    </View>
-                  )}
-                />
-                <Divider />
+        <Text variant="titleMedium" style={{ fontWeight: 'bold', marginBottom: 12, marginLeft: 4 }}>Recent Sales</Text>
+
+        {transactions.length === 0 ? (
+          <Surface style={styles.emptyState} elevation={0}>
+            <Icon name="file-document-outline" size={48} color={theme.colors.outline} />
+            <Text style={{ color: theme.colors.outline, marginTop: 8 }}>No sales recorded yet.</Text>
+          </Surface>
+        ) : (
+          transactions.map((t) => (
+            <Surface key={t._id} style={styles.transactionCard} elevation={1}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Avatar.Icon
+                    size={40}
+                    icon="sale"
+                    style={{ backgroundColor: `${getStatusColor(t.status)}20` }}
+                    color={getStatusColor(t.status)}
+                  />
+                  <View style={{ marginLeft: 12 }}>
+                    <Text variant="titleSmall" style={{ fontWeight: 'bold' }}>{t.buyerName}</Text>
+                    <Text variant="labelSmall" style={{ color: theme.colors.outline }}>{new Date(t.date).toLocaleDateString()}</Text>
+                  </View>
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text variant="titleMedium" style={{ fontWeight: 'bold', color: theme.colors.primary }}>+${t.totalValue?.toLocaleString()}</Text>
+                  <Text variant="labelSmall">{t.grams}g @ ${t.pricePerGram}/g</Text>
+                </View>
               </View>
-            ))}
-          </Card.Content>
-        </Card>
+              {t.referenceId && (
+                <View style={{ marginTop: 8, padding: 4, backgroundColor: '#f5f5f5', alignSelf: 'flex-start', borderRadius: 4 }}>
+                  <Text variant="labelSmall" style={{ color: theme.colors.outline }}>Ref: {t.referenceId}</Text>
+                </View>
+              )}
+            </Surface>
+          ))
+        )}
+
       </ScrollView>
 
       {/* Add Transaction FAB */}
       <FAB
         icon="plus"
-        style={styles.fab}
+        label="Record Sale"
+        style={[styles.fab, { backgroundColor: theme.colors.primary }]}
+        color={theme.colors.onPrimary}
         onPress={showModal}
       />
 
@@ -236,171 +249,156 @@ const SalesScreen = () => {
           onDismiss={hideModal}
           contentContainerStyle={styles.modalContainer}
         >
-          <ScrollView>
-            <Title style={styles.modalTitle}>Record Sale</Title>
+          <View style={styles.modalContent}>
+            <Title style={styles.modalTitle}>Record New Sale</Title>
+            <ScrollView showsVerticalScrollIndicator={false}>
 
-            <TextInput
-              label="Buyer"
-              value={newTransaction.buyer}
-              onChangeText={(text) => setNewTransaction({ ...newTransaction, buyer: text })}
-              style={styles.input}
-            />
+              <TextInput
+                label="Buyer Name"
+                value={buyer}
+                onChangeText={setBuyer}
+                mode="outlined"
+                style={styles.input}
+                placeholder="e.g. Fidelity Printers"
+              />
 
-            <TextInput
-              label="Quantity (grams)"
-              value={newTransaction.quantity}
-              onChangeText={(text) => setNewTransaction({ ...newTransaction, quantity: text })}
-              keyboardType="numeric"
-              style={styles.input}
-            />
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <TextInput
+                  label="Weight (g)"
+                  value={quantity}
+                  onChangeText={setQuantity}
+                  keyboardType="numeric"
+                  mode="outlined"
+                  style={[styles.input, { flex: 1 }]}
+                />
+                <TextInput
+                  label="Price ($/g)"
+                  value={pricePerUnit}
+                  onChangeText={setPricePerUnit}
+                  keyboardType="numeric"
+                  mode="outlined"
+                  style={[styles.input, { flex: 1 }]}
+                  left={<TextInput.Affix text="$" />}
+                />
+              </View>
 
-            <TextInput
-              label="Price per Gram (USD)"
-              value={newTransaction.pricePerUnit}
-              onChangeText={(text) => setNewTransaction({ ...newTransaction, pricePerUnit: text })}
-              keyboardType="numeric"
-              style={styles.input}
-            />
+              {quantity && pricePerUnit && (
+                <Surface style={{ padding: 12, backgroundColor: theme.colors.primaryContainer, borderRadius: 8, marginBottom: 16 }}>
+                  <Text style={{ textAlign: 'center', fontWeight: 'bold' }}>
+                    Total Value: ${(parseFloat(quantity) * parseFloat(pricePerUnit)).toLocaleString()}
+                  </Text>
+                </Surface>
+              )}
 
-            <TextInput
-              label="Receipt Number"
-              value={newTransaction.receiptNumber}
-              onChangeText={(text) => setNewTransaction({ ...newTransaction, receiptNumber: text })}
-              style={styles.input}
-            />
+              <TextInput
+                label="Receipt / Ref Number"
+                value={receiptNumber}
+                onChangeText={setReceiptNumber}
+                mode="outlined"
+                style={styles.input}
+              />
 
-            <TextInput
-              label="Notes"
-              value={newTransaction.notes}
-              onChangeText={(text) => setNewTransaction({ ...newTransaction, notes: text })}
-              multiline
-              numberOfLines={3}
-              style={styles.input}
-            />
+              <TextInput
+                label="Notes"
+                value={notes}
+                onChangeText={setNotes}
+                multiline
+                numberOfLines={3}
+                mode="outlined"
+                style={styles.input}
+              />
 
-            <Button
-              mode="outlined"
-              onPress={handleImagePicker}
-              style={styles.imageButton}
-              icon="camera"
-            >
-              Add Receipt Image
-            </Button>
-
-            {newTransaction.receiptImage && (
-              <Text style={styles.imageConfirmation}>Receipt image added</Text>
-            )}
-
-            <View style={styles.modalActions}>
-              <Button onPress={hideModal} style={styles.modalButton}>
-                Cancel
-              </Button>
               <Button
-                mode="contained"
-                onPress={handleSubmit}
-                style={styles.modalButton}
+                mode="outlined"
+                onPress={handleImagePicker}
+                style={styles.imageButton}
+                icon="camera"
               >
-                Save
+                {receiptImage ? 'Change Receipt Photo' : 'Attach Receipt Photo'}
               </Button>
-            </View>
-          </ScrollView>
+
+              {receiptImage && (
+                <Image source={{ uri: receiptImage }} style={{ width: '100%', height: 150, borderRadius: 8, marginBottom: 16 }} />
+              )}
+
+              <View style={styles.modalActions}>
+                <Button onPress={hideModal} style={{ marginRight: 8 }} textColor={theme.colors.secondary}>Cancel</Button>
+                <Button
+                  mode="contained"
+                  onPress={handleSubmit}
+                  loading={submitting}
+                  contentStyle={{ paddingHorizontal: 24 }}
+                >
+                  Save Record
+                </Button>
+              </View>
+            </ScrollView>
+          </View>
         </Modal>
       </Portal>
-    </View>
+    </ScreenWrapper>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    padding: 16,
+    paddingBottom: 80,
+  },
+  loadingContainer: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
-  card: {
-    margin: 8,
-    elevation: 2,
-  },
-  filterButtons: {
-    marginVertical: 16,
-  },
-  summaryContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-  },
-  summaryItem: {
-    alignItems: 'center',
-  },
-  summaryValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  summaryLabel: {
-    fontSize: 12,
-    color: '#666666',
-    marginTop: 4,
-  },
-  transactionMetadata: {
-    alignItems: 'flex-end',
-  },
-  transactionDate: {
-    fontSize: 12,
-    color: '#666666',
-  },
-  transactionAmount: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginVertical: 4,
-  },
-  statusChip: {
-    height: 24,
-  },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 16,
-    borderWidth: 1,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
   },
-  statusText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    textTransform: 'capitalize',
+  summaryCard: {
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 24,
+  },
+  transactionCard: {
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    marginBottom: 12,
+  },
+  emptyState: {
+    padding: 32,
+    alignItems: 'center',
+    backgroundColor: '#f9f9f9',
+    borderRadius: 16,
+    marginTop: 20,
   },
   fab: {
     position: 'absolute',
     margin: 16,
     right: 0,
     bottom: 0,
-    backgroundColor: '#2E7D32',
   },
   modalContainer: {
     backgroundColor: 'white',
-    padding: 20,
     margin: 20,
-    borderRadius: 8,
-    maxHeight: '80%',
+    borderRadius: 16,
+    maxHeight: '90%',
+  },
+  modalContent: {
+    padding: 24,
   },
   modalTitle: {
-    marginBottom: 16,
+    marginBottom: 20,
+    fontWeight: 'bold',
   },
   input: {
     marginBottom: 16,
+    backgroundColor: '#fff',
   },
   imageButton: {
     marginBottom: 16,
-  },
-  imageConfirmation: {
-    marginBottom: 16,
-    color: '#2E7D32',
+    borderColor: '#ccc',
   },
   modalActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginTop: 16,
-  },
-  modalButton: {
-    marginLeft: 8,
+    marginTop: 8,
   },
 });
 
