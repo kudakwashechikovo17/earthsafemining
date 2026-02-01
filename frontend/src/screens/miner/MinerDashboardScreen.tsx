@@ -68,6 +68,7 @@ const MinerDashboardScreen = ({ navigation }: MinerDashboardScreenProps) => {
   // Default empty state values if data is missing (Safety check)
   const earningsSummary = dashboardData?.earnings || { daily: 0, weekly: 0, monthly: 0 };
   const recentTransactions = dashboardData?.recentTransactions || [];
+  const recentProduction = dashboardData?.recentProduction || [];
   const complianceAlerts = dashboardData?.complianceAlerts || [];
 
   // Chart Data
@@ -196,9 +197,40 @@ const MinerDashboardScreen = ({ navigation }: MinerDashboardScreenProps) => {
           </Card.Content>
         </Card>
 
-        {/* Recent Transactions */}
+        {/* Recent Activity Sections */}
+        {/* 1. Production */}
         <View style={styles.sectionHeader}>
-          <Text variant="titleMedium" style={{ fontWeight: 'bold' }}>Recent Activity</Text>
+          <Text variant="titleMedium" style={{ fontWeight: 'bold' }}>Recent Production</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Production')}>
+            <Text style={{ color: theme.colors.primary }}>View Log</Text>
+          </TouchableOpacity>
+        </View>
+
+        {recentProduction.length === 0 ? (
+          <Surface style={styles.emptyState} elevation={0}>
+            <Icon name="pickaxe" size={32} color={theme.colors.outline} />
+            <Text style={{ color: theme.colors.outline, marginTop: 4 }}>No shifts logged.</Text>
+          </Surface>
+        ) : (
+          recentProduction.map((shift: any) => (
+            <Surface key={`shift-${shift.id}`} style={styles.transactionItem} elevation={0}>
+              <Avatar.Icon size={40} icon={shift.type === 'day' ? 'weather-sunny' : 'weather-night'} style={{ backgroundColor: theme.colors.primaryContainer }} color={theme.colors.primary} />
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text variant="bodyLarge" style={{ fontWeight: 'bold' }}>{shift.type === 'day' ? 'Day Shift' : 'Night Shift'}</Text>
+                <Text variant="bodySmall" style={{ color: theme.colors.outline }}>{shift.date}</Text>
+              </View>
+              <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
+                <Text variant="labelSmall" style={{ color: shift.status === 'open' ? theme.colors.primary : theme.colors.outline, fontWeight: 'bold' }}>
+                  {shift.status.toUpperCase()}
+                </Text>
+              </View>
+            </Surface>
+          ))
+        )}
+
+        {/* 2. Sales Transactions */}
+        <View style={styles.sectionHeader}>
+          <Text variant="titleMedium" style={{ fontWeight: 'bold' }}>Sales Activity</Text>
           <TouchableOpacity onPress={() => navigation.navigate('Sales')}>
             <Text style={{ color: theme.colors.primary }}>View All</Text>
           </TouchableOpacity>

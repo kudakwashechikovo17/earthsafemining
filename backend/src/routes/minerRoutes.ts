@@ -3,6 +3,7 @@ import { authenticate, authorize } from '../middleware/auth';
 import SalesTransaction, { SaleStatus } from '../models/SalesTransaction';
 import MaterialMovement, { MaterialType } from '../models/MaterialMovement';
 import Organization from '../models/Organization';
+import { Shift } from '../models/Shift';
 import mongoose from 'mongoose';
 
 const router = express.Router();
@@ -96,7 +97,9 @@ router.get('/dashboard', authenticate, authorize(['miner', 'cooperative', 'admin
         .limit(5)
         .select('buyerName date totalValue grams currency status'),
       // 6. Org Details for alerts
-      Organization.findById(orgId).select('miningLicenseNumber status')
+      Organization.findById(orgId).select('miningLicenseNumber status'),
+      // 7. Recent Shifts (Added for visibility)
+      Shift.find({ orgId }).sort({ date: -1 }).limit(5).select('type date status')
     ]);
 
     // Format Alert Data
@@ -149,6 +152,12 @@ router.get('/dashboard', authenticate, authorize(['miner', 'cooperative', 'admin
         unit: 'g',
         status: t.status
       })),
+      recentProduction: productionStats[6]?.map((s: any) => ({
+        id: s._id,
+        type: s.type,
+        date: new Date(s.date).toLocaleDateString(),
+        status: s.status
+      })) || [], // Map the 7th result (index 6)
       complianceAlerts: alerts
     });
 
