@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { User, UserRole, SubscriptionTier } from '../models/User';
+import { Membership } from '../models/Membership';
 import { logger } from '../utils/logger';
 
 // @desc    Register a new user
@@ -61,6 +62,10 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
     // Save user to database
     await user.save();
     logger.info(`User saved with role: ${user.role}`);
+
+    // Create default membership if needed? 
+    // For now, we assume user creates an org later or is invited. 
+    // So orgId in token might be undefined initially.
 
     // Generate JWT token
     const token = user.generateAuthToken();
@@ -142,8 +147,14 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    // Find active membership to get Org ID
+    const membership = await Membership.findOne({
+      userId: user._id,
+      status: 'active'
+    });
+
     // Generate JWT token
-    const token = user.generateAuthToken();
+    const token = user.generateAuthToken(membership?.orgId?.toString());
 
     // Generate refresh token
     const refreshToken = user.generateRefreshToken();

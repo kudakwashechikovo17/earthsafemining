@@ -43,7 +43,7 @@ export interface IUser extends Document {
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
-  generateAuthToken(): string;
+  generateAuthToken(orgId?: string): string;
   generateRefreshToken(): string;
 }
 
@@ -142,9 +142,9 @@ userSchema.methods.comparePassword = async function (candidatePassword: string):
 };
 
 // Generate auth token
-userSchema.methods.generateAuthToken = function (): string {
+userSchema.methods.generateAuthToken = function (orgId?: string): string {
   return jwt.sign(
-    { id: this._id, role: this.role },
+    { id: this._id, role: this.role, orgId },
     (process.env.JWT_SECRET as string) || 'default_access_secret',
     { expiresIn: (process.env.JWT_EXPIRES_IN as string) || '15m' } as any
   );
