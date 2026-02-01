@@ -48,6 +48,14 @@ router.post('/:orgId/sales', authenticate, checkMembership([OrgRole.MINER, OrgRo
 
         const totalValue = parseFloat(quantity) * parseFloat(pricePerUnit);
 
+        // Determine source based on buyer name
+        let source = SaleSource.OTHER;
+        if (buyerName && buyerName.toLowerCase().includes('fidelity')) {
+            source = SaleSource.FIDELITY;
+        } else if (buyerName && buyerName.toLowerCase().includes('private')) {
+            source = SaleSource.PRIVATE;
+        }
+
         const sale = await SalesTransaction.create({
             orgId,
             buyerName,
@@ -58,8 +66,8 @@ router.post('/:orgId/sales', authenticate, checkMembership([OrgRole.MINER, OrgRo
             status: SaleStatus.PENDING,
             date: date || new Date(),
             referenceId: receiptNumber,
-            mineralType: 'Gold', // Default for now
-            source: 'Processing'
+            mineralType: 'gold',
+            source: source
         });
 
         res.status(201).json(sale);

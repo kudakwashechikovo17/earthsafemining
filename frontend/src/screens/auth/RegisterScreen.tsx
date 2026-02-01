@@ -80,7 +80,9 @@ const RegisterScreen = () => {
       console.error('Registration error details:', error);
       let errorMessage = 'Registration failed. Please try again.';
 
-      if (error.response?.data?.message) {
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        errorMessage = 'Server connection timed out. The server might be waking up, please try again in a moment.';
+      } else if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.response?.status === 409) {
         errorMessage = 'Email already exists.';

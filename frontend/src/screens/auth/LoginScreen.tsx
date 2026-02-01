@@ -86,7 +86,9 @@ const LoginScreen = () => {
 
       let errorMessage = 'An error occurred during login.';
 
-      if (error.response) {
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        errorMessage = 'Server connection timed out. The server might be waking up, please try again in a moment.';
+      } else if (error.response) {
         if (error.response.data?.message) {
           errorMessage = error.response.data.message;
         } else if (error.response.status === 401) {
