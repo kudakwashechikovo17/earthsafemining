@@ -108,6 +108,9 @@ const SalesScreen = () => {
     }
 
     setSubmitting(true);
+    // DEBUG: Alert to confirm button press
+    Alert.alert('DEBUG', `Submitting Sale... \nBuyer: ${buyer}\nQty: ${quantity}\nOrg: ${currentOrg?._id ? 'Yes' : 'No'}`);
+
     console.log('Submitting sale:', {
       orgId: currentOrg?._id,
       buyer,
