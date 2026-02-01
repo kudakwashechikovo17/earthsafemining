@@ -26,8 +26,10 @@ const getStartDate = (type: 'day' | 'week' | 'month') => {
 router.get('/dashboard', authenticate, authorize(['miner', 'cooperative', 'admin']), async (req: any, res) => {
   try {
     const orgId = req.user.orgId;
+    console.log(`[Dashboard] Fetching data for OrgID: ${orgId}`);
 
     if (!orgId) {
+      console.error('[Dashboard] Error: No OrgID in request user');
       res.status(400).json({ message: 'User is not part of an organization' });
       return;
     }
@@ -37,8 +39,8 @@ router.get('/dashboard', authenticate, authorize(['miner', 'cooperative', 'admin
     const safeExec = async (promise: Promise<any>, fallback: any, label: string) => {
       try {
         return await promise;
-      } catch (err) {
-        console.error(`Dashboard Error [${label}]:`, err);
+      } catch (err: any) {
+        console.error(`Dashboard Error [${label}]:`, err.message, err.stack);
         return fallback;
       }
     };
