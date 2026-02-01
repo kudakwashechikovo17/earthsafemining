@@ -27,7 +27,8 @@ router.get('/dashboard', authenticate, authorize(['miner', 'cooperative', 'admin
     const orgId = req.user.orgId;
 
     if (!orgId) {
-      return res.status(400).json({ message: 'User is not part of an organization' });
+      res.status(400).json({ message: 'User is not part of an organization' });
+      return;
     }
 
     // Parallel execution for performance
@@ -158,8 +159,15 @@ router.get('/dashboard', authenticate, authorize(['miner', 'cooperative', 'admin
 });
 
 // Mock/Stub routes for features not yet implemented
-router.post('/production', authenticate, (req, res) => res.status(200).json({ message: 'Logged' }));
-router.get('/production', authenticate, (req, res) => res.status(200).json([]));
-router.get('/sales', authenticate, (req, res) => res.status(200).json([]));
+// Mock/Stub routes for features not yet implemented
+router.post('/production', authenticate, (req, res) => {
+  res.status(200).json({ message: 'Logged' });
+});
+router.get('/production', authenticate, (req, res) => {
+  res.status(200).json([]);
+});
+router.get('/sales', authenticate, (req, res) => {
+  res.status(200).json([]);
+});
 
 export default router; 
