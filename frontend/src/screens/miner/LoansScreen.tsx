@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import {
   Card,
@@ -19,60 +19,57 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as DocumentPicker from 'expo-document-picker';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
+import { apiService } from '../../services/apiService';
+import ScreenWrapper from '../../components/ScreenWrapper';
 
 const LoansScreen = () => {
-  const [visible, setVisible] = useState(false);
-  const [loans, setLoans] = useState([
-    {
-      id: '1',
-      amount: 5000,
-      purpose: 'Equipment Purchase',
-      status: 'approved',
-      interestRate: 12,
-      term: 12,
-      monthlyPayment: 445.32,
-      disbursementDate: '2023-10-01',
-      nextPaymentDate: '2023-12-01',
-      institution: 'MicroMine Finance',
-      collateral: 'Mining Equipment',
-    },
-    {
-      id: '2',
-      amount: 2000,
-      purpose: 'Working Capital',
-      status: 'pending',
-      interestRate: 15,
-      term: 6,
-      monthlyPayment: 361.67,
-      institution: 'Mining Credit Union',
-      collateral: 'Future Production',
-    },
-    {
-      id: '3',
-      amount: 3500,
-      purpose: 'Site Development',
-      status: 'rejected',
-      interestRate: 14,
-      term: 9,
-      institution: 'ArtMine Bank',
-      rejectionReason: 'Insufficient production history',
-    },
-  ]);
+  const { currentOrg } = useSelector((state: RootState) => state.auth);
+  const navigation = useNavigation();
 
+  const [visible, setVisible] = useState(false);
+  const [loans, setLoans] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [financialHealth, setFinancialHealth] = useState<any>(null); // { score, grade, factors }
+  const [submitting, setSubmitting] = useState(false);
+
+  // Form State
   const [newLoan, setNewLoan] = useState({
     amount: '',
     purpose: '',
     term: '',
     collateral: '',
-    institution: '',
+    institution: 'EarthSafe Microfinance',
     documents: [] as string[],
     notes: '',
   });
+
+  useEffect(() => {
+    fetchData();
+  }, [currentOrg]);
+
+  const fetchData = async () => {
+    if (!currentOrg) return;
+    try {
+      const [loanData, healthData] = await Promise.all([
+        apiService.getLoans(currentOrg._id),
+        apiService.getFinancialHealth(currentOrg._id)
+      ]);
+      setLoans(loanData);
+      setFinancialHealth(healthData);
+    } catch (error) {
+      console.error('Fetch Loans Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const showModal = () => setVisible(true);
   const hideModal = () => setVisible(false);
 
   const handleDocumentPicker = async () => {
+    // ... existing logic ...
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: ['application/pdf', 'image/*'],
@@ -89,29 +86,38 @@ const LoansScreen = () => {
     }
   };
 
-  const handleSubmit = () => {
-    // TODO: Implement API call to submit loan application
-    const loan = {
-      id: Date.now().toString(),
-      status: 'pending',
-      interestRate: 0, // To be determined by institution
-      monthlyPayment: 0, // To be calculated
-      ...newLoan,
-      amount: parseFloat(newLoan.amount),
-      term: parseInt(newLoan.term),
-    };
+  const handleSubmit = async () => {
+    if (!newLoan.amount || !newLoan.purpose || !newLoan.term) {
+      // Alert
+      return;
+    }
 
-    setLoans([loan, ...loans]);
-    setNewLoan({
-      amount: '',
-      purpose: '',
-      term: '',
-      collateral: '',
-      institution: '',
-      documents: [],
-      notes: '',
-    });
-    hideModal();
+    setSubmitting(true);
+    try {
+      if (!currentOrg) throw new Error('No org');
+
+      await apiService.applyLoan(currentOrg._id, {
+        ...newLoan,
+        amount: parseFloat(newLoan.amount),
+      });
+
+      // Refresh
+      fetchData();
+      hideModal();
+      setNewLoan({
+        amount: '',
+        purpose: '',
+        term: '',
+        collateral: '',
+        institution: 'EarthSafe Microfinance',
+        documents: [],
+        notes: '',
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -203,9 +209,8 @@ const LoansScreen = () => {
               <View key={loan.id}>
                 <List.Item
                   title={`$${loan.amount} - ${loan.purpose}`}
-                  description={`Institution: ${loan.institution}\nTerm: ${loan.term} months${
-                    loan.rejectionReason ? `\nReason: ${loan.rejectionReason}` : ''
-                  }`}
+                  description={`Institution: ${loan.institution}\nTerm: ${loan.term} months${loan.rejectionReason ? `\nReason: ${loan.rejectionReason}` : ''
+                    }`}
                   left={() => (
                     <Avatar.Icon
                       size={40}
@@ -220,8 +225,10 @@ const LoansScreen = () => {
                       <View
                         style={[
                           styles.statusBadge,
-                          { borderColor: getStatusColor(loan.status), 
-                            backgroundColor: `${getStatusColor(loan.status)}20` },
+                          {
+                            borderColor: getStatusColor(loan.status),
+                            backgroundColor: `${getStatusColor(loan.status)}20`
+                          },
                         ]}
                       >
                         <Text style={[styles.statusText, { color: getStatusColor(loan.status) }]}>

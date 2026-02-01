@@ -173,6 +173,22 @@ export const apiService = {
     return response.data;
   },
 
+  // Loans & Finance
+  getLoans: async (orgId: string) => {
+    const response = await api.get(`/orgs/${orgId}/loans`);
+    return response.data;
+  },
+
+  applyLoan: async (orgId: string, data: any) => {
+    const response = await api.post(`/orgs/${orgId}/loans`, data);
+    return response.data;
+  },
+
+  getFinancialHealth: async (orgId: string) => {
+    const response = await api.get(`/orgs/${orgId}/financial-health`);
+    return response.data;
+  },
+
   // Org Management
   getOrgMembers: async (orgId: string) => {
     const response = await api.get(`/orgs/${orgId}/members`);

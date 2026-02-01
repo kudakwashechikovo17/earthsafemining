@@ -22,6 +22,7 @@ import financeRoutes from './routes/financeRoutes';
 import creditRoutes from './routes/creditRoutes';
 import salesRoutes from './routes/salesRoutes';
 import complianceRoutes from './routes/complianceRoutes';
+import loanRoutes from './routes/loanRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -48,6 +49,7 @@ app.use('/api/orgs', financeRoutes);
 app.use('/api/orgs', creditRoutes);
 app.use('/api/orgs', salesRoutes); // Base route involves orgs
 app.use('/api/orgs', complianceRoutes);
+app.use('/api/orgs', loanRoutes);
 app.use('/api/orgs', orgRoutes); // Generic org routes last
 
 app.use('/api/users', userRoutes);
