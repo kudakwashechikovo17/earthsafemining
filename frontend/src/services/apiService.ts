@@ -104,6 +104,12 @@ export const apiService = {
     return response.data;
   },
 
+  // Dashboard
+  getMinerDashboard: async () => {
+    const response = await api.get('/miner/dashboard');
+    return response.data;
+  },
+
   // Generic Helpers (for direct access to new routes)
   get: async (url: string) => {
     return api.get(url); // Returns full response object to keep consistency with usage
