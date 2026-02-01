@@ -58,6 +58,8 @@ const ComplianceStack = () => (
 const LoansStack = () => (
   <Stack.Navigator>
     <Stack.Screen name="Loans" component={LoansScreen} options={{ title: 'Loans & Investments' }} />
+    <Stack.Screen name="LoanPreparation" component={LoanPreparationScreen} options={{ title: 'Get Loan Ready' }} />
+    <Stack.Screen name="FinancialMarketplace" component={FinancialMarketplaceScreen} options={{ title: 'Financial Marketplace' }} />
   </Stack.Navigator>
 );
 
