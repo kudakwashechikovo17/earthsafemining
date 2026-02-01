@@ -41,6 +41,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Routes
 // Mount specific org sub-routes FIRST to ensure they are matched before generic org routes
+console.log('Mounting salesRoutes at /api/orgs');
 app.use('/api/orgs', shiftRoutes);
 app.use('/api/orgs', financeRoutes);
 app.use('/api/orgs', creditRoutes);
@@ -48,6 +49,7 @@ app.use('/api/orgs', salesRoutes); // Base route involves orgs
 app.use('/api/orgs', orgRoutes); // Generic org routes last
 
 app.use('/api/users', userRoutes);
+console.log('Mounting minerRoutes at /api/miner');
 app.use('/api/miner', minerRoutes); // Changed from /api/miners to /api/miner as per instruction
 app.use('/api/cooperatives', cooperativeRoutes);
 app.use('/api/financial-institutions', financialInstitutionRoutes);
