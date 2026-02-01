@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { TextInput, Button, Title, Paragraph, List, Divider, RadioButton, IconButton, Text } from 'react-native-paper';
-import { useDispatch, useSelector } from 'react-redux';
+import { View, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
+import { TextInput, Button, Text, Divider, RadioButton, useTheme, Card, Surface, HelperText, Appbar, Avatar } from 'react-native-paper';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
-import apiService from '../../services/apiService'; // Assume this is updated or we use axios
+import { apiService } from '../../services/apiService';
 import ScreenWrapper from '../../components/ScreenWrapper';
 
 const ShiftLogScreen = ({ navigation }: any) => {
+    const theme = useTheme();
     const { currentOrg } = useSelector((state: RootState) => state.auth);
 
     // Shift Header State
@@ -33,7 +35,10 @@ const ShiftLogScreen = ({ navigation }: any) => {
     const [submitting, setSubmitting] = useState(false);
 
     const addMaterial = () => {
-        if (!matQty || !matSource) return;
+        if (!matQty || !matSource) {
+            Alert.alert('Required', 'Please enter quantity and source');
+            return;
+        }
         setMaterialMovements([...materialMovements, { type: matType, quantity: matQty, source: matSource, unit: 'tonnes' }]);
         setMatQty('');
         setMatSource('');
@@ -41,7 +46,10 @@ const ShiftLogScreen = ({ navigation }: any) => {
     };
 
     const addWorker = () => {
-        if (!workerName || !hours) return;
+        if (!workerName || !hours) {
+            Alert.alert('Required', 'Please enter worker name and hours');
+            return;
+        }
         setTimesheets([...timesheets, { workerName, role: workerRole, hoursWorked: hours }]);
         setWorkerName('');
         setHours('');
@@ -50,39 +58,46 @@ const ShiftLogScreen = ({ navigation }: any) => {
 
     const submitShift = async () => {
         if (!currentOrg) return;
+
+        if (materialMovements.length === 0 && timesheets.length === 0 && !notes) {
+            Alert.alert('Empty Log', 'Please add some activities, materials, or notes before submitting.');
+            return;
+        }
+
         setSubmitting(true);
         try {
             // 1. Create Shift
-            const shiftRes = await (apiService as any).post(`/orgs/${currentOrg._id}/shifts`, {
+            const shiftData = {
                 type: shiftType,
                 notes,
-                // supervisorId is inferred from token user
-            });
-            const shiftId = shiftRes.data._id;
+            };
+            const shiftRes = await apiService.createShift(currentOrg._id, shiftData);
+            const shiftId = shiftRes._id;
 
             // 2. Post Details (Parallel)
             const promises = [];
 
             // Timesheets
             for (const ts of timesheets) {
-                promises.push((apiService as any).post(`/shifts/${shiftId}/timesheets`, ts));
+                promises.push(apiService.addTimesheet(shiftId, ts));
             }
 
             // Material
             for (const mat of materialMovements) {
-                promises.push((apiService as any).post(`/shifts/${shiftId}/material`, {
+                promises.push(apiService.addMaterialMovement(shiftId, {
                     ...mat,
-                    destination: 'Processing' // Default
+                    destination: 'Processing' // Default for now
                 }));
             }
 
             await Promise.all(promises);
 
-            Alert.alert('Success', 'Shift Logged Successfully');
-            navigation.goBack();
+            Alert.alert('Success', 'Shift Logged Successfully', [
+                { text: 'OK', onPress: () => navigation.goBack() }
+            ]);
         } catch (error) {
-            console.error(error);
-            Alert.alert('Error', 'Failed to log shift');
+            console.error('Submit Shift Error:', error);
+            Alert.alert('Error', 'Failed to log shift. Please try again.');
         } finally {
             setSubmitting(false);
         }
@@ -90,90 +105,252 @@ const ShiftLogScreen = ({ navigation }: any) => {
 
     return (
         <ScreenWrapper>
-            <ScrollView contentContainerStyle={styles.container}>
-                <Title style={styles.header}>New Shift Log</Title>
-                <Paragraph>Organization: {currentOrg?.name}</Paragraph>
+            <Appbar.Header style={{ backgroundColor: theme.colors.surface }}>
+                <Appbar.BackAction onPress={() => navigation.goBack()} />
+                <Appbar.Content title="Log Production Shift" />
+            </Appbar.Header>
 
-                <Divider style={styles.divider} />
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+                <ScrollView contentContainerStyle={styles.container}>
 
-                <Title style={styles.sectionTitle}>Shift Details</Title>
-                <RadioButton.Group onValueChange={setShiftType} value={shiftType}>
-                    <View style={styles.row}>
-                        <View style={styles.radioItem}><RadioButton value="day" /><Text>Day</Text></View>
-                        <View style={styles.radioItem}><RadioButton value="night" /><Text>Night</Text></View>
-                    </View>
-                </RadioButton.Group>
+                    {/* Organization Info */}
+                    <Surface style={[styles.orgCard, { backgroundColor: theme.colors.primaryContainer }]} elevation={1}>
+                        <Icon name="factory" size={24} color={theme.colors.primary} />
+                        <View style={{ marginLeft: 12 }}>
+                            <Text variant="titleMedium" style={{ fontWeight: 'bold' }}>{currentOrg?.name || 'My Mine'}</Text>
+                            <Text variant="bodySmall" style={{ opacity: 0.7 }}>{new Date().toDateString()}</Text>
+                        </View>
+                    </Surface>
 
-                <TextInput label="Shift Notes" value={notes} onChangeText={setNotes} mode="outlined" multiline numberOfLines={2} />
+                    {/* Shift Details Card */}
+                    <Card style={styles.card}>
+                        <Card.Content>
+                            <Text variant="titleMedium" style={styles.sectionTitle}>Shift Details</Text>
+                            <Divider style={styles.divider} />
 
-                <Divider style={styles.divider} />
+                            <Text variant="bodyMedium" style={{ marginBottom: 8 }}>Shift Type:</Text>
+                            <View style={styles.radioGroup}>
+                                <TouchableOpacity
+                                    style={[styles.radioBtn, shiftType === 'day' && { backgroundColor: theme.colors.secondaryContainer, borderColor: theme.colors.primary }]}
+                                    onPress={() => setShiftType('day')}
+                                >
+                                    <Icon name="weather-sunny" size={20} color={shiftType === 'day' ? theme.colors.primary : theme.colors.onSurface} />
+                                    <Text style={{ marginLeft: 8, fontWeight: shiftType === 'day' ? 'bold' : 'normal' }}>Day Shift</Text>
+                                </TouchableOpacity>
 
-                {/* Material Movement Section */}
-                <View style={styles.sectionHeader}>
-                    <Title style={styles.sectionTitle}>Production (Material)</Title>
-                    <Button onPress={() => setShowMaterialForm(!showMaterialForm)}>{showMaterialForm ? 'Cancel' : 'Add'}</Button>
-                </View>
-
-                {showMaterialForm && (
-                    <View style={styles.formBox}>
-                        <RadioButton.Group onValueChange={setMatType} value={matType}>
-                            <View style={styles.row}>
-                                <View style={styles.radioItem}><RadioButton value="ore" /><Text>Ore</Text></View>
-                                <View style={styles.radioItem}><RadioButton value="waste" /><Text>Waste</Text></View>
+                                <TouchableOpacity
+                                    style={[styles.radioBtn, shiftType === 'night' && { backgroundColor: theme.colors.secondaryContainer, borderColor: theme.colors.primary }]}
+                                    onPress={() => setShiftType('night')}
+                                >
+                                    <Icon name="weather-night" size={20} color={shiftType === 'night' ? theme.colors.primary : theme.colors.onSurface} />
+                                    <Text style={{ marginLeft: 8, fontWeight: shiftType === 'night' ? 'bold' : 'normal' }}>Night Shift</Text>
+                                </TouchableOpacity>
                             </View>
-                        </RadioButton.Group>
-                        <TextInput label="Quantity (Tonnes)" value={matQty} onChangeText={setMatQty} keyboardType="numeric" style={styles.input} />
-                        <TextInput label="Source (e.g. Pit 1)" value={matSource} onChangeText={setMatSource} style={styles.input} />
-                        <Button mode="contained" onPress={addMaterial}>Save Entry</Button>
-                    </View>
-                )}
 
-                {materialMovements.map((m, i) => (
-                    <List.Item key={i} title={`${m.type.toUpperCase()}: ${m.quantity}t from ${m.source}`} left={props => <List.Icon {...props} icon="truck" />} />
-                ))}
+                            <TextInput
+                                label="Shift Notes / Activities"
+                                value={notes}
+                                onChangeText={setNotes}
+                                mode="outlined"
+                                multiline
+                                numberOfLines={3}
+                                style={{ backgroundColor: '#fff', marginTop: 12 }}
+                                outlineColor={theme.colors.outline}
+                                activeOutlineColor={theme.colors.primary}
+                            />
+                        </Card.Content>
+                    </Card>
 
-                <Divider style={styles.divider} />
+                    {/* Material Movement Section */}
+                    <Card style={styles.card}>
+                        <Card.Content>
+                            <View style={styles.sectionHeader}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <Icon name="dump-truck" size={24} color={theme.colors.primary} />
+                                    <Text variant="titleMedium" style={[styles.sectionTitle, { marginLeft: 8, marginTop: 0 }]}>Material Moved</Text>
+                                </View>
+                                <Button mode="text" onPress={() => setShowMaterialForm(!showMaterialForm)}>
+                                    {showMaterialForm ? 'Cancel' : '+ Add'}
+                                </Button>
+                            </View>
+                            <Divider style={styles.divider} />
 
-                {/* Timesheets Section */}
-                <View style={styles.sectionHeader}>
-                    <Title style={styles.sectionTitle}>Timesheets</Title>
-                    <Button onPress={() => setShowWorkerForm(!showWorkerForm)}>{showWorkerForm ? 'Cancel' : 'Add'}</Button>
-                </View>
+                            {showMaterialForm && (
+                                <Surface style={styles.formBox} elevation={0}>
+                                    <Text style={{ marginBottom: 8, fontWeight: 'bold' }}>Type:</Text>
+                                    <View style={styles.radioGroup}>
+                                        <TouchableOpacity
+                                            style={[styles.radioBtn, matType === 'ore' && { backgroundColor: theme.colors.secondaryContainer }]}
+                                            onPress={() => setMatType('ore')}
+                                        >
+                                            <Text>Ore</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={[styles.radioBtn, matType === 'waste' && { backgroundColor: theme.colors.secondaryContainer }]}
+                                            onPress={() => setMatType('waste')}
+                                        >
+                                            <Text>Waste</Text>
+                                        </TouchableOpacity>
+                                    </View>
 
-                {showWorkerForm && (
-                    <View style={styles.formBox}>
-                        <TextInput label="Worker Name" value={workerName} onChangeText={setWorkerName} style={styles.input} />
-                        <TextInput label="Role" value={workerRole} onChangeText={setWorkerRole} style={styles.input} />
-                        <TextInput label="Hours" value={hours} onChangeText={setHours} keyboardType="numeric" style={styles.input} />
-                        <Button mode="contained" onPress={addWorker}>Save Worker</Button>
-                    </View>
-                )}
+                                    <View style={styles.rowInputs}>
+                                        <TextInput
+                                            label="Qty (Tonnes)"
+                                            value={matQty}
+                                            onChangeText={setMatQty}
+                                            keyboardType="numeric"
+                                            style={[styles.input, { flex: 1, marginRight: 8 }]}
+                                            mode="outlined"
+                                            dense
+                                        />
+                                        <TextInput
+                                            label="Source (Slot/Pit)"
+                                            value={matSource}
+                                            onChangeText={setMatSource}
+                                            style={[styles.input, { flex: 1 }]}
+                                            mode="outlined"
+                                            dense
+                                        />
+                                    </View>
+                                    <Button mode="contained" onPress={addMaterial} style={{ borderRadius: 8 }}>Add Entry</Button>
+                                </Surface>
+                            )}
 
-                {timesheets.map((t, i) => (
-                    <List.Item key={i} title={`${t.workerName} (${t.role})`} description={`${t.hoursWorked} hours`} left={props => <List.Icon {...props} icon="account" />} />
-                ))}
+                            {materialMovements.length === 0 && !showMaterialForm ? (
+                                <Text style={{ fontStyle: 'italic', color: theme.colors.outline, textAlign: 'center', marginVertical: 8 }}>
+                                    No material movement recorded.
+                                </Text>
+                            ) : (
+                                materialMovements.map((m, i) => (
+                                    <Surface key={i} style={styles.listItem} elevation={1}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <Avatar.Icon size={32} icon="truck" style={{ backgroundColor: m.type === 'ore' ? theme.colors.primaryContainer : theme.colors.errorContainer }} />
+                                            <View style={{ marginLeft: 12 }}>
+                                                <Text style={{ fontWeight: 'bold', textTransform: 'capitalize' }}>{m.type}</Text>
+                                                <Text variant="bodySmall" style={{ color: theme.colors.outline }}>From: {m.source}</Text>
+                                            </View>
+                                        </View>
+                                        <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{m.quantity}t</Text>
+                                    </Surface>
+                                ))
+                            )}
+                        </Card.Content>
+                    </Card>
 
-                <Divider style={styles.divider} />
+                    {/* Timesheets Section */}
+                    <Card style={styles.card}>
+                        <Card.Content>
+                            <View style={styles.sectionHeader}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <Icon name="account-group" size={24} color={theme.colors.primary} />
+                                    <Text variant="titleMedium" style={[styles.sectionTitle, { marginLeft: 8, marginTop: 0 }]}>Team Timesheet</Text>
+                                </View>
+                                <Button mode="text" onPress={() => setShowWorkerForm(!showWorkerForm)}>
+                                    {showWorkerForm ? 'Cancel' : '+ Add'}
+                                </Button>
+                            </View>
+                            <Divider style={styles.divider} />
 
-                <Button mode="contained" onPress={submitShift} loading={submitting} style={styles.submitBtn}>
-                    Submit Log
-                </Button>
-            </ScrollView>
+                            {showWorkerForm && (
+                                <Surface style={styles.formBox} elevation={0}>
+                                    <TextInput label="Worker Name" value={workerName} onChangeText={setWorkerName} style={styles.input} mode="outlined" dense />
+                                    <View style={styles.rowInputs}>
+                                        <TextInput label="Role" value={workerRole} onChangeText={setWorkerRole} style={[styles.input, { flex: 2, marginRight: 8 }]} mode="outlined" dense />
+                                        <TextInput label="Hours" value={hours} onChangeText={setHours} keyboardType="numeric" style={[styles.input, { flex: 1 }]} mode="outlined" dense />
+                                    </View>
+                                    <Button mode="contained" onPress={addWorker} style={{ borderRadius: 8 }}>Add Worker</Button>
+                                </Surface>
+                            )}
+
+                            {timesheets.length === 0 && !showWorkerForm ? (
+                                <Text style={{ fontStyle: 'italic', color: theme.colors.outline, textAlign: 'center', marginVertical: 8 }}>
+                                    No staff logged.
+                                </Text>
+                            ) : (
+                                timesheets.map((t, i) => (
+                                    <Surface key={i} style={styles.listItem} elevation={1}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <Avatar.Icon size={32} icon="account" style={{ backgroundColor: theme.colors.secondaryContainer }} />
+                                            <View style={{ marginLeft: 12 }}>
+                                                <Text style={{ fontWeight: 'bold' }}>{t.workerName}</Text>
+                                                <Text variant="bodySmall" style={{ color: theme.colors.outline }}>{t.role}</Text>
+                                            </View>
+                                        </View>
+                                        <Text style={{ fontWeight: 'bold' }}>{t.hoursWorked}h</Text>
+                                    </Surface>
+                                ))
+                            )}
+                        </Card.Content>
+                    </Card>
+
+                    <Button
+                        mode="contained"
+                        onPress={submitShift}
+                        loading={submitting}
+                        style={styles.submitBtn}
+                        contentStyle={{ paddingVertical: 8 }}
+                    >
+                        Submit Shift Log
+                    </Button>
+                    <View style={{ height: 40 }} />
+                </ScrollView>
+            </KeyboardAvoidingView>
         </ScreenWrapper>
     );
 };
 
 const styles = StyleSheet.create({
     container: { padding: 16 },
-    header: { fontSize: 24, fontWeight: 'bold' },
-    sectionTitle: { fontSize: 18, marginTop: 10 },
-    divider: { marginVertical: 15 },
+    orgCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderRadius: 12,
+        marginBottom: 20
+    },
+    card: {
+        borderRadius: 16,
+        marginBottom: 16,
+        backgroundColor: '#fff',
+        elevation: 2
+    },
+    sectionTitle: { fontWeight: 'bold', marginBottom: 4 },
+    divider: { marginBottom: 16, marginTop: 4 },
     sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    formBox: { backgroundColor: '#f0f0f0', padding: 10, borderRadius: 8, marginBottom: 10 },
-    input: { marginBottom: 10, backgroundColor: 'white' },
-    row: { flexDirection: 'row', alignItems: 'center' },
-    radioItem: { flexDirection: 'row', alignItems: 'center', marginRight: 15 },
-    submitBtn: { marginTop: 20, paddingVertical: 5 }
+    formBox: {
+        backgroundColor: '#f9f9f9',
+        padding: 16,
+        borderRadius: 12,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#eee'
+    },
+    input: { marginBottom: 12, backgroundColor: '#fff' },
+    rowInputs: { flexDirection: 'row', justifyContent: 'space-between' },
+    radioGroup: { flexDirection: 'row', marginBottom: 12 },
+    radioBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginRight: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#ddd'
+    },
+    listItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 12,
+        borderRadius: 12,
+        backgroundColor: '#fff',
+        marginBottom: 8
+    },
+    submitBtn: {
+        marginTop: 8,
+        borderRadius: 12
+    }
 });
 
 export default ShiftLogScreen;

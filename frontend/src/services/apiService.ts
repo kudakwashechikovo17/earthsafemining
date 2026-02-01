@@ -110,6 +110,22 @@ export const apiService = {
     return response.data;
   },
 
+  // Shifts & Production
+  createShift: async (orgId: string, data: any) => {
+    const response = await api.post(`/orgs/${orgId}/shifts`, data);
+    return response.data;
+  },
+
+  addTimesheet: async (shiftId: string, data: any) => {
+    const response = await api.post(`/shifts/${shiftId}/timesheets`, data);
+    return response.data;
+  },
+
+  addMaterialMovement: async (shiftId: string, data: any) => {
+    const response = await api.post(`/shifts/${shiftId}/material`, data);
+    return response.data;
+  },
+
   // Generic Helpers (for direct access to new routes)
   get: async (url: string) => {
     return api.get(url); // Returns full response object to keep consistency with usage
