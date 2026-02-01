@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
-import { Text, TextInput, Button, HelperText, RadioButton, Card, useTheme } from 'react-native-paper';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { Text, TextInput, Button, HelperText, RadioButton, Card, useTheme, Surface } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { UserRole } from '../../store/slices/authSlice';
 import { authAPI, RegisterRequest } from '../../services/api';
+import ScreenWrapper from '../../components/ScreenWrapper';
 
-// Define navigation types
 type AuthStackParamList = {
   Welcome: undefined;
   Login: undefined;
@@ -16,8 +16,6 @@ type AuthStackParamList = {
 };
 
 type RegisterScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Register'>;
-
-import ScreenWrapper from '../../components/ScreenWrapper';
 
 const RegisterScreen = () => {
   const navigation = useNavigation<RegisterScreenNavigationProp>();
@@ -34,7 +32,6 @@ const RegisterScreen = () => {
   const [secureConfirmTextEntry, setSecureConfirmTextEntry] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Error states
   const [firstNameError, setFirstNameError] = useState('');
   const [lastNameError, setLastNameError] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -46,141 +43,50 @@ const RegisterScreen = () => {
   const validateForm = () => {
     let isValid = true;
 
-    // Validate first name
-    if (!firstName.trim()) {
-      setFirstNameError('First name is required');
-      isValid = false;
-    } else {
-      setFirstNameError('');
-    }
+    if (!firstName.trim()) { setFirstNameError('Required'); isValid = false; } else { setFirstNameError(''); }
+    if (!lastName.trim()) { setLastNameError('Required'); isValid = false; } else { setLastNameError(''); }
 
-    // Validate last name
-    if (!lastName.trim()) {
-      setLastNameError('Last name is required');
-      isValid = false;
-    } else {
-      setLastNameError('');
-    }
-
-    // Validate email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email.trim()) {
-      setEmailError('Email is required');
-      isValid = false;
-    } else if (!emailRegex.test(email)) {
-      setEmailError('Please enter a valid email');
-      isValid = false;
-    } else {
-      setEmailError('');
-    }
+    if (!email.trim() || !emailRegex.test(email)) { setEmailError('Valid email required'); isValid = false; } else { setEmailError(''); }
 
-    // Validate phone (required)
-    if (!phone.trim()) {
-      setPhoneError('Phone number is required');
-      isValid = false;
-    } else if (!/^\+?[0-9]{10,15}$/.test(phone)) {
-      setPhoneError('Please enter a valid phone number');
-      isValid = false;
-    } else {
-      setPhoneError('');
-    }
+    if (!phone.trim()) { setPhoneError('Required'); isValid = false; } else { setPhoneError(''); }
 
-    // Validate password
-    if (!password) {
-      setPasswordError('Password is required');
-      isValid = false;
-    } else if (password.length < 8) {
-      setPasswordError('Password must be at least 8 characters');
-      isValid = false;
-    } else {
-      setPasswordError('');
-    }
+    if (!password || password.length < 8) { setPasswordError('Min 8 characters'); isValid = false; } else { setPasswordError(''); }
 
-    // Validate confirm password
-    if (!confirmPassword) {
-      setConfirmPasswordError('Please confirm your password');
-      isValid = false;
-    } else if (password !== confirmPassword) {
-      setConfirmPasswordError('Passwords do not match');
-      isValid = false;
-    } else {
-      setConfirmPasswordError('');
-    }
+    if (password !== confirmPassword) { setConfirmPasswordError('Mismatch'); isValid = false; } else { setConfirmPasswordError(''); }
 
     return isValid;
   };
 
   const handleRegister = async () => {
-    console.log('Register button pressed');
-    if (!validateForm()) {
-      console.log('Validation failed', { firstNameError, lastNameError, emailError, passwordError });
-      return;
-    }
-    console.log('Validation passed, starting registration...');
+    if (!validateForm()) return;
 
     setIsLoading(true);
     setRegisterError('');
 
     try {
-      // Create user data object
       const userData: RegisterRequest = {
-        firstName,
-        lastName,
-        email,
-        password,
-        role,
-        phone: phone // Phone is now required
+        firstName, lastName, email, password, role, phone
       };
 
-      console.log('Registering with data:', userData);
+      await authAPI.register(userData);
 
-      // Call the register API
-      const response = await authAPI.register(userData);
-      console.log('Registration successful:', response);
-
-      // Show success message and navigate to login
       Alert.alert(
-        'Registration Successful',
-        'Your account has been created successfully. Please login with your credentials.',
-        [
-          { text: 'OK', onPress: () => navigation.navigate('Login') }
-        ]
+        'Account Created',
+        'Your account has been created successfully. Proceed to login.',
+        [{ text: 'Login Now', onPress: () => navigation.navigate('Login') }]
       );
     } catch (error: any) {
       console.error('Registration error details:', error);
+      let errorMessage = 'Registration failed. Please try again.';
 
-      // Handle API error
-      let errorMessage = 'An error occurred during registration. Please try again.';
-
-      if (error.code === 'ECONNABORTED') {
-        errorMessage = 'Request timed out. Please check your internet connection.';
-      } else if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        console.log('Error response data:', error.response.data);
-        console.log('Error response status:', error.response.status);
-
-        if (error.response.data && error.response.data.message) {
-          errorMessage = error.response.data.message;
-        } else if (error.response.status === 409) {
-          errorMessage = 'Email already exists. Please use a different email.';
-        } else if (error.response.status === 400) {
-          errorMessage = 'Invalid input data. Please check your information.';
-        } else if (error.response.status === 501) {
-          errorMessage = 'This feature is not implemented yet on the server.';
-        }
-      } else if (error.request) {
-        // The request was made but no response was received
-        console.log('Error request:', error.request);
-        errorMessage = 'No response from server. Please check your internet connection.';
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        console.log('Error message:', error.message);
-        errorMessage = error.message || errorMessage;
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.status === 409) {
+        errorMessage = 'Email already exists.';
       }
 
       setRegisterError(errorMessage);
-      Alert.alert('Registration Failed', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -188,168 +94,173 @@ const RegisterScreen = () => {
 
   return (
     <ScreenWrapper>
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        <View style={styles.headerContainer}>
-          <Text style={[styles.title, { color: theme.colors.primary }]}>Create Account</Text>
-          <Text style={styles.subtitle}>Join EarthSafe today</Text>
-        </View>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.keyboardView}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
 
-        <Card style={styles.card}>
-          <Card.Content>
-            <View style={styles.row}>
-              <View style={styles.halfInput}>
-                <TextInput
-                  label="First Name"
-                  mode="outlined"
-                  value={firstName}
-                  onChangeText={setFirstName}
-                  style={styles.input}
-                  error={!!firstNameError}
-                />
-                {firstNameError ? <HelperText type="error">{firstNameError}</HelperText> : null}
+          <View style={styles.headerContainer}>
+            <Text variant="headlineMedium" style={{ fontWeight: 'bold', color: theme.colors.primary }}>Create Account</Text>
+            <Text variant="titleMedium" style={{ color: theme.colors.secondary }}>Join the EarthSafe Network</Text>
+          </View>
+
+          <Card style={styles.card} mode="elevated">
+            <Card.Content>
+              <View style={styles.row}>
+                <View style={styles.halfInput}>
+                  <TextInput
+                    label="First Name"
+                    mode="outlined"
+                    value={firstName}
+                    onChangeText={setFirstName}
+                    style={styles.input}
+                    error={!!firstNameError}
+                    outlineColor={theme.colors.outline}
+                    activeOutlineColor={theme.colors.primary}
+                  />
+                  {firstNameError ? <HelperText type="error" padding="none">{firstNameError}</HelperText> : null}
+                </View>
+
+                <View style={styles.halfInput}>
+                  <TextInput
+                    label="Last Name"
+                    mode="outlined"
+                    value={lastName}
+                    onChangeText={setLastName}
+                    style={styles.input}
+                    error={!!lastNameError}
+                    outlineColor={theme.colors.outline}
+                    activeOutlineColor={theme.colors.primary}
+                  />
+                  {lastNameError ? <HelperText type="error" padding="none">{lastNameError}</HelperText> : null}
+                </View>
               </View>
 
-              <View style={styles.halfInput}>
-                <TextInput
-                  label="Last Name"
-                  mode="outlined"
-                  value={lastName}
-                  onChangeText={setLastName}
-                  style={styles.input}
-                  error={!!lastNameError}
-                />
-                {lastNameError ? <HelperText type="error">{lastNameError}</HelperText> : null}
+              <TextInput
+                label="Email"
+                mode="outlined"
+                value={email}
+                onChangeText={setEmail}
+                style={styles.input}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                error={!!emailError}
+                left={<TextInput.Icon icon="email-outline" color={theme.colors.primary} />}
+                outlineColor={theme.colors.outline}
+                activeOutlineColor={theme.colors.primary}
+              />
+              {emailError ? <HelperText type="error">{emailError}</HelperText> : null}
+
+              <TextInput
+                label="Phone Number"
+                mode="outlined"
+                value={phone}
+                onChangeText={setPhone}
+                style={styles.input}
+                keyboardType="phone-pad"
+                error={!!phoneError}
+                left={<TextInput.Icon icon="phone-outline" color={theme.colors.primary} />}
+                outlineColor={theme.colors.outline}
+                activeOutlineColor={theme.colors.primary}
+              />
+              {phoneError ? <HelperText type="error">{phoneError}</HelperText> : null}
+
+              <TextInput
+                label="Password"
+                mode="outlined"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={secureTextEntry}
+                style={styles.input}
+                left={<TextInput.Icon icon="lock-outline" color={theme.colors.primary} />}
+                right={<TextInput.Icon icon={secureTextEntry ? 'eye-off' : 'eye'} onPress={() => setSecureTextEntry(!secureTextEntry)} />}
+                error={!!passwordError}
+                outlineColor={theme.colors.outline}
+                activeOutlineColor={theme.colors.primary}
+              />
+              {passwordError ? <HelperText type="error">{passwordError}</HelperText> : null}
+
+              <TextInput
+                label="Confirm Password"
+                mode="outlined"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={secureConfirmTextEntry}
+                style={styles.input}
+                left={<TextInput.Icon icon="lock-check-outline" color={theme.colors.primary} />}
+                right={<TextInput.Icon icon={secureConfirmTextEntry ? 'eye-off' : 'eye'} onPress={() => setSecureConfirmTextEntry(!secureConfirmTextEntry)} />}
+                error={!!confirmPasswordError}
+                outlineColor={theme.colors.outline}
+                activeOutlineColor={theme.colors.primary}
+              />
+              {confirmPasswordError ? <HelperText type="error">{confirmPasswordError}</HelperText> : null}
+
+              <Text variant="titleMedium" style={styles.sectionTitle}>I am joining as a:</Text>
+              <Surface style={styles.roleContainer} elevation={0}>
+                <RadioButton.Group onValueChange={value => setRole(value as UserRole)} value={role}>
+                  <View style={styles.radioOption}>
+                    <RadioButton value={UserRole.MINER} color={theme.colors.primary} />
+                    <Text variant="bodyLarge">Miner</Text>
+                  </View>
+                  <View style={styles.radioOption}>
+                    <RadioButton value={UserRole.COOPERATIVE} color={theme.colors.primary} />
+                    <Text variant="bodyLarge">Cooperative</Text>
+                  </View>
+                  <View style={styles.radioOption}>
+                    <RadioButton value={UserRole.BUYER} color={theme.colors.primary} />
+                    <Text variant="bodyLarge">Buyer</Text>
+                  </View>
+                </RadioButton.Group>
+              </Surface>
+
+              {registerError ? (
+                <Surface style={[styles.errorContainer, { backgroundColor: theme.colors.errorContainer }]}>
+                  <Text style={{ color: theme.colors.error, textAlign: 'center' }}>{registerError}</Text>
+                </Surface>
+              ) : null}
+
+              <Button
+                mode="contained"
+                onPress={handleRegister}
+                style={styles.button}
+                contentStyle={styles.buttonContent}
+                loading={isLoading}
+                disabled={isLoading}
+              >
+                Create Account
+              </Button>
+
+              <View style={styles.loginContainer}>
+                <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>Already have an account? </Text>
+                <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                  <Text variant="bodyMedium" style={[styles.loginText, { color: theme.colors.primary }]}>Login</Text>
+                </TouchableOpacity>
               </View>
-            </View>
-
-            <TextInput
-              label="Email"
-              mode="outlined"
-              value={email}
-              onChangeText={setEmail}
-              style={styles.input}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              error={!!emailError}
-              left={<TextInput.Icon icon="email" />}
-            />
-            {emailError ? <HelperText type="error">{emailError}</HelperText> : null}
-
-            <TextInput
-              label="Phone Number"
-              mode="outlined"
-              value={phone}
-              onChangeText={setPhone}
-              style={styles.input}
-              keyboardType="phone-pad"
-              error={!!phoneError}
-              left={<TextInput.Icon icon="phone" />}
-            />
-            {phoneError ? <HelperText type="error">{phoneError}</HelperText> : null}
-
-            <TextInput
-              label="Password"
-              mode="outlined"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={secureTextEntry}
-              style={styles.input}
-              left={<TextInput.Icon icon="lock" />}
-              right={
-                <TextInput.Icon
-                  icon={secureTextEntry ? 'eye' : 'eye-off'}
-                  onPress={() => setSecureTextEntry(!secureTextEntry)}
-                />
-              }
-              error={!!passwordError}
-            />
-            {passwordError ? <HelperText type="error">{passwordError}</HelperText> : null}
-
-            <TextInput
-              label="Confirm Password"
-              mode="outlined"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry={secureConfirmTextEntry}
-              style={styles.input}
-              left={<TextInput.Icon icon="lock-check" />}
-              right={
-                <TextInput.Icon
-                  icon={secureConfirmTextEntry ? 'eye' : 'eye-off'}
-                  onPress={() => setSecureConfirmTextEntry(!secureConfirmTextEntry)}
-                />
-              }
-              error={!!confirmPasswordError}
-            />
-            {confirmPasswordError ? <HelperText type="error">{confirmPasswordError}</HelperText> : null}
-
-            <Text style={styles.sectionTitle}>I am a:</Text>
-            <View style={styles.roleContainer}>
-              <RadioButton.Group onValueChange={value => setRole(value as UserRole)} value={role}>
-                <View style={styles.radioOption}>
-                  <RadioButton value={UserRole.MINER} />
-                  <Text>Miner</Text>
-                </View>
-                <View style={styles.radioOption}>
-                  <RadioButton value={UserRole.COOPERATIVE} />
-                  <Text>Cooperative</Text>
-                </View>
-                <View style={styles.radioOption}>
-                  <RadioButton value={UserRole.BUYER} />
-                  <Text>Buyer</Text>
-                </View>
-              </RadioButton.Group>
-            </View>
-
-            {registerError ? <HelperText type="error" style={styles.errorText}>{registerError}</HelperText> : null}
-
-            <Button
-              mode="contained"
-              onPress={handleRegister}
-              style={styles.button}
-              contentStyle={styles.buttonContent}
-              loading={isLoading}
-              disabled={isLoading}
-            >
-              Register
-            </Button>
-
-            <View style={styles.loginContainer}>
-              <Text>Already have an account? </Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                <Text style={[styles.loginText, { color: theme.colors.primary }]}>Login</Text>
-              </TouchableOpacity>
-            </View>
-          </Card.Content>
-        </Card>
-      </ScrollView>
+            </Card.Content>
+          </Card>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </ScreenWrapper>
   );
 };
 
 const styles = StyleSheet.create({
+  keyboardView: {
+    flex: 1,
+  },
   scrollContainer: {
     flexGrow: 1,
-    paddingVertical: 20,
+    padding: 20,
+    justifyContent: 'center',
   },
   headerContainer: {
     alignItems: 'center',
-    marginBottom: 20,
-    marginTop: 10,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666666',
+    marginBottom: 24,
   },
   card: {
-    borderRadius: 12,
-    elevation: 4,
-    marginBottom: 20,
+    borderRadius: 24,
+    backgroundColor: '#ffffff',
   },
   row: {
     flexDirection: 'row',
@@ -359,42 +270,46 @@ const styles = StyleSheet.create({
     width: '48%',
   },
   input: {
-    marginBottom: 10,
+    marginBottom: 4,
     backgroundColor: '#ffffff',
   },
   sectionTitle: {
-    fontSize: 16,
     fontWeight: 'bold',
-    marginTop: 10,
-    marginBottom: 10,
+    marginTop: 16,
+    marginBottom: 8,
   },
   roleContainer: {
-    marginBottom: 15,
+    marginBottom: 16,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    padding: 8,
   },
   radioOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 5,
+    paddingVertical: 4,
   },
   button: {
-    marginTop: 10,
-    borderRadius: 8,
+    marginTop: 8,
+    borderRadius: 12,
   },
   buttonContent: {
-    paddingVertical: 6,
+    paddingVertical: 8,
   },
   loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 20,
-    marginBottom: 10,
+    marginTop: 24,
+    marginBottom: 8,
   },
   loginText: {
     fontWeight: 'bold',
   },
-  errorText: {
-    marginBottom: 10,
-    textAlign: 'center',
+  errorContainer: {
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    marginTop: 8,
   },
 });
 

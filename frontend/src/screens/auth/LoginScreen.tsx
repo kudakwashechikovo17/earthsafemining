@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
-import { Text, TextInput, Button, HelperText, Divider, Card, useTheme } from 'react-native-paper';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Image, KeyboardAvoidingView, Platform } from 'react-native';
+import { Text, TextInput, Button, HelperText, Divider, Card, useTheme, Surface } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useDispatch } from 'react-redux';
 import { loginStart, loginSuccess, loginFailure } from '../../store/slices/authSlice';
 import { authAPI, LoginRequest } from '../../services/api';
-import { mockAuthAPI, mockLoginCredentials } from '../../services/mockAuth';
+import ScreenWrapper from '../../components/ScreenWrapper';
 
 // Define navigation types
 type AuthStackParamList = {
@@ -18,50 +18,6 @@ type AuthStackParamList = {
 };
 
 type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
-
-const MockLoginSection = ({ onLogin }: { onLogin: (credentials: LoginRequest) => void }) => {
-  return (
-    <Card style={styles.mockCard}>
-      <Card.Title title="Demo Logins" subtitle="Quick access for demonstration" />
-      <Card.Content>
-        <Text style={styles.mockText}>Use these accounts to test different roles:</Text>
-
-        <View style={styles.mockButtonContainer}>
-          <Button
-            mode="outlined"
-            style={styles.mockButton}
-            onPress={() => onLogin(mockLoginCredentials.cooperative)}
-          >
-            Cooperative
-          </Button>
-
-          <Button
-            mode="outlined"
-            style={styles.mockButton}
-            onPress={() => onLogin(mockLoginCredentials.buyer)}
-          >
-            Buyer
-          </Button>
-
-          <Button
-            mode="outlined"
-            style={styles.mockButton}
-            onPress={() => onLogin(mockLoginCredentials.miner)}
-          >
-            Miner
-          </Button>
-        </View>
-
-        <View style={styles.mockCredentials}>
-          <Text>Email: demo.[role]@earthsafe.co.zw</Text>
-          <Text>Password: [role]1234</Text>
-        </View>
-      </Card.Content>
-    </Card>
-  );
-};
-
-import ScreenWrapper from '../../components/ScreenWrapper';
 
 const LoginScreen = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
@@ -102,72 +58,35 @@ const LoginScreen = () => {
   };
 
   const handleLogin = async () => {
-    console.log('Login attempt with:', email, password);
     const isEmailValid = validateEmail(email);
     const isPasswordValid = validatePassword(password);
 
-    if (!isEmailValid || !isPasswordValid) {
-      console.log('Validation failed');
-      return;
-    }
+    if (!isEmailValid || !isPasswordValid) return;
 
     setIsLoading(true);
     setLoginError('');
     dispatch(loginStart());
 
     try {
-      // Create login credentials
-      const credentials: LoginRequest = {
-        email,
-        password
-      };
-
-      console.log('Sending login request with:', credentials);
-
-      // Try mock login first for demo accounts
-      try {
-        const response = await mockAuthAPI.login(credentials);
-        console.log('Mock login successful:', response);
-        dispatch(loginSuccess(response.user));
-        return;
-      } catch (mockError) {
-        console.log('Not a mock user, trying real login');
-      }
-
-      // Call the real login API
+      const credentials: LoginRequest = { email, password };
       const response = await authAPI.login(credentials);
-      console.log('Login successful:', response);
 
-      // Dispatch login success with user data
+      console.log('Login successful:', response);
       dispatch(loginSuccess(response.user));
     } catch (error: any) {
       console.error('Login error:', error);
-
-      // Handle API error
-      let errorMessage = 'An error occurred during login. Please try again.';
+      let errorMessage = 'An error occurred during login.';
 
       if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        console.log('Error response data:', error.response.data);
-        console.log('Error response status:', error.response.status);
-
-        if (error.response.data && error.response.data.message) {
+        if (error.response.data?.message) {
           errorMessage = error.response.data.message;
         } else if (error.response.status === 401) {
           errorMessage = 'Invalid email or password.';
         } else if (error.response.status === 404) {
-          errorMessage = 'User not found. Please check your email.';
-        } else if (error.response.status === 501) {
-          errorMessage = 'This feature is not implemented yet on the server.';
+          errorMessage = 'User not found.';
         }
       } else if (error.request) {
-        // The request was made but no response was received
-        console.log('Error request:', error.request);
-        errorMessage = 'No response from server. Please check your internet connection.';
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        console.log('Error message:', error.message);
+        errorMessage = 'Network error. Please check your connection.';
       }
 
       dispatch(loginFailure(errorMessage));
@@ -177,188 +96,161 @@ const LoginScreen = () => {
     }
   };
 
-  const handleMockLogin = (credentials: LoginRequest) => {
-    // Set the form fields with the mock credentials
-    setEmail(credentials.email);
-    setPassword(credentials.password);
-
-    // Then trigger the login
-    setTimeout(() => {
-      handleLogin();
-    }, 100);
-  };
-
   return (
     <ScreenWrapper>
-      <ScrollView contentContainerStyle={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.headerContainer}>
-          <Text style={[styles.title, { color: theme.colors.primary }]}>EarthSafe</Text>
-          <Text style={styles.subtitle}>Mining Compliance & Tracking</Text>
-        </View>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.keyboardView}
+      >
+        <ScrollView contentContainerStyle={styles.scrollView} showsVerticalScrollIndicator={false}>
 
-        <Card style={styles.card}>
-          <Card.Content>
-            <Text style={styles.cardTitle}>Welcome Back</Text>
-            <Text style={styles.cardSubtitle}>Sign in to your account</Text>
+          {/* Header Section */}
+          <View style={styles.headerContainer}>
+            <Surface style={[styles.logoSurface, { backgroundColor: theme.colors.primaryContainer }]} elevation={4}>
+              <Text variant="displayMedium" style={{ fontWeight: 'bold', color: theme.colors.primary }}>E</Text>
+            </Surface>
+            <Text variant="headlineMedium" style={{ fontWeight: 'bold', color: theme.colors.primary, marginTop: 16 }}>EarthSafe</Text>
+            <Text variant="titleMedium" style={{ color: theme.colors.secondary }}>Professional Mining Suite</Text>
+          </View>
 
-            <TextInput
-              label="Email"
-              mode="outlined"
-              value={email}
-              onChangeText={setEmail}
-              style={styles.input}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              error={!!emailError}
-              left={<TextInput.Icon icon="email" />}
-            />
-            {emailError ? <HelperText type="error">{emailError}</HelperText> : null}
+          {/* Login Form Card */}
+          <Card style={styles.card} mode="elevated">
+            <Card.Content>
+              <Text variant="headlineSmall" style={styles.cardTitle}>Welcome Back</Text>
+              <Text variant="bodyMedium" style={{ textAlign: 'center', marginBottom: 24, color: theme.colors.outline }}>
+                Sign in to continue
+              </Text>
 
-            <TextInput
-              label="Password"
-              mode="outlined"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={secureTextEntry}
-              style={styles.input}
-              left={<TextInput.Icon icon="lock" />}
-              right={
-                <TextInput.Icon
-                  icon={secureTextEntry ? 'eye' : 'eye-off'}
-                  onPress={() => setSecureTextEntry(!secureTextEntry)}
-                />
-              }
-              error={!!passwordError}
-            />
-            {passwordError ? <HelperText type="error">{passwordError}</HelperText> : null}
+              <TextInput
+                label="Email Address"
+                mode="outlined"
+                value={email}
+                onChangeText={(text) => { setEmail(text); if (emailError) validateEmail(text); }}
+                style={styles.input}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                error={!!emailError}
+                left={<TextInput.Icon icon="email-outline" color={theme.colors.primary} />}
+                outlineColor={theme.colors.outline}
+                activeOutlineColor={theme.colors.primary}
+              />
+              {emailError ? <HelperText type="error">{emailError}</HelperText> : null}
 
-            <TouchableOpacity
-              style={styles.forgotPasswordContainer}
-              onPress={() => navigation.navigate('ForgotPassword')}
-            >
-              <Text style={[styles.forgotPasswordText, { color: theme.colors.primary }]}>Forgot Password?</Text>
-            </TouchableOpacity>
+              <TextInput
+                label="Password"
+                mode="outlined"
+                value={password}
+                onChangeText={(text) => { setPassword(text); if (passwordError) validatePassword(text); }}
+                secureTextEntry={secureTextEntry}
+                style={styles.input}
+                left={<TextInput.Icon icon="lock-outline" color={theme.colors.primary} />}
+                right={
+                  <TextInput.Icon
+                    icon={secureTextEntry ? 'eye-off' : 'eye'}
+                    onPress={() => setSecureTextEntry(!secureTextEntry)}
+                  />
+                }
+                error={!!passwordError}
+                outlineColor={theme.colors.outline}
+                activeOutlineColor={theme.colors.primary}
+              />
+              {passwordError ? <HelperText type="error">{passwordError}</HelperText> : null}
 
-            {loginError ? <HelperText type="error" style={styles.errorText}>{loginError}</HelperText> : null}
-
-            <Button
-              mode="contained"
-              onPress={handleLogin}
-              style={styles.button}
-              contentStyle={styles.buttonContent}
-              loading={isLoading}
-              disabled={isLoading}
-            >
-              Login
-            </Button>
-
-            <View style={styles.registerContainer}>
-              <Text style={{ color: theme.colors.onSurface }}>Don't have an account? </Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                <Text style={[styles.registerText, { color: theme.colors.primary }]}>Register</Text>
+              <TouchableOpacity
+                style={styles.forgotPasswordContainer}
+                onPress={() => navigation.navigate('ForgotPassword')}
+              >
+                <Text style={{ color: theme.colors.primary, fontWeight: '600' }}>Forgot Password?</Text>
               </TouchableOpacity>
-            </View>
-          </Card.Content>
-        </Card>
 
-        <Divider style={styles.divider} />
+              {loginError ? (
+                <Surface style={[styles.errorContainer, { backgroundColor: theme.colors.errorContainer }]}>
+                  <Text style={{ color: theme.colors.error, textAlign: 'center' }}>{loginError}</Text>
+                </Surface>
+              ) : null}
 
-        <MockLoginSection onLogin={handleMockLogin} />
-      </ScrollView>
+              <Button
+                mode="contained"
+                onPress={handleLogin}
+                style={styles.button}
+                contentStyle={styles.buttonContent}
+                loading={isLoading}
+                disabled={isLoading}
+              >
+                Sign In
+              </Button>
+            </Card.Content>
+          </Card>
+
+          {/* Footer */}
+          <View style={styles.registerContainer}>
+            <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>Don't have an account? </Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+              <Text variant="bodyMedium" style={{ color: theme.colors.primary, fontWeight: 'bold' }}>Create Account</Text>
+            </TouchableOpacity>
+          </View>
+
+        </ScrollView>
+      </KeyboardAvoidingView>
     </ScreenWrapper>
   );
 };
 
 const styles = StyleSheet.create({
+  keyboardView: {
+    flex: 1,
+  },
   scrollView: {
     flexGrow: 1,
-    paddingVertical: 20,
+    justifyContent: 'center',
+    padding: 24,
   },
   headerContainer: {
     alignItems: 'center',
-    marginBottom: 30,
-    marginTop: 20,
+    marginBottom: 40,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666666',
+  logoSurface: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   card: {
-    borderRadius: 12,
-    elevation: 4,
-    marginBottom: 20,
+    borderRadius: 24,
+    backgroundColor: '#ffffff',
   },
   cardTitle: {
-    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 5,
     textAlign: 'center',
-  },
-  cardSubtitle: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 20,
-    textAlign: 'center',
+    marginTop: 8,
   },
   input: {
-    marginBottom: 10,
+    marginBottom: 6,
     backgroundColor: '#ffffff',
   },
   forgotPasswordContainer: {
     alignSelf: 'flex-end',
-    marginBottom: 20,
-  },
-  forgotPasswordText: {
-    fontWeight: '600',
+    marginBottom: 24,
+    marginTop: 8,
   },
   button: {
-    marginTop: 10,
-    borderRadius: 8,
+    borderRadius: 12,
+    marginTop: 8,
   },
   buttonContent: {
-    paddingVertical: 6,
+    paddingVertical: 8,
   },
   registerContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 20,
+    marginTop: 32,
+    paddingBottom: 20,
   },
-  registerText: {
-    fontWeight: 'bold',
-  },
-  errorText: {
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  divider: {
-    marginVertical: 20,
-  },
-  mockCard: {
-    marginTop: 10,
-    marginBottom: 20,
-    backgroundColor: '#F5F5F5',
-  },
-  mockText: {
-    marginBottom: 15,
-  },
-  mockButtonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 15,
-  },
-  mockButton: {
-    flex: 1,
-    marginHorizontal: 5,
-  },
-  mockCredentials: {
-    backgroundColor: '#E0E0E0',
-    padding: 10,
-    borderRadius: 5,
+  errorContainer: {
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
   },
 });
 
