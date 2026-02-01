@@ -30,6 +30,7 @@ const REQUIRED_DOCUMENT_TYPES = [
 ];
 
 const ComplianceScreen = () => {
+  const navigation = useNavigation();
   const [visible, setVisible] = useState(false);
   const [documentTypeMenuVisible, setDocumentTypeMenuVisible] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -89,7 +90,7 @@ const ComplianceScreen = () => {
 
   const showModal = () => setVisible(true);
   const hideModal = () => setVisible(false);
-  
+
   const showDocumentTypeMenu = () => setDocumentTypeMenuVisible(true);
   const hideDocumentTypeMenu = () => setDocumentTypeMenuVisible(false);
 
@@ -115,26 +116,26 @@ const ComplianceScreen = () => {
       alert('Please select a document type');
       return;
     }
-    
+
     // Check if document type already exists and is not expired
     const existingDoc = documents.find(
       doc => doc.type === newDocument.type && doc.status !== 'expired'
     );
-    
+
     if (existingDoc) {
       alert(`You already have an active ${newDocument.type} document. Please update it instead of adding a new one.`);
       return;
     }
-    
+
     // Calculate days left and status
     let daysLeft = 0;
     let status = 'active';
-    
+
     if (newDocument.expiryDate) {
       const today = new Date();
       const expiryDate = new Date(newDocument.expiryDate);
       daysLeft = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-      
+
       if (daysLeft <= 0) {
         status = 'expired';
         daysLeft = 0;
@@ -146,7 +147,7 @@ const ComplianceScreen = () => {
     // Start the upload simulation
     setIsUploading(true);
     setUploadProgress(0);
-    
+
     // Simulate upload progress
     const progressInterval = setInterval(() => {
       setUploadProgress(prev => {
@@ -154,12 +155,12 @@ const ComplianceScreen = () => {
         return newProgress > 1 ? 1 : newProgress;
       });
     }, 1000);
-    
+
     // Simulate a 5-second upload
     setTimeout(() => {
       clearInterval(progressInterval);
       setUploadProgress(1);
-      
+
       // Create and save the new document
       const document = {
         id: Date.now().toString(),
@@ -167,9 +168,9 @@ const ComplianceScreen = () => {
         daysLeft,
         ...newDocument,
       };
-  
+
       setDocuments([document, ...documents]);
-      
+
       // Reset form and states
       setTimeout(() => {
         setIsUploading(false);
@@ -185,7 +186,7 @@ const ComplianceScreen = () => {
         });
         hideModal();
       }, 500); // Small delay to show 100% completion before closing
-      
+
     }, 5000);
   };
 
@@ -208,7 +209,7 @@ const ComplianceScreen = () => {
     const activeDocumentTypes = documents
       .filter(doc => doc.status !== 'expired')
       .map(doc => doc.type);
-    
+
     // Find required documents that are not in the active documents list
     return REQUIRED_DOCUMENT_TYPES.filter(
       type => !activeDocumentTypes.includes(type)
@@ -218,12 +219,12 @@ const ComplianceScreen = () => {
   // Calculate compliance score based on required documents
   const getComplianceScore = () => {
     const total = REQUIRED_DOCUMENT_TYPES.length;
-    
+
     // Only count active and expiring documents (not expired)
     const validDocuments = documents.filter(doc => doc.status !== 'expired');
     const uniqueValidTypes = new Set(validDocuments.map(doc => doc.type));
     const valid = uniqueValidTypes.size;
-    
+
     // Ensure we return a number, not a string
     const score = (valid / total) * 100;
     return score.toString();
@@ -232,10 +233,35 @@ const ComplianceScreen = () => {
   return (
     <View style={styles.container}>
       <ScrollView>
+        {/* Safety Hub */}
+        <Card style={styles.card}>
+          <Card.Content>
+            <Title>Safety Hub</Title>
+            <View style={styles.actionButtons}>
+              <Button
+                mode="contained"
+                icon="alert-octagon"
+                onPress={() => (navigation as any).navigate('IncidentReport')}
+                style={[styles.actionButton, { backgroundColor: '#D32F2F' }]}
+              >
+                Report Incident
+              </Button>
+              <Button
+                mode="contained"
+                icon="clipboard-check"
+                onPress={() => (navigation as any).navigate('SafetyChecklist')}
+                style={[styles.actionButton, { backgroundColor: '#0288D1' }]}
+              >
+                Daily Checklist
+              </Button>
+            </View>
+          </Card.Content>
+        </Card>
+
         {/* Compliance Summary Card */}
         <Card style={styles.card}>
           <Card.Content>
-            <Title>Compliance Overview</Title>
+            <Title>Compliance Documents</Title>
             <View style={styles.scoreContainer}>
               <Text style={styles.scoreValue}>{getComplianceScore()}%</Text>
               <Text style={styles.scoreLabel}>Compliance Score</Text>
@@ -306,13 +332,13 @@ const ComplianceScreen = () => {
                   )}
                   right={() => (
                     <View style={styles.documentMetadata}>
-                      <View 
+                      <View
                         style={[
                           styles.statusBadge,
                           { borderColor: getStatusColor(document.status) }
                         ]}
                       >
-                        <Text 
+                        <Text
                           style={[
                             styles.statusText,
                             { color: getStatusColor(document.status) }
@@ -361,18 +387,18 @@ const ComplianceScreen = () => {
             {/* Document Type Selection */}
             <View style={styles.documentTypeContainer}>
               <Text style={styles.inputLabel}>Document Type*</Text>
-              <Button 
-                mode="outlined" 
+              <Button
+                mode="outlined"
                 onPress={showDocumentTypeMenu}
                 style={styles.documentTypeButton}
               >
                 {newDocument.type || 'Select Document Type'}
                 <Icon name="menu-down" size={20} />
               </Button>
-              
+
               <Portal>
-                <Modal 
-                  visible={documentTypeMenuVisible} 
+                <Modal
+                  visible={documentTypeMenuVisible}
                   onDismiss={hideDocumentTypeMenu}
                   contentContainerStyle={styles.documentTypeModal}
                 >
@@ -390,8 +416,8 @@ const ComplianceScreen = () => {
                       {docType}
                     </Button>
                   ))}
-                  <Button 
-                    mode="outlined" 
+                  <Button
+                    mode="outlined"
                     onPress={hideDocumentTypeMenu}
                     style={styles.cancelButton}
                   >
@@ -495,6 +521,15 @@ const styles = StyleSheet.create({
   card: {
     margin: 8,
     elevation: 2,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    gap: 10
+  },
+  actionButton: {
+    flex: 1,
   },
   scoreContainer: {
     alignItems: 'center',

@@ -152,6 +152,27 @@ export const apiService = {
     return response.data;
   },
 
+  // Compliance & Safety
+  reportIncident: async (orgId: string, data: any) => {
+    const response = await api.post(`/orgs/${orgId}/compliance/incidents`, data);
+    return response.data;
+  },
+
+  getIncidents: async (orgId: string) => {
+    const response = await api.get(`/orgs/${orgId}/compliance/incidents`);
+    return response.data;
+  },
+
+  submitChecklist: async (orgId: string, data: any) => {
+    const response = await api.post(`/orgs/${orgId}/compliance/checklist`, data);
+    return response.data;
+  },
+
+  getTodayChecklist: async (orgId: string) => {
+    const response = await api.get(`/orgs/${orgId}/compliance/checklist/today`);
+    return response.data;
+  },
+
   // Org Management
   getOrgMembers: async (orgId: string) => {
     const response = await api.get(`/orgs/${orgId}/members`);

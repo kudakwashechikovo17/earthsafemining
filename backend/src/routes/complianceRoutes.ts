@@ -1,0 +1,122 @@
+import express from 'express';
+import { authenticate } from '../middleware/auth';
+import { Membership, OrgRole } from '../models/Membership';
+import { IncidentReport, IncidentType, IncidentSeverity, IncidentStatus } from '../models/IncidentReport';
+import { SafetyChecklist } from '../models/SafetyChecklist';
+
+const router = express.Router({ mergeParams: true });
+
+// Helper: Check membership
+const checkMembership = () => {
+    return async (req: any, res: any, next: any) => {
+        try {
+            const orgId = req.params.orgId || req.body.orgId;
+            if (!orgId) return res.status(400).json({ message: 'Organization ID required' });
+
+            const membership = await Membership.findOne({ userId: req.user.id, orgId });
+            if (!membership || membership.status !== 'active') {
+                return res.status(403).json({ message: 'Not a member of this organization' });
+            }
+            (req as any).membership = membership;
+            next();
+        } catch (error) {
+            next(error);
+        }
+    };
+};
+
+/**
+ * @route   POST /api/orgs/:orgId/compliance/incidents
+ * @desc    Report a safety incident
+ * @access  Private
+ */
+router.post('/:orgId/compliance/incidents', authenticate, checkMembership(), async (req: any, res) => {
+    try {
+        const { type, severity, description, location, photos, date } = req.body;
+        const orgId = req.params.orgId;
+
+        const incident = await IncidentReport.create({
+            orgId,
+            reporterId: req.user.id,
+            date: date || new Date(),
+            type,
+            severity,
+            description,
+            location,
+            photos,
+            status: IncidentStatus.OPEN
+        });
+
+        res.status(201).json(incident);
+    } catch (error: any) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
+/**
+ * @route   GET /api/orgs/:orgId/compliance/incidents
+ * @desc    Get all incidents for org
+ * @access  Private
+ */
+router.get('/:orgId/compliance/incidents', authenticate, checkMembership(), async (req, res) => {
+    try {
+        const incidents = await IncidentReport.find({ orgId: req.params.orgId })
+            .sort({ date: -1 })
+            .limit(50)
+            .populate('reporterId', 'firstName lastName email');
+        res.json(incidents);
+    } catch (error: any) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+/**
+ * @route   POST /api/orgs/:orgId/compliance/checklist
+ * @desc    Submit daily safety checklist
+ * @access  Private
+ */
+router.post('/:orgId/compliance/checklist', authenticate, checkMembership(), async (req: any, res) => {
+    try {
+        const { items, notes, date } = req.body;
+        const orgId = req.params.orgId;
+
+        // Check if already submitted today by this user? (Optional, skipping for now to allow updates)
+
+        const checklist = await SafetyChecklist.create({
+            orgId,
+            inspectorId: req.user.id,
+            date: date || new Date(),
+            items,
+            status: 'submitted',
+            notes
+        });
+
+        res.status(201).json(checklist);
+    } catch (error: any) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
+/**
+ * @route   GET /api/orgs/:orgId/compliance/checklist/today
+ * @desc    Get today's checklist for user
+ * @access  Private
+ */
+router.get('/:orgId/compliance/checklist/today', authenticate, checkMembership(), async (req: any, res) => {
+    try {
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const checklist = await SafetyChecklist.findOne({
+            orgId: req.params.orgId,
+            inspectorId: req.user.id,
+            date: { $gte: startOfDay }
+        });
+
+        res.json(checklist || null);
+    } catch (error: any) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+export default router;

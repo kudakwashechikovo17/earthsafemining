@@ -33,6 +33,17 @@ router.get('/dashboard', authenticate, authorize(['miner', 'cooperative', 'admin
     }
 
     // Parallel execution for performance
+    // Helper for safe execution
+    const safeExec = async (promise: Promise<any>, fallback: any, label: string) => {
+      try {
+        return await promise;
+      } catch (err) {
+        console.error(`Dashboard Error [${label}]:`, err);
+        return fallback;
+      }
+    };
+
+    // Parallel execution with error isolation
     const [
       dailySales,
       weeklySales,
@@ -43,7 +54,7 @@ router.get('/dashboard', authenticate, authorize(['miner', 'cooperative', 'admin
       recentShifts
     ] = await Promise.all([
       // 1. Daily Earnings
-      SalesTransaction.aggregate([
+      safeExec(SalesTransaction.aggregate([
         {
           $match: {
             orgId: new mongoose.Types.ObjectId(orgId),
@@ -52,9 +63,10 @@ router.get('/dashboard', authenticate, authorize(['miner', 'cooperative', 'admin
           }
         },
         { $group: { _id: null, total: { $sum: '$totalValue' } } }
-      ]),
+      ]), [], 'DailySales'),
+
       // 2. Weekly Earnings
-      SalesTransaction.aggregate([
+      safeExec(SalesTransaction.aggregate([
         {
           $match: {
             orgId: new mongoose.Types.ObjectId(orgId),
@@ -63,9 +75,10 @@ router.get('/dashboard', authenticate, authorize(['miner', 'cooperative', 'admin
           }
         },
         { $group: { _id: null, total: { $sum: '$totalValue' } } }
-      ]),
+      ]), [], 'WeeklySales'),
+
       // 3. Monthly Earnings
-      SalesTransaction.aggregate([
+      safeExec(SalesTransaction.aggregate([
         {
           $match: {
             orgId: new mongoose.Types.ObjectId(orgId),
@@ -74,9 +87,10 @@ router.get('/dashboard', authenticate, authorize(['miner', 'cooperative', 'admin
           }
         },
         { $group: { _id: null, total: { $sum: '$totalValue' } } }
-      ]),
+      ]), [], 'MonthlySales'),
+
       // 4. Production Chart Data (Last 6 Months)
-      MaterialMovement.aggregate([
+      safeExec(MaterialMovement.aggregate([
         {
           $match: {
             orgId: new mongoose.Types.ObjectId(orgId),
@@ -91,21 +105,24 @@ router.get('/dashboard', authenticate, authorize(['miner', 'cooperative', 'admin
           }
         },
         { $sort: { "_id.year": 1, "_id.month": 1 } }
-      ]),
+      ]), [], 'ProductionStats'),
+
       // 5. Recent Transactions
-      SalesTransaction.find({ orgId })
+      safeExec(SalesTransaction.find({ orgId })
         .sort({ date: -1 })
         .limit(5)
-        .select('buyerName date totalValue grams currency status'),
+        .select('buyerName date totalValue grams currency status'), [], 'RecentTransactions'),
+
       // 6. Org Details for alerts
-      Organization.findById(orgId).select('miningLicenseNumber status'),
-      // 7. Recent Shifts (Added for visibility)
-      Shift.find({ orgId }).sort({ date: -1 }).limit(5).select('type date status')
+      safeExec(Organization.findById(orgId).select('miningLicenseNumber status'), {}, 'OrgDetails'),
+
+      // 7. Recent Shifts
+      safeExec(Shift.find({ orgId }).sort({ date: -1 }).limit(5).select('type date status'), [], 'RecentShifts')
     ]);
 
     // Format Alert Data
     const alerts = [];
-    if (orgDetails && !orgDetails.miningLicenseNumber) {
+    if (orgDetails && !orgDetails.miningLicenseNumber && orgDetails.status) { // Check status exists to ensure orgDetails is valid
       alerts.push({
         id: 'license-missing',
         title: 'Missing Mining License',
@@ -128,7 +145,7 @@ router.get('/dashboard', authenticate, authorize(['miner', 'cooperative', 'admin
       const year = d.getFullYear();
       const label = monthNames[d.getMonth()];
 
-      const found = productionStats.find((s: any) => s._id.month === monthIdx && s._id.year === year);
+      const found = (productionStats || []).find((s: any) => s._id.month === monthIdx && s._id.year === year);
 
       chartLabels.push(label);
       chartData.push(found ? found.total : 0);
@@ -136,15 +153,15 @@ router.get('/dashboard', authenticate, authorize(['miner', 'cooperative', 'admin
 
     res.json({
       earnings: {
-        daily: dailySales[0]?.total || 0,
-        weekly: weeklySales[0]?.total || 0,
-        monthly: monthlySales[0]?.total || 0
+        daily: dailySales?.[0]?.total || 0,
+        weekly: weeklySales?.[0]?.total || 0,
+        monthly: monthlySales?.[0]?.total || 0
       },
       productionTrend: {
         labels: chartLabels,
         data: chartData
       },
-      recentTransactions: recentTransactions.map(t => ({
+      recentTransactions: (recentTransactions || []).map((t: any) => ({
         id: t._id,
         buyer: t.buyerName,
         date: new Date(t.date).toLocaleDateString(),
@@ -153,7 +170,7 @@ router.get('/dashboard', authenticate, authorize(['miner', 'cooperative', 'admin
         unit: 'g',
         status: t.status
       })),
-      recentProduction: recentShifts.map((s: any) => ({
+      recentProduction: (recentShifts || []).map((s: any) => ({
         id: s._id,
         type: s.type,
         date: new Date(s.date).toLocaleDateString(),
@@ -163,7 +180,7 @@ router.get('/dashboard', authenticate, authorize(['miner', 'cooperative', 'admin
     });
 
   } catch (error) {
-    console.error('Dashboard Error:', error);
+    console.error('CRITICAL Dashboard Error:', error);
     res.status(500).json({ message: 'Server error retrieving dashboard data' });
   }
 });

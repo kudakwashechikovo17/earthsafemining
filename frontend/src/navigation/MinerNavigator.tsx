@@ -15,6 +15,8 @@ import BuyersListScreen from '../screens/miner/BuyersListScreen';
 import OrgMembersScreen from '../screens/miner/OrgMembersScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import ShiftDetailsScreen from '../screens/miner/ShiftDetailsScreen';
+import IncidentReportScreen from '../screens/miner/IncidentReportScreen';
+import SafetyChecklistScreen from '../screens/miner/SafetyChecklistScreen';
 
 // Create navigators
 const Tab = createBottomTabNavigator();
@@ -46,6 +48,8 @@ const SalesStack = () => (
 const ComplianceStack = () => (
   <Stack.Navigator>
     <Stack.Screen name="Compliance" component={ComplianceScreen} options={{ title: 'Compliance' }} />
+    <Stack.Screen name="IncidentReport" component={IncidentReportScreen} options={{ title: 'Report Incident' }} />
+    <Stack.Screen name="SafetyChecklist" component={SafetyChecklistScreen} options={{ title: 'Daily Safety Checklist' }} />
   </Stack.Navigator>
 );
 
