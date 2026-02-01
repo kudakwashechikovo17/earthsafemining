@@ -60,7 +60,7 @@ router.get('/dashboard', authenticate, authorize(['miner', 'cooperative', 'admin
         {
           $match: {
             orgId: new mongoose.Types.ObjectId(orgId),
-            status: SaleStatus.VERIFIED,
+            status: { $in: [SaleStatus.VERIFIED, SaleStatus.PENDING] },
             date: { $gte: getStartDate('day') }
           }
         },
@@ -72,7 +72,7 @@ router.get('/dashboard', authenticate, authorize(['miner', 'cooperative', 'admin
         {
           $match: {
             orgId: new mongoose.Types.ObjectId(orgId),
-            status: SaleStatus.VERIFIED,
+            status: { $in: [SaleStatus.VERIFIED, SaleStatus.PENDING] },
             date: { $gte: getStartDate('week') }
           }
         },
@@ -84,7 +84,7 @@ router.get('/dashboard', authenticate, authorize(['miner', 'cooperative', 'admin
         {
           $match: {
             orgId: new mongoose.Types.ObjectId(orgId),
-            status: SaleStatus.VERIFIED,
+            status: { $in: [SaleStatus.VERIFIED, SaleStatus.PENDING] },
             date: { $gte: getStartDate('month') }
           }
         },
