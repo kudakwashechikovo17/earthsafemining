@@ -1,28 +1,24 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
-import { Card, Title, Paragraph, Text, Divider, Avatar, Button, useTheme } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions, ImageBackground } from 'react-native';
+import { Card, Title, Paragraph, Text, Divider, Avatar, Button, useTheme, Surface } from 'react-native-paper';
 import { LineChart } from 'react-native-chart-kit';
-import { Dimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useDispatch, useSelector } from 'react-redux';
-import { logout } from '../../store/slices/authSlice';
-import { authAPI } from '../../services/api';
-import { RootState } from '../../store';
+import { useDispatch } from 'react-redux';
 import { authService } from '../../services/authService';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { MinerStackParamList } from '../../types/navigation';
 import ScreenWrapper from '../../components/ScreenWrapper';
+import { LinearGradient } from 'expo-linear-gradient'; // Ensure this is installed or use fallback
 
 type MinerDashboardScreenProps = {
   navigation: StackNavigationProp<MinerStackParamList, 'Dashboard'>;
 };
 
 const MinerDashboardScreen = ({ navigation }: MinerDashboardScreenProps) => {
-  const dispatch = useDispatch();
   const theme = useTheme();
   const { width } = useWindowDimensions();
 
-  // Mock data for the dashboard
+  // Mock data for the dashboard (Replace with real data from Redux later)
   const earningsSummary = {
     daily: 250,
     weekly: 1750,
@@ -34,6 +30,8 @@ const MinerDashboardScreen = ({ navigation }: MinerDashboardScreenProps) => {
     datasets: [
       {
         data: [20, 45, 28, 80, 99, 43],
+        color: (opacity = 1) => `rgba(27, 94, 32, ${opacity})`, // Primary Green
+        strokeWidth: 2,
       },
     ],
   };
@@ -43,51 +41,21 @@ const MinerDashboardScreen = ({ navigation }: MinerDashboardScreenProps) => {
   const priceChange = ((goldPrice - previousGoldPrice) / previousGoldPrice) * 100;
 
   const recentTransactions = [
-    {
-      id: '1',
-      date: '2023-11-15',
-      buyer: 'FPR Harare',
-      amount: 1250,
-      quantity: 20,
-      unit: 'grams',
-    },
-    {
-      id: '2',
-      date: '2023-11-10',
-      buyer: 'ABC Minerals',
-      amount: 1875,
-      quantity: 30,
-      unit: 'grams',
-    },
-    {
-      id: '3',
-      date: '2023-11-05',
-      buyer: 'FPR Bulawayo',
-      amount: 625,
-      quantity: 10,
-      unit: 'grams',
-    },
+    { id: '1', date: '2023-11-15', buyer: 'FPR Harare', amount: 1250, quantity: 20, unit: 'g' },
+    { id: '2', date: '2023-11-10', buyer: 'ABC Minerals', amount: 1875, quantity: 30, unit: 'g' },
   ];
 
   const complianceAlerts = [
     {
       id: '1',
       title: 'Mining Permit Expiring',
-      description: 'Your mining permit will expire in 15 days. Please renew it.',
+      description: 'Your mining permit will expire in 15 days.',
       daysLeft: 15,
       type: 'warning',
-    },
-    {
-      id: '2',
-      title: 'Tax Clearance Required',
-      description: 'Annual tax clearance submission due in 30 days.',
-      daysLeft: 30,
-      type: 'info',
     },
   ];
 
   const handleLogout = async () => {
-    console.log('Logging out...');
     try {
       await authService.logout();
     } catch (error) {
@@ -98,172 +66,142 @@ const MinerDashboardScreen = ({ navigation }: MinerDashboardScreenProps) => {
   return (
     <ScreenWrapper>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
+
+        {/* Modern Header Section */}
+        <View style={styles.headerContainer}>
           <View>
-            <Text style={[styles.greeting, { color: theme.colors.primary }]}>Good morning, John</Text>
-            <Text style={styles.date}>{new Date().toDateString()}</Text>
+            <Text variant="headlineMedium" style={{ fontWeight: 'bold', color: theme.colors.primary }}>Good morning,</Text>
+            <Text variant="titleLarge" style={{ color: theme.colors.secondary }}>John Doe</Text>
+            <Text variant="labelMedium" style={{ color: theme.colors.outline }}>{new Date().toDateString()}</Text>
           </View>
-          <Avatar.Text size={48} label="JD" style={{ backgroundColor: theme.colors.primary }} />
+          <Avatar.Text size={50} label="JD" style={{ backgroundColor: theme.colors.primaryContainer, marginLeft: 'auto' }} color={theme.colors.primary} />
         </View>
 
-        {/* Earnings Summary Card */}
-        <Card style={styles.card}>
+        {/* Action Grid (Quick Access) */}
+        <View style={styles.actionGrid}>
+          <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Production')}>
+            <Surface style={[styles.actionIconSurface, { backgroundColor: theme.colors.primaryContainer }]} elevation={2}>
+              <Icon name="pickaxe" size={28} color={theme.colors.primary} />
+            </Surface>
+            <Text style={styles.actionLabel}>Log Production</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Sales')}>
+            <Surface style={[styles.actionIconSurface, { backgroundColor: theme.colors.tertiaryContainer }]} elevation={2}>
+              <Icon name="cash-multiple" size={28} color={theme.colors.tertiary} />
+            </Surface>
+            <Text style={styles.actionLabel}>New Sale</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Compliance')}>
+            <Surface style={[styles.actionIconSurface, { backgroundColor: theme.colors.secondaryContainer }]} elevation={2}>
+              <Icon name="file-document-check" size={28} color={theme.colors.secondary} />
+            </Surface>
+            <Text style={styles.actionLabel}>Permits</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Earnings Summary - Modern Card */}
+        <Card style={[styles.card, { backgroundColor: theme.colors.primary }]} mode="elevated">
           <Card.Content>
-            <Title style={styles.cardTitle}>Earnings Summary</Title>
-            <View style={styles.earningsContainer}>
-              <View style={styles.earningItem}>
-                <Text style={styles.earningLabel}>Today</Text>
-                <Text style={[styles.earningValue, { color: theme.colors.primary }]}>${earningsSummary.daily}</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ color: theme.colors.onPrimary, opacity: 0.8 }}>Total Earnings (Month)</Text>
+              <Icon name="chart-timeline-variant" size={24} color={theme.colors.onPrimary} />
+            </View>
+            <Text variant="displaySmall" style={{ color: theme.colors.onPrimary, fontWeight: 'bold', marginVertical: 8 }}>
+              ${earningsSummary.monthly.toLocaleString()}
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 16 }}>
+              <View>
+                <Text style={{ color: theme.colors.onPrimary, opacity: 0.8, fontSize: 12 }}>Today</Text>
+                <Text style={{ color: theme.colors.onPrimary, fontWeight: 'bold' }}>${earningsSummary.daily}</Text>
               </View>
-              <View style={styles.earningItem}>
-                <Text style={styles.earningLabel}>This Week</Text>
-                <Text style={[styles.earningValue, { color: theme.colors.primary }]}>${earningsSummary.weekly}</Text>
-              </View>
-              <View style={styles.earningItem}>
-                <Text style={styles.earningLabel}>This Month</Text>
-                <Text style={[styles.earningValue, { color: theme.colors.primary }]}>${earningsSummary.monthly}</Text>
+              <View>
+                <Text style={{ color: theme.colors.onPrimary, opacity: 0.8, fontSize: 12 }}>This Week</Text>
+                <Text style={{ color: theme.colors.onPrimary, fontWeight: 'bold' }}>${earningsSummary.weekly}</Text>
               </View>
             </View>
           </Card.Content>
         </Card>
 
-        {/* Production Trends Card */}
+        {/* Gold Price Ticker */}
+        <Surface style={styles.tickerSurface} elevation={1}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Avatar.Icon size={36} icon="gold" style={{ backgroundColor: theme.colors.tertiaryContainer }} color="#FFD700" />
+            <View style={{ marginLeft: 12 }}>
+              <Text variant="titleSmall">Gold Price (Global)</Text>
+              <Text variant="titleMedium" style={{ fontWeight: 'bold' }}>${goldPrice}/g</Text>
+            </View>
+          </View>
+          <View style={{ alignItems: 'flex-end' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Icon name={priceChange >= 0 ? 'trending-up' : 'trending-down'} size={16} color={priceChange >= 0 ? 'green' : 'red'} />
+              <Text style={{ color: priceChange >= 0 ? 'green' : 'red', fontWeight: 'bold', marginLeft: 4 }}>
+                {Math.abs(priceChange).toFixed(2)}%
+              </Text>
+            </View>
+            <Text variant="labelSmall" style={{ color: theme.colors.outline }}>Last 24h</Text>
+          </View>
+        </Surface>
+
+        {/* Production Trends Chart */}
         <Card style={styles.card}>
           <Card.Content>
-            <Title style={styles.cardTitle}>Production Trends</Title>
+            <Title style={styles.cardTitle}>Production Trend</Title>
             <LineChart
               data={data}
-              width={width - 48} // Screen width minus padding
-              height={220}
+              width={width - 64} // consistent width
+              height={180}
               chartConfig={{
-                backgroundColor: '#ffffff',
-                backgroundGradientFrom: '#ffffff',
-                backgroundGradientTo: '#ffffff',
+                backgroundColor: theme.colors.surface,
+                backgroundGradientFrom: theme.colors.surface,
+                backgroundGradientTo: theme.colors.surface,
                 decimalPlaces: 0,
                 color: (opacity = 1) => theme.colors.primary,
                 labelColor: (opacity = 1) => theme.colors.onSurface,
-                style: {
-                  borderRadius: 16,
-                },
-                propsForDots: {
-                  r: '6',
-                  strokeWidth: '2',
-                  stroke: theme.colors.primary,
-                },
+                style: { borderRadius: 16 },
+                propsForDots: { r: '4', strokeWidth: '2', stroke: theme.colors.primary },
               }}
               bezier
-              style={styles.chart}
+              style={{ marginVertical: 8, borderRadius: 16 }}
+              withInnerLines={false}
+              withOuterLines={false}
             />
           </Card.Content>
         </Card>
 
-        {/* Gold Price Alert Card */}
-        <Card style={styles.card}>
-          <Card.Content>
-            <Title style={styles.cardTitle}>Gold Price Alert</Title>
-            <View style={styles.priceContainer}>
-              <View>
-                <Text style={[styles.currentPrice, { color: theme.colors.onSurface }]}>${goldPrice}/g</Text>
-                <View style={styles.priceChangeContainer}>
-                  <Icon
-                    name={priceChange >= 0 ? 'arrow-up' : 'arrow-down'}
-                    size={20}
-                    color={priceChange >= 0 ? '#4CAF50' : '#F44336'}
-                  />
-                  <Text
-                    style={[
-                      styles.priceChange,
-                      { color: priceChange >= 0 ? '#4CAF50' : '#F44336' },
-                    ]}
-                  >
-                    {Math.abs(priceChange).toFixed(2)}%
-                  </Text>
-                </View>
-              </View>
-              <Button
-                mode="contained"
-                style={[styles.sellButton, { backgroundColor: theme.colors.secondary }]}
-                labelStyle={{ color: '#000' }}
-                onPress={() => navigation.navigate('BuyersList')}
-              >
-                Sell Now
-              </Button>
+        {/* Recent Transactions */}
+        <View style={styles.sectionHeader}>
+          <Text variant="titleMedium" style={{ fontWeight: 'bold' }}>Recent Activity</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Sales')}>
+            <Text style={{ color: theme.colors.primary }}>View All</Text>
+          </TouchableOpacity>
+        </View>
+
+        {recentTransactions.map((tx) => (
+          <Surface key={tx.id} style={styles.transactionItem} elevation={0}>
+            <Avatar.Icon size={40} icon="sale" style={{ backgroundColor: theme.colors.secondaryContainer }} color={theme.colors.secondary} />
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text variant="bodyLarge" style={{ fontWeight: 'bold' }}>{tx.buyer}</Text>
+              <Text variant="bodySmall" style={{ color: theme.colors.outline }}>{tx.date}</Text>
             </View>
-          </Card.Content>
-        </Card>
-
-        {/* Recent Transactions Card */}
-        <Card style={styles.card}>
-          <Card.Content>
-            <Title style={styles.cardTitle}>Recent Transactions</Title>
-            {recentTransactions.map((transaction, index) => (
-              <View key={transaction.id}>
-                <View style={styles.transactionItem}>
-                  <View>
-                    <Text style={styles.transactionBuyer}>{transaction.buyer}</Text>
-                    <Text style={styles.transactionDate}>{transaction.date}</Text>
-                  </View>
-                  <View style={styles.transactionDetails}>
-                    <Text style={[styles.transactionAmount, { color: theme.colors.primary }]}>${transaction.amount}</Text>
-                    <Text style={styles.transactionQuantity}>
-                      {transaction.quantity} {transaction.unit}
-                    </Text>
-                  </View>
-                </View>
-                {index < recentTransactions.length - 1 && <Divider />}
-              </View>
-            ))}
-            <TouchableOpacity style={styles.viewAllContainer}>
-              <Text style={[styles.viewAllText, { color: theme.colors.primary }]}>View All Transactions</Text>
-            </TouchableOpacity>
-          </Card.Content>
-        </Card>
-
-        {/* Compliance Alerts Card */}
-        <Card style={styles.card}>
-          <Card.Content>
-            <Title style={styles.cardTitle}>Compliance Alerts</Title>
-            {complianceAlerts.map((alert) => (
-              <View key={alert.id} style={styles.alertItem}>
-                <View style={styles.alertIconContainer}>
-                  <Avatar.Icon
-                    size={40}
-                    icon={alert.type === 'warning' ? 'alert' : 'information'}
-                    style={{
-                      backgroundColor:
-                        alert.type === 'warning' ? '#FFA000' : '#1976D2',
-                    }}
-                  />
-                </View>
-                <View style={styles.alertContent}>
-                  <Text style={styles.alertTitle}>{alert.title}</Text>
-                  <Text style={styles.alertDescription}>{alert.description}</Text>
-                  <Text
-                    style={[
-                      styles.alertDaysLeft,
-                      {
-                        color: alert.daysLeft <= 15 ? '#D32F2F' : '#1976D2',
-                      },
-                    ]}
-                  >
-                    {alert.daysLeft} days left
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </Card.Content>
-        </Card>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text variant="bodyLarge" style={{ fontWeight: 'bold', color: theme.colors.primary }}>+${tx.amount}</Text>
+              <Text variant="bodySmall">{tx.quantity}{tx.unit}</Text>
+            </View>
+          </Surface>
+        ))}
 
         <Button
           mode="outlined"
           onPress={handleLogout}
           style={styles.logoutButton}
           textColor={theme.colors.error}
+          icon="logout"
         >
           Logout
         </Button>
-
-        <View style={{ height: 20 }} />
+        <View style={{ height: 40 }} />
       </ScrollView>
     </ScreenWrapper>
   );
@@ -271,143 +209,74 @@ const MinerDashboardScreen = ({ navigation }: MinerDashboardScreenProps) => {
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingVertical: 16,
+    padding: 16,
   },
-  header: {
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+    marginTop: 8,
+  },
+  actionGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
     marginBottom: 24,
   },
-  greeting: {
-    fontSize: 28,
-    fontWeight: 'bold',
-  },
-  date: {
-    fontSize: 14,
-    color: '#666666',
-    marginTop: 4,
-  },
-  card: {
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderRadius: 16,
-    elevation: 2,
-    backgroundColor: '#ffffff',
-  },
-  cardTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  earningsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  earningItem: {
+  actionButton: {
     alignItems: 'center',
     flex: 1,
   },
-  earningLabel: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginBottom: 4,
+  actionIconSurface: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  earningValue: {
+  actionLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  card: {
+    marginBottom: 16,
+    borderRadius: 20,
+    elevation: 3,
+  },
+  cardTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    marginBottom: 12,
   },
-  chart: {
-    marginVertical: 8,
-    borderRadius: 16,
-  },
-  priceContainer: {
+  tickerSurface: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    marginBottom: 16,
   },
-  currentPrice: {
-    fontSize: 32,
-    fontWeight: 'bold',
-  },
-  priceChangeContainer: {
+  sectionHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 4,
-  },
-  priceChange: {
-    marginLeft: 4,
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  sellButton: {
-    borderRadius: 8,
-    paddingHorizontal: 16,
+    marginBottom: 12,
+    marginTop: 8,
   },
   transactionItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-  },
-  transactionBuyer: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  transactionDate: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginTop: 4,
-  },
-  transactionDetails: {
-    alignItems: 'flex-end',
-  },
-  transactionAmount: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  transactionQuantity: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginTop: 4,
-  },
-  viewAllContainer: {
     alignItems: 'center',
-    marginTop: 16,
-  },
-  viewAllText: {
-    fontWeight: 'bold',
-  },
-  alertItem: {
-    flexDirection: 'row',
-    marginBottom: 16,
-  },
-  alertIconContainer: {
-    marginRight: 16,
-    justifyContent: 'center',
-  },
-  alertContent: {
-    flex: 1,
-  },
-  alertTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  alertDescription: {
-    fontSize: 14,
-    color: '#666666',
-    marginTop: 2,
-    lineHeight: 20,
-  },
-  alertDaysLeft: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    marginTop: 4,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
   logoutButton: {
-    marginHorizontal: 16,
-    marginTop: 8,
-    borderColor: '#D32F2F',
+    marginTop: 24,
+    borderColor: '#e0e0e0',
   },
 });
 
