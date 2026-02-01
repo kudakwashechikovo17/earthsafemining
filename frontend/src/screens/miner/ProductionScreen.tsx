@@ -30,12 +30,17 @@ const ProductionScreen = () => {
   // Stats
   const [totalShifts, setTotalShifts] = useState(0);
   const [activeShifts, setActiveShifts] = useState(0);
+  const [productionStats, setProductionStats] = useState({ ore: 0, waste: 0 });
 
   const fetchShifts = async () => {
     if (!currentOrg) return;
     try {
-      const data = await apiService.getShifts(currentOrg._id);
+      const [data, stats] = await Promise.all([
+        apiService.getShifts(currentOrg._id),
+        apiService.getProductionStats(currentOrg._id)
+      ]);
       setShifts(data);
+      setProductionStats(stats);
 
       // Calculate stats
       setTotalShifts(data.length);
@@ -103,8 +108,12 @@ const ProductionScreen = () => {
               </View>
               {/* Placeholder for actual production vol - requires aggregation endpoint */}
               <View style={styles.summaryItem}>
-                <Text style={styles.summaryValue}>--</Text>
-                <Text style={styles.summaryLabel}>Vol (Tonnes)</Text>
+                <Text style={styles.summaryValue}>{productionStats.ore}t</Text>
+                <Text style={styles.summaryLabel}>Ore Mined</Text>
+              </View>
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryValue}>{productionStats.waste}t</Text>
+                <Text style={styles.summaryLabel}>Waste Moved</Text>
               </View>
             </View>
           </Card.Content>
