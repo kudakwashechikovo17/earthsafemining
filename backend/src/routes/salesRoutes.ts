@@ -18,7 +18,7 @@ const checkMembership = (allowedRoles: OrgRole[] = []) => {
                 return res.status(403).json({ message: 'Not a member of this organization' });
             }
 
-            if (allowedRoles.length > 0 && !allowedRoles.includes(membership.role)) {
+            if (allowedRoles.length > 0 && !allowedRoles.includes(membership.role) && membership.role !== OrgRole.OWNER) {
                 return res.status(403).json({ message: 'Insufficient permissions' });
             }
 
