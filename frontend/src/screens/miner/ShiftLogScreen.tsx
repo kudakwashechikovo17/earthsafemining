@@ -68,6 +68,8 @@ const ShiftLogScreen = ({ navigation }: any) => {
         }
 
         setSubmitting(true);
+        // Alert.alert('Debug', 'Starting submission...'); // Uncomment if needed
+
         try {
             // 1. Create Shift
             const shiftData = {
@@ -75,29 +77,28 @@ const ShiftLogScreen = ({ navigation }: any) => {
                 notes,
             };
             const shiftRes = await apiService.createShift(currentOrg._id, shiftData);
+
+            if (!shiftRes || !shiftRes._id) {
+                throw new Error('Failed to create shift ID');
+            }
             const shiftId = shiftRes._id;
 
-            // 2. Post Details (Parallel)
-            const promises = [];
-
-            // Timesheets
+            // 2. Add Timesheets (Sequential)
             for (const ts of timesheets) {
-                promises.push(apiService.addTimesheet(shiftId, {
+                await apiService.addTimesheet(shiftId, {
                     ...ts,
                     hoursWorked: parseFloat(ts.hoursWorked) || 0
-                }));
+                });
             }
 
-            // Material
+            // 3. Add Materials (Sequential)
             for (const mat of materialMovements) {
-                promises.push(apiService.addMaterialMovement(shiftId, {
+                await apiService.addMaterialMovement(shiftId, {
                     ...mat,
                     quantity: parseFloat(mat.quantity) || 0,
-                    destination: 'Processing' // Default for now
-                }));
+                    destination: 'Processing'
+                });
             }
-
-            await Promise.all(promises);
 
             Alert.alert('Success', 'Shift Logged Successfully', [
                 { text: 'OK', onPress: () => navigation.goBack() }
@@ -105,7 +106,7 @@ const ShiftLogScreen = ({ navigation }: any) => {
         } catch (error: any) {
             console.error('Submit Shift Error:', error);
             const msg = error.response?.data?.message || error.message || 'Failed to log shift';
-            Alert.alert('Error', msg);
+            Alert.alert('Submission Error', msg);
         } finally {
             setSubmitting(false);
         }
