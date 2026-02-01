@@ -74,8 +74,11 @@ const RegisterScreen = () => {
       setEmailError('');
     }
 
-    // Validate phone (optional)
-    if (phone && !/^\+?[0-9]{10,15}$/.test(phone)) {
+    // Validate phone (required)
+    if (!phone.trim()) {
+      setPhoneError('Phone number is required');
+      isValid = false;
+    } else if (!/^\+?[0-9]{10,15}$/.test(phone)) {
       setPhoneError('Please enter a valid phone number');
       isValid = false;
     } else {
@@ -86,8 +89,8 @@ const RegisterScreen = () => {
     if (!password) {
       setPasswordError('Password is required');
       isValid = false;
-    } else if (password.length < 6) {
-      setPasswordError('Password must be at least 6 characters');
+    } else if (password.length < 8) {
+      setPasswordError('Password must be at least 8 characters');
       isValid = false;
     } else {
       setPasswordError('');
@@ -126,7 +129,7 @@ const RegisterScreen = () => {
         email,
         password,
         role,
-        phone: phone || undefined
+        phone: phone // Phone is now required
       };
 
       console.log('Registering with data:', userData);
@@ -143,6 +146,7 @@ const RegisterScreen = () => {
           { text: 'OK', onPress: () => navigation.navigate('Login') }
         ]
       );
+    } catch (error: any) {
       console.error('Registration error details:', error);
 
       // Handle API error
@@ -232,7 +236,7 @@ const RegisterScreen = () => {
             {emailError ? <HelperText type="error">{emailError}</HelperText> : null}
 
             <TextInput
-              label="Phone (optional)"
+              label="Phone Number"
               mode="outlined"
               value={phone}
               onChangeText={setPhone}
