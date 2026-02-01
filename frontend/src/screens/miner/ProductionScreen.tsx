@@ -1,191 +1,151 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import {
   Card,
   Title,
   FAB,
-  Portal,
-  Modal,
-  TextInput,
-  Button,
   Text,
   Divider,
   List,
   Avatar,
-  SegmentedButtons,
+  ActivityIndicator,
+  Chip,
+  useTheme
 } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import * as ImagePicker from 'expo-image-picker';
-import * as Location from 'expo-location';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
+import { apiService } from '../../services/apiService';
+import ScreenWrapper from '../../components/ScreenWrapper';
 
 const ProductionScreen = () => {
-  const [visible, setVisible] = useState(false);
-  const [timeFilter, setTimeFilter] = useState('week');
-  const [productionEntries, setProductionEntries] = useState([
-    {
-      id: '1',
-      date: '2023-11-15',
-      mineralType: 'gold',
-      quantity: 25,
-      unit: 'grams',
-      purity: 92,
-      location: 'Mine Site A',
-      verified: true,
-    },
-    {
-      id: '2',
-      date: '2023-11-14',
-      mineralType: 'gold',
-      quantity: 18,
-      unit: 'grams',
-      purity: 88,
-      location: 'Mine Site B',
-      verified: false,
-    },
-    {
-      id: '3',
-      date: '2023-11-13',
-      mineralType: 'gold',
-      quantity: 32,
-      unit: 'grams',
-      purity: 95,
-      location: 'Mine Site A',
-      verified: true,
-    },
-  ]);
+  const theme = useTheme();
+  const navigation = useNavigation();
+  const { currentOrg } = useSelector((state: RootState) => state.auth);
 
-  const [newEntry, setNewEntry] = useState({
-    mineralType: 'gold',
-    quantity: '',
-    unit: 'grams',
-    purity: '',
-    location: '',
-    notes: '',
-    images: [],
-  });
+  const [loading, setLoading] = useState(false);
+  const [shifts, setShifts] = useState<any[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const showModal = () => setVisible(true);
-  const hideModal = () => setVisible(false);
+  // Stats
+  const [totalShifts, setTotalShifts] = useState(0);
+  const [activeShifts, setActiveShifts] = useState(0);
 
-  const handleImagePicker = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
-    if (permissionResult.granted === false) {
-      alert('Permission to access camera roll is required!');
-      return;
-    }
+  const fetchShifts = async () => {
+    if (!currentOrg) return;
+    try {
+      const data = await apiService.getShifts(currentOrg._id);
+      setShifts(data);
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      setNewEntry({
-        ...newEntry,
-        images: [...newEntry.images, result.assets[0].uri],
-      });
+      // Calculate stats
+      setTotalShifts(data.length);
+      setActiveShifts(data.filter((s: any) => s.status === 'open').length);
+    } catch (error) {
+      console.error('Error fetching shifts:', error);
     }
   };
 
-  const handleLocationPicker = async () => {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    
-    if (status !== 'granted') {
-      alert('Permission to access location was denied');
-      return;
-    }
-
-    const location = await Location.getCurrentPositionAsync({});
-    setNewEntry({
-      ...newEntry,
-      location: `${location.coords.latitude}, ${location.coords.longitude}`,
-    });
+  const loadData = async () => {
+    setLoading(true);
+    await fetchShifts();
+    setLoading(false);
   };
 
-  const handleSubmit = () => {
-    // TODO: Implement API call to save production entry
-    const entry = {
-      id: Date.now().toString(),
-      date: new Date().toISOString().split('T')[0],
-      ...newEntry,
-      verified: false,
-    };
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchShifts();
+    setRefreshing(false);
+  };
 
-    setProductionEntries([entry, ...productionEntries]);
-    setNewEntry({
-      mineralType: 'gold',
-      quantity: '',
-      unit: 'grams',
-      purity: '',
-      location: '',
-      notes: '',
-      images: [],
+  // Reload when screen comes into focus (e.g. after logging a shift)
+  useFocusEffect(
+    useCallback(() => {
+      if (currentOrg) {
+        fetchShifts(); // Silent update
+      }
+    }, [currentOrg])
+  );
+
+  useEffect(() => {
+    loadData();
+  }, [currentOrg]);
+
+  const handleStartShift = () => {
+    (navigation as any).navigate('ShiftLog');
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString(undefined, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
     });
-    hideModal();
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView>
-        {/* Production Summary Card */}
+    <ScreenWrapper>
+      <ScrollView
+        style={styles.container}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        {/* Summary Card */}
         <Card style={styles.card}>
           <Card.Content>
-            <Title>Production Summary</Title>
-            <SegmentedButtons
-              value={timeFilter}
-              onValueChange={setTimeFilter}
-              buttons={[
-                { value: 'week', label: 'Week' },
-                { value: 'month', label: 'Month' },
-                { value: 'year', label: 'Year' },
-              ]}
-              style={styles.filterButtons}
-            />
+            <Title>Production Overview</Title>
             <View style={styles.summaryContainer}>
               <View style={styles.summaryItem}>
-                <Text style={styles.summaryValue}>75g</Text>
-                <Text style={styles.summaryLabel}>Total Production</Text>
+                <Text style={styles.summaryValue}>{activeShifts}</Text>
+                <Text style={styles.summaryLabel}>Active Shifts</Text>
               </View>
               <View style={styles.summaryItem}>
-                <Text style={styles.summaryValue}>91.6%</Text>
-                <Text style={styles.summaryLabel}>Avg. Purity</Text>
+                <Text style={styles.summaryValue}>{totalShifts}</Text>
+                <Text style={styles.summaryLabel}>Total Logged</Text>
               </View>
+              {/* Placeholder for actual production vol - requires aggregation endpoint */}
               <View style={styles.summaryItem}>
-                <Text style={styles.summaryValue}>66%</Text>
-                <Text style={styles.summaryLabel}>Verified</Text>
+                <Text style={styles.summaryValue}>--</Text>
+                <Text style={styles.summaryLabel}>Vol (Tonnes)</Text>
               </View>
             </View>
           </Card.Content>
         </Card>
 
-        {/* Production Entries List */}
+        {/* Recent Shifts List */}
         <Card style={styles.card}>
           <Card.Content>
-            <Title>Production Entries</Title>
-            {productionEntries.map((entry) => (
-              <View key={entry.id}>
+            <Title>Recent Shifts</Title>
+            <Divider style={styles.divider} />
+
+            {loading && <ActivityIndicator style={{ margin: 20 }} />}
+
+            {!loading && shifts.length === 0 && (
+              <Text style={{ textAlign: 'center', margin: 20, color: '#666' }}>
+                No shifts logged yet. Start a new shift to track production.
+              </Text>
+            )}
+
+            {shifts.map((shift) => (
+              <View key={shift._id}>
                 <List.Item
-                  title={`${entry.quantity} ${entry.unit} of ${entry.mineralType}`}
-                  description={`Location: ${entry.location}\nPurity: ${entry.purity}%`}
-                  left={() => (
+                  title={`${shift.type === 'day' ? 'Day' : 'Night'} Shift - ${formatDate(shift.date)}`}
+                  description={shift.notes || 'No notes'}
+                  left={props => (
                     <Avatar.Icon
-                      size={40}
-                      icon="pickaxe"
-                      style={{
-                        backgroundColor: entry.verified ? '#2E7D32' : '#FFA000',
-                      }}
+                      {...props}
+                      icon={shift.type === 'day' ? 'weather-sunny' : 'weather-night'}
+                      style={{ backgroundColor: shift.status === 'open' ? theme.colors.primary : '#ccc' }}
                     />
                   )}
-                  right={() => (
-                    <View style={styles.entryMetadata}>
-                      <Text style={styles.entryDate}>{entry.date}</Text>
-                      {entry.verified && (
-                        <Icon name="check-circle" size={20} color="#2E7D32" />
-                      )}
+                  right={props => (
+                    <View style={{ justifyContent: 'center' }}>
+                      <Chip
+                        mode="outlined"
+                        compact
+                        textStyle={{ fontSize: 10 }}
+                        style={{ borderColor: shift.status === 'open' ? theme.colors.primary : '#666' }}
+                      >
+                        {shift.status.toUpperCase()}
+                      </Chip>
                     </View>
                   )}
                 />
@@ -194,94 +154,17 @@ const ProductionScreen = () => {
             ))}
           </Card.Content>
         </Card>
+
+        <View style={{ height: 80 }} />
       </ScrollView>
 
-      {/* Add Production Entry FAB */}
       <FAB
         icon="plus"
+        label="Log Shift"
         style={styles.fab}
-        onPress={showModal}
+        onPress={handleStartShift}
       />
-
-      {/* Add Production Entry Modal */}
-      <Portal>
-        <Modal
-          visible={visible}
-          onDismiss={hideModal}
-          contentContainerStyle={styles.modalContainer}
-        >
-          <ScrollView>
-            <Title style={styles.modalTitle}>Add Production Entry</Title>
-
-            <TextInput
-              label="Quantity"
-              value={newEntry.quantity}
-              onChangeText={(text) => setNewEntry({ ...newEntry, quantity: text })}
-              keyboardType="numeric"
-              style={styles.input}
-            />
-
-            <TextInput
-              label="Purity (%)"
-              value={newEntry.purity}
-              onChangeText={(text) => setNewEntry({ ...newEntry, purity: text })}
-              keyboardType="numeric"
-              style={styles.input}
-            />
-
-            <TextInput
-              label="Location"
-              value={newEntry.location}
-              onChangeText={(text) => setNewEntry({ ...newEntry, location: text })}
-              style={styles.input}
-              right={
-                <TextInput.Icon
-                  icon="map-marker"
-                  onPress={handleLocationPicker}
-                />
-              }
-            />
-
-            <TextInput
-              label="Notes"
-              value={newEntry.notes}
-              onChangeText={(text) => setNewEntry({ ...newEntry, notes: text })}
-              multiline
-              numberOfLines={3}
-              style={styles.input}
-            />
-
-            <Button
-              mode="outlined"
-              onPress={handleImagePicker}
-              style={styles.imageButton}
-              icon="camera"
-            >
-              Add Images
-            </Button>
-
-            {newEntry.images.length > 0 && (
-              <Text style={styles.imageCount}>
-                {newEntry.images.length} image(s) selected
-              </Text>
-            )}
-
-            <View style={styles.modalActions}>
-              <Button onPress={hideModal} style={styles.modalButton}>
-                Cancel
-              </Button>
-              <Button
-                mode="contained"
-                onPress={handleSubmit}
-                style={styles.modalButton}
-              >
-                Save
-              </Button>
-            </View>
-          </ScrollView>
-        </Modal>
-      </Portal>
-    </View>
+    </ScreenWrapper>
   );
 };
 
@@ -293,34 +176,31 @@ const styles = StyleSheet.create({
   card: {
     margin: 8,
     elevation: 2,
-  },
-  filterButtons: {
-    marginVertical: 16,
+    backgroundColor: 'white'
   },
   summaryContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 8,
+    marginTop: 16,
+    marginBottom: 8
   },
   summaryItem: {
     alignItems: 'center',
+    flex: 1
   },
   summaryValue: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: '#2E7D32',
   },
   summaryLabel: {
     fontSize: 12,
     color: '#666666',
     marginTop: 4,
   },
-  entryMetadata: {
-    alignItems: 'flex-end',
-  },
-  entryDate: {
-    fontSize: 12,
-    color: '#666666',
-    marginBottom: 4,
+  divider: {
+    marginBottom: 0,
+    marginTop: 8
   },
   fab: {
     position: 'absolute',
@@ -329,34 +209,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: '#2E7D32',
   },
-  modalContainer: {
-    backgroundColor: 'white',
-    padding: 20,
-    margin: 20,
-    borderRadius: 8,
-    maxHeight: '80%',
-  },
-  modalTitle: {
-    marginBottom: 16,
-  },
-  input: {
-    marginBottom: 16,
-  },
-  imageButton: {
-    marginBottom: 16,
-  },
-  imageCount: {
-    marginBottom: 16,
-    color: '#666666',
-  },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 16,
-  },
-  modalButton: {
-    marginLeft: 8,
-  },
 });
 
-export default ProductionScreen; 
+export default ProductionScreen;

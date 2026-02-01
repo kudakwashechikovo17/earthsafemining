@@ -111,6 +111,11 @@ export const apiService = {
   },
 
   // Shifts & Production
+  getShifts: async (orgId: string) => {
+    const response = await api.get(`/orgs/${orgId}/shifts`);
+    return response.data;
+  },
+
   createShift: async (orgId: string, data: any) => {
     const response = await api.post(`/orgs/${orgId}/shifts`, data);
     return response.data;

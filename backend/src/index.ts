@@ -57,6 +57,9 @@ app.use('/api/government', governmentRoutes);
 app.use('/api/buyers', buyerRoutes);
 app.use('/api/admin', adminRoutes);
 
+// Mount shiftRoutes at base /api to support /api/shifts/:id/... endpoints
+app.use('/api', shiftRoutes);
+
 // Health check endpoint
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'ok', message: 'EarthSafe API is running' });
