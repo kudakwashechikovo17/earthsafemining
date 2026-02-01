@@ -57,7 +57,10 @@ const ShiftLogScreen = ({ navigation }: any) => {
     };
 
     const submitShift = async () => {
-        if (!currentOrg) return;
+        if (!currentOrg) {
+            Alert.alert('Error', 'Organization not validated. Please restart the app.');
+            return;
+        }
 
         if (materialMovements.length === 0 && timesheets.length === 0 && !notes) {
             Alert.alert('Empty Log', 'Please add some activities, materials, or notes before submitting.');
@@ -79,13 +82,17 @@ const ShiftLogScreen = ({ navigation }: any) => {
 
             // Timesheets
             for (const ts of timesheets) {
-                promises.push(apiService.addTimesheet(shiftId, ts));
+                promises.push(apiService.addTimesheet(shiftId, {
+                    ...ts,
+                    hoursWorked: parseFloat(ts.hoursWorked) || 0
+                }));
             }
 
             // Material
             for (const mat of materialMovements) {
                 promises.push(apiService.addMaterialMovement(shiftId, {
                     ...mat,
+                    quantity: parseFloat(mat.quantity) || 0,
                     destination: 'Processing' // Default for now
                 }));
             }
@@ -95,9 +102,10 @@ const ShiftLogScreen = ({ navigation }: any) => {
             Alert.alert('Success', 'Shift Logged Successfully', [
                 { text: 'OK', onPress: () => navigation.goBack() }
             ]);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Submit Shift Error:', error);
-            Alert.alert('Error', 'Failed to log shift. Please try again.');
+            const msg = error.response?.data?.message || error.message || 'Failed to log shift';
+            Alert.alert('Error', msg);
         } finally {
             setSubmitting(false);
         }
