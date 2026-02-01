@@ -74,7 +74,16 @@ const LoginScreen = () => {
       console.log('Login successful:', response);
       dispatch(loginSuccess(response.user));
     } catch (error: any) {
-      console.error('Login error:', error);
+      console.error('Login error details:', JSON.stringify(error, null, 2));
+      if (error.response) {
+        console.error('Response data:', error.response.data);
+        console.error('Response status:', error.response.status);
+      } else if (error.request) {
+        console.error('No response received:', error.request);
+      } else {
+        console.error('Error message:', error.message);
+      }
+
       let errorMessage = 'An error occurred during login.';
 
       if (error.response) {
@@ -84,9 +93,13 @@ const LoginScreen = () => {
           errorMessage = 'Invalid email or password.';
         } else if (error.response.status === 404) {
           errorMessage = 'User not found.';
+        } else if (error.response.status === 500) {
+          errorMessage = 'Server error. Please try again later.';
         }
       } else if (error.request) {
         errorMessage = 'Network error. Please check your connection.';
+      } else {
+        errorMessage = error.message || 'Unknown error occurred.';
       }
 
       dispatch(loginFailure(errorMessage));

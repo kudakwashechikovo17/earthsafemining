@@ -73,8 +73,8 @@ export const authAPI = {
         await AsyncStorage.setItem('token', response.data.token);
       }
       return response.data;
-    } catch (error) {
-      console.error('Login error:', error);
+    } catch (error: any) {
+      console.error('API Login error:', JSON.stringify(error, null, 2));
       throw error;
     }
   },
