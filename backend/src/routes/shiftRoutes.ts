@@ -188,4 +188,39 @@ router.post('/shifts/:shiftId/material', authenticate, async (req: any, res) => 
     }
 });
 
+/**
+ * @route   GET /api/shifts/:shiftId
+ * @desc    Get single shift details with related data
+ * @access  Private
+ */
+router.get('/shifts/:shiftId', authenticate, async (req: any, res) => {
+    try {
+        const shift = await Shift.findById(req.params.shiftId);
+        if (!shift) {
+            res.status(404).json({ message: 'Shift not found' });
+            return;
+        }
+
+        // Check auth
+        const membership = await Membership.findOne({ userId: req.user.id, orgId: shift.orgId });
+        if (!membership) {
+            res.status(403).json({ message: 'Not authorized' });
+            return;
+        }
+
+        const [timesheets, materials] = await Promise.all([
+            Timesheet.find({ shiftId: shift._id }),
+            MaterialMovement.find({ shiftId: shift._id })
+        ]);
+
+        res.json({
+            shift,
+            timesheets,
+            materials
+        });
+    } catch (error: any) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
 export default router;

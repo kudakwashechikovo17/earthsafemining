@@ -213,18 +213,20 @@ const MinerDashboardScreen = ({ navigation }: MinerDashboardScreenProps) => {
           </Surface>
         ) : (
           recentProduction.map((shift: any) => (
-            <Surface key={`shift-${shift.id}`} style={styles.transactionItem} elevation={0}>
-              <Avatar.Icon size={40} icon={shift.type === 'day' ? 'weather-sunny' : 'weather-night'} style={{ backgroundColor: theme.colors.primaryContainer }} color={theme.colors.primary} />
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text variant="bodyLarge" style={{ fontWeight: 'bold' }}>{shift.type === 'day' ? 'Day Shift' : 'Night Shift'}</Text>
-                <Text variant="bodySmall" style={{ color: theme.colors.outline }}>{shift.date}</Text>
-              </View>
-              <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
-                <Text variant="labelSmall" style={{ color: shift.status === 'open' ? theme.colors.primary : theme.colors.outline, fontWeight: 'bold' }}>
-                  {shift.status.toUpperCase()}
-                </Text>
-              </View>
-            </Surface>
+            <TouchableOpacity key={`shift-${shift.id}`} onPress={() => navigation.navigate('ShiftDetails', { shiftId: shift.id })}>
+              <Surface style={styles.transactionItem} elevation={0}>
+                <Avatar.Icon size={40} icon={shift.type === 'day' ? 'weather-sunny' : 'weather-night'} style={{ backgroundColor: theme.colors.primaryContainer }} color={theme.colors.primary} />
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text variant="bodyLarge" style={{ fontWeight: 'bold' }}>{shift.type === 'day' ? 'Day Shift' : 'Night Shift'}</Text>
+                  <Text variant="bodySmall" style={{ color: theme.colors.outline }}>{shift.date}</Text>
+                </View>
+                <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
+                  <Text variant="labelSmall" style={{ color: shift.status === 'open' ? theme.colors.primary : theme.colors.outline, fontWeight: 'bold' }}>
+                    {shift.status.toUpperCase()}
+                  </Text>
+                </View>
+              </Surface>
+            </TouchableOpacity>
           ))
         )}
 

@@ -116,6 +116,11 @@ export const apiService = {
     return response.data;
   },
 
+  getShiftDetails: async (shiftId: string) => {
+    const response = await api.get(`/shifts/${shiftId}`);
+    return response.data;
+  },
+
   getProductionStats: async (orgId: string) => {
     const response = await api.get(`/orgs/${orgId}/production/stats`);
     return response.data;

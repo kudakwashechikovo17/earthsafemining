@@ -14,6 +14,7 @@ import ProfileScreen from '../screens/miner/ProfileScreen';
 import BuyersListScreen from '../screens/miner/BuyersListScreen';
 import OrgMembersScreen from '../screens/miner/OrgMembersScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import ShiftDetailsScreen from '../screens/miner/ShiftDetailsScreen';
 
 // Create navigators
 const Tab = createBottomTabNavigator();
@@ -24,6 +25,7 @@ const DashboardStack = () => (
   <Stack.Navigator>
     <Stack.Screen name="MinerDashboard" component={MinerDashboardScreen} options={{ title: 'Dashboard' }} />
     <Stack.Screen name="BuyersList" component={BuyersListScreen} options={{ title: 'Available Buyers' }} />
+    <Stack.Screen name="ShiftDetails" component={ShiftDetailsScreen} options={{ title: 'Shift Details' }} />
   </Stack.Navigator>
 );
 
@@ -31,6 +33,7 @@ const ProductionStack = () => (
   <Stack.Navigator>
     <Stack.Screen name="Production" component={ProductionScreen} options={{ title: 'Production' }} />
     <Stack.Screen name="ShiftLog" component={ShiftLogScreen} options={{ title: 'Log Daily Shift' }} />
+    <Stack.Screen name="ShiftDetails" component={ShiftDetailsScreen} options={{ title: 'Shift Details' }} />
   </Stack.Navigator>
 );
 

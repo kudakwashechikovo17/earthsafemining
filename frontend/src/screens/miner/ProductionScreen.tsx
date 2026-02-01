@@ -136,6 +136,7 @@ const ProductionScreen = () => {
             {shifts.map((shift) => (
               <View key={shift._id}>
                 <List.Item
+                  onPress={() => (navigation as any).navigate('ShiftDetails', { shiftId: shift._id })}
                   title={`${shift.type === 'day' ? 'Day' : 'Night'} Shift - ${formatDate(shift.date)}`}
                   description={shift.notes || 'No notes'}
                   left={props => (
