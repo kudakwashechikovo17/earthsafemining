@@ -99,7 +99,7 @@ const MinerDashboardScreen = ({ navigation }: MinerDashboardScreenProps) => {
           <View>
             <Text variant="headlineMedium" style={{ fontWeight: 'bold', color: theme.colors.primary }}>Good morning,</Text>
             <Text variant="titleLarge" style={{ color: theme.colors.secondary }}>{user?.firstName || 'Miner'}</Text>
-            <Text variant="labelMedium" style={{ color: theme.colors.outline }}>{new Date().toDateString()}</Text>
+            <Text variant="labelMedium" style={{ color: theme.colors.outline }}>{new Date().toDateString()} • v1.1</Text>
           </View>
           <Avatar.Text size={50} label={user?.firstName?.charAt(0) || "M"} style={{ backgroundColor: theme.colors.primaryContainer, marginLeft: 'auto' }} color={theme.colors.primary} />
         </View>
