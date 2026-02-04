@@ -16,6 +16,7 @@ const LoanPreparationScreen = () => {
         profileComplete: false,
         productionData: false,
         walletActive: false,
+        complianceReady: false,
     });
     const [consent, setConsent] = useState(false);
 
@@ -46,10 +47,15 @@ const LoanPreparationScreen = () => {
             // Cast to any to avoid TS errors if types aren't fully updated yet
             const hasWallet = !!((currentOrg as any).contactPhone || (user as any).phoneNumber);
 
+            // 4. Check Compliance (Mining License)
+            // Using miningLicenseNumber from Organization model
+            const isCompliant = !!(currentOrg as any).miningLicenseNumber;
+
             setChecks({
                 profileComplete: isProfileComplete,
                 productionData: isProductionDataReady,
                 walletActive: hasWallet,
+                complianceReady: isCompliant,
             });
         } catch (error) {
             console.error('Readiness Check Failed:', error);
@@ -82,7 +88,7 @@ const LoanPreparationScreen = () => {
                 <View style={styles.header}>
                     <Title style={styles.title}>Loan Readiness</Title>
                     <Text style={styles.subtitle}>
-                        Review your status below. You can browse offers now, but approval depends on these criteria. (v1.4)
+                        Review your status below. You can browse offers now, but approval depends on these criteria. (v1.5)
                     </Text>
                 </View>
 
@@ -95,6 +101,12 @@ const LoanPreparationScreen = () => {
                             title="Profile & Identity Verified"
                             description={checks.profileComplete ? "Verified" : "Action Required: Update Profile"}
                             left={props => <Icon name={checks.profileComplete ? "check-circle" : "alert-circle"} size={24} color={checks.profileComplete ? "green" : "orange"} style={styles.icon} />}
+                        />
+                        <Divider />
+                        <List.Item
+                            title="Regulatory Compliance"
+                            description={(checks as any).complianceReady ? "License Active" : "Action Required: Upload Mining License"}
+                            left={props => <Icon name={(checks as any).complianceReady ? "shield-check" : "file-document-alert"} size={24} color={(checks as any).complianceReady ? "green" : "orange"} style={styles.icon} />}
                         />
                         <Divider />
                         <List.Item
