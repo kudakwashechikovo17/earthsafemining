@@ -19,6 +19,7 @@ import {
 } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import ScreenWrapper from '../../components/ScreenWrapper';
+import { useNavigation } from '@react-navigation/native';
 
 const EQUIPMENT_TYPES = [
     { label: 'Heavy Machinery', value: 'heavy_machinery' },
@@ -35,6 +36,7 @@ const STATUS_OPTIONS = [
 ];
 
 const EquipmentScreen = () => {
+    const navigation = useNavigation();
     const { currentOrg } = useSelector((state: RootState) => state.auth);
     const [loading, setLoading] = useState(true);
     const [equipment, setEquipment] = useState<any[]>([]);
@@ -254,6 +256,17 @@ const EquipmentScreen = () => {
                         </View>
                     </Card.Content>
                 </Card>
+
+                {/* Equipment Marketplace Button */}
+                <Button
+                    mode="contained"
+                    icon="store"
+                    onPress={() => (navigation as any).navigate('EquipmentReadiness')}
+                    style={styles.marketplaceButton}
+                    contentStyle={{ height: 50 }}
+                >
+                    Access Equipment Marketplace
+                </Button>
 
                 {/* Equipment List */}
                 {equipment.length === 0 ? (
@@ -488,6 +501,10 @@ const styles = StyleSheet.create({
     summaryCard: {
         marginBottom: 16,
         elevation: 2,
+    },
+    marketplaceButton: {
+        backgroundColor: '#1976D2',
+        marginBottom: 16,
     },
     summaryRow: {
         flexDirection: 'row',

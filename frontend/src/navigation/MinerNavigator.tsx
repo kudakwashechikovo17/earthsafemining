@@ -21,6 +21,8 @@ import LoanPreparationScreen from '../screens/miner/LoanPreparationScreen';
 import FinancialMarketplaceScreen from '../screens/miner/FinancialMarketplaceScreen';
 import TimesheetListScreen from '../screens/miner/TimesheetListScreen';
 import EquipmentScreen from '../screens/miner/EquipmentScreen';
+import EquipmentReadinessScreen from '../screens/miner/EquipmentReadinessScreen';
+import EquipmentMarketplaceScreen from '../screens/miner/EquipmentMarketplaceScreen';
 
 // Create navigators
 const Tab = createBottomTabNavigator();
@@ -42,6 +44,8 @@ const ProductionStack = () => (
     <Stack.Screen name="ShiftDetails" component={ShiftDetailsScreen} options={{ title: 'Shift Details' }} />
     <Stack.Screen name="TimesheetList" component={TimesheetListScreen} options={{ title: 'Timesheets' }} />
     <Stack.Screen name="Equipment" component={EquipmentScreen} options={{ title: 'Equipment & Machinery' }} />
+    <Stack.Screen name="EquipmentReadiness" component={EquipmentReadinessScreen} options={{ title: 'Equipment Financing Readiness' }} />
+    <Stack.Screen name="EquipmentMarketplace" component={EquipmentMarketplaceScreen} options={{ title: 'Equipment Marketplace' }} />
   </Stack.Navigator>
 );
 
