@@ -119,11 +119,11 @@ const MinerDashboardScreen = ({ navigation }: MinerDashboardScreenProps) => {
             <Text style={styles.actionLabel}>Timesheets</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Sales')}>
+          <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('BuyersList')}>
             <Surface style={[styles.actionIconSurface, { backgroundColor: theme.colors.tertiaryContainer }]} elevation={2}>
-              <Icon name="cash-multiple" size={28} color={theme.colors.tertiary} />
+              <Icon name="store-search" size={28} color={theme.colors.tertiary} />
             </Surface>
-            <Text style={styles.actionLabel}>New Sale</Text>
+            <Text style={styles.actionLabel}>Find Buyers</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Compliance')}>
