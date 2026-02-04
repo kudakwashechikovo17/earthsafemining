@@ -357,6 +357,27 @@ export const apiService = {
     return response.data;
   },
 
+  // Payroll
+  getPayroll: async (orgId: string) => {
+    const response = await api.get(`/orgs/${orgId}/payroll`);
+    return response.data;
+  },
+
+  addPayroll: async (orgId: string, data: any) => {
+    const response = await api.post(`/orgs/${orgId}/payroll`, data);
+    return response.data;
+  },
+
+  updatePayroll: async (orgId: string, payrollId: string, data: any) => {
+    const response = await api.patch(`/orgs/${orgId}/payroll/${payrollId}`, data);
+    return response.data;
+  },
+
+  deletePayroll: async (orgId: string, payrollId: string) => {
+    const response = await api.delete(`/orgs/${orgId}/payroll/${payrollId}`);
+    return response.data;
+  },
+
   // Generic Helpers (for direct access to new routes)
   get: async (url: string) => {
     return api.get(url); // Returns full response object to keep consistency with usage

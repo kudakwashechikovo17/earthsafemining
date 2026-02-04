@@ -30,6 +30,7 @@ import expenseRoutes from './routes/expenseRoutes';
 import receiptRoutes from './routes/receiptRoutes';
 import inventoryRoutes from './routes/inventoryRoutes';
 import loanRepaymentRoutes from './routes/loanRepaymentRoutes';
+import payrollRoutes from './routes/payrollRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -62,6 +63,7 @@ app.use('/api/orgs', expenseRoutes); // NEW: Expense tracking
 app.use('/api/orgs', receiptRoutes); // NEW: Receipt management
 app.use('/api/orgs', inventoryRoutes); // NEW: Inventory management
 app.use('/api/orgs', loanRepaymentRoutes); // NEW: Loan repayments
+app.use('/api/orgs', payrollRoutes); // NEW: Payroll management
 app.use('/api/orgs', timesheetRoutes); // Timesheet management
 app.use('/api/orgs', loanRoutes);
 app.use('/api/orgs', orgRoutes); // Generic org routes last

@@ -26,6 +26,9 @@ import EquipmentMarketplaceScreen from '../screens/miner/EquipmentMarketplaceScr
 import ExpenseScreen from '../screens/miner/ExpenseScreen';
 import InventoryScreen from '../screens/miner/InventoryScreen';
 import LoanRepaymentScreen from '../screens/miner/LoanRepaymentScreen';
+import FinancialDashboardScreen from '../screens/miner/FinancialDashboardScreen';
+import PayrollScreen from '../screens/miner/PayrollScreen';
+import ReceiptScreen from '../screens/miner/ReceiptScreen';
 
 // Create navigators
 const Tab = createBottomTabNavigator();
@@ -73,7 +76,15 @@ const LoansStack = () => (
     <Stack.Screen name="LoanPreparation" component={LoanPreparationScreen} options={{ title: 'Get Loan Ready' }} />
     <Stack.Screen name="FinancialMarketplace" component={FinancialMarketplaceScreen} options={{ title: 'Financial Marketplace' }} />
     <Stack.Screen name="LoanRepayment" component={LoanRepaymentScreen} options={{ title: 'Loan Repayments' }} />
+  </Stack.Navigator>
+);
+
+const FinancialsStack = () => (
+  <Stack.Navigator>
+    <Stack.Screen name="FinancialDashboard" component={FinancialDashboardScreen} options={{ title: 'Financials' }} />
     <Stack.Screen name="Expenses" component={ExpenseScreen} options={{ title: 'Expenses' }} />
+    <Stack.Screen name="Receipts" component={ReceiptScreen} options={{ title: 'Receipts' }} />
+    <Stack.Screen name="Payroll" component={PayrollScreen} options={{ title: 'Payroll' }} />
   </Stack.Navigator>
 );
 
@@ -99,6 +110,8 @@ const MinerNavigator = () => {
             iconName = focused ? 'pickaxe' : 'pickaxe';
           } else if (route.name === 'SalesTab') {
             iconName = focused ? 'cash-multiple' : 'cash-multiple';
+          } else if (route.name === 'FinancialsTab') {
+            iconName = focused ? 'calculator' : 'calculator';
           } else if (route.name === 'ComplianceTab') {
             iconName = focused ? 'file-document' : 'file-document-outline';
           } else if (route.name === 'LoansTab') {
@@ -116,6 +129,7 @@ const MinerNavigator = () => {
       <Tab.Screen name="Dashboard" component={DashboardStack} options={{ title: 'Dashboard' }} />
       <Tab.Screen name="ProductionTab" component={ProductionStack} options={{ title: 'Production' }} />
       <Tab.Screen name="SalesTab" component={SalesStack} options={{ title: 'Sales' }} />
+      <Tab.Screen name="FinancialsTab" component={FinancialsStack} options={{ title: 'Financials' }} />
       <Tab.Screen name="ComplianceTab" component={ComplianceStack} options={{ title: 'Compliance' }} />
       <Tab.Screen name="LoansTab" component={LoansStack} options={{ title: 'Loans' }} />
       <Tab.Screen name="ProfileTab" component={ProfileStack} options={{ title: 'Profile' }} />
