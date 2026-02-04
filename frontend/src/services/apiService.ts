@@ -236,6 +236,22 @@ export const apiService = {
     return response.data;
   },
 
+  // Compliance Documents
+  getComplianceDocuments: async (orgId: string) => {
+    const response = await api.get(`/orgs/${orgId}/compliance/documents`);
+    return response.data;
+  },
+
+  uploadComplianceDocument: async (orgId: string, data: any) => {
+    const response = await api.post(`/orgs/${orgId}/compliance/documents`, data);
+    return response.data;
+  },
+
+  deleteComplianceDocument: async (orgId: string, docId: string) => {
+    const response = await api.delete(`/orgs/${orgId}/compliance/documents/${docId}`);
+    return response.data;
+  },
+
   // Generic Helpers (for direct access to new routes)
   get: async (url: string) => {
     return api.get(url); // Returns full response object to keep consistency with usage

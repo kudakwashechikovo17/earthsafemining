@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
+import { apiService } from '../../services/apiService';
 import {
   Card,
   Title,
@@ -31,52 +34,33 @@ const REQUIRED_DOCUMENT_TYPES = [
 
 const ComplianceScreen = () => {
   const navigation = useNavigation();
+  const { currentOrg } = useSelector((state: RootState) => state.auth);
   const [visible, setVisible] = useState(false);
   const [documentTypeMenuVisible, setDocumentTypeMenuVisible] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [documents, setDocuments] = useState([
-    {
-      id: '1',
-      type: 'Mining License',
-      number: 'ML-2023-1234',
-      issuedDate: '2023-01-15',
-      expiryDate: '2024-01-14',
-      status: 'active',
-      issuer: 'Ministry of Mines',
-      daysLeft: 60,
-    },
-    {
-      id: '2',
-      type: 'Environmental Impact Assessment Certificate',
-      number: 'EIA-2023-5678',
-      issuedDate: '2023-03-20',
-      expiryDate: '2024-03-19',
-      status: 'expiring',
-      issuer: 'Environmental Management Agency',
-      daysLeft: 15,
-    },
-    {
-      id: '3',
-      type: 'Prospecting License',
-      number: 'PL-2023-4321',
-      issuedDate: '2023-04-10',
-      expiryDate: '2024-04-09',
-      status: 'active',
-      issuer: 'Ministry of Mines',
-      daysLeft: 120,
-    },
-    {
-      id: '4',
-      type: 'Health and Safety Certification',
-      number: 'HSC-2023-9012',
-      issuedDate: '2023-06-01',
-      expiryDate: '2023-12-31',
-      status: 'expired',
-      issuer: 'Ministry of Health',
-      daysLeft: 0,
-    },
-  ]);
+  const [loading, setLoading] = useState(true);
+  const [documents, setDocuments] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (currentOrg) {
+      fetchDocuments();
+    }
+  }, [currentOrg]);
+
+  const fetchDocuments = async () => {
+    if (!currentOrg) return;
+    try {
+      setLoading(true);
+      const data = await apiService.getComplianceDocuments(currentOrg._id);
+      setDocuments(data);
+    } catch (error) {
+      console.error('Failed to fetch compliance documents:', error);
+      Alert.alert('Error', 'Failed to load compliance documents');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const [newDocument, setNewDocument] = useState({
     type: '',
@@ -111,9 +95,14 @@ const ComplianceScreen = () => {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!newDocument.type) {
-      alert('Please select a document type');
+      Alert.alert('Error', 'Please select a document type');
+      return;
+    }
+
+    if (!currentOrg) {
+      Alert.alert('Error', 'No organization selected');
       return;
     }
 
@@ -123,53 +112,40 @@ const ComplianceScreen = () => {
     );
 
     if (existingDoc) {
-      alert(`You already have an active ${newDocument.type} document. Please update it instead of adding a new one.`);
+      Alert.alert('Warning', `You already have an active ${newDocument.type} document. Please update it instead of adding a new one.`);
       return;
     }
 
-    // Calculate days left and status
-    let daysLeft = 0;
-    let status = 'active';
-
-    if (newDocument.expiryDate) {
-      const today = new Date();
-      const expiryDate = new Date(newDocument.expiryDate);
-      daysLeft = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-
-      if (daysLeft <= 0) {
-        status = 'expired';
-        daysLeft = 0;
-      } else if (daysLeft <= 30) {
-        status = 'expiring';
-      }
-    }
-
-    // Start the upload simulation
+    // Start the upload
     setIsUploading(true);
     setUploadProgress(0);
 
-    // Simulate upload progress
+    // Simulate progress for UX
     const progressInterval = setInterval(() => {
       setUploadProgress(prev => {
-        const newProgress = prev + 0.2; // Increase by 20% each second for 5 seconds
-        return newProgress > 1 ? 1 : newProgress;
+        const newProgress = prev + 0.25;
+        return newProgress > 0.9 ? 0.9 : newProgress;
       });
-    }, 1000);
+    }, 500);
 
-    // Simulate a 5-second upload
-    setTimeout(() => {
+    try {
+      const documentData = {
+        type: newDocument.type,
+        number: newDocument.number,
+        issuedDate: newDocument.issuedDate,
+        expiryDate: newDocument.expiryDate,
+        issuer: newDocument.issuer,
+        notes: newDocument.notes,
+        fileUrl: newDocument.file, // Placeholder for now
+      };
+
+      await apiService.uploadComplianceDocument(currentOrg._id, documentData);
+
       clearInterval(progressInterval);
       setUploadProgress(1);
 
-      // Create and save the new document
-      const document = {
-        id: Date.now().toString(),
-        status,
-        daysLeft,
-        ...newDocument,
-      };
-
-      setDocuments([document, ...documents]);
+      // Refresh documents list
+      await fetchDocuments();
 
       // Reset form and states
       setTimeout(() => {
@@ -185,9 +161,15 @@ const ComplianceScreen = () => {
           notes: '',
         });
         hideModal();
-      }, 500); // Small delay to show 100% completion before closing
-
-    }, 5000);
+        Alert.alert('Success', 'Document uploaded successfully');
+      }, 500);
+    } catch (error) {
+      clearInterval(progressInterval);
+      setIsUploading(false);
+      setUploadProgress(0);
+      console.error('Upload error:', error);
+      Alert.alert('Error', 'Failed to upload document. Please try again.');
+    }
   };
 
   const getStatusColor = (status: string) => {
