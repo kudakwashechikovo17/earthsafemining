@@ -215,6 +215,22 @@ export const apiService = {
     return response.data;
   },
 
+  // Timesheets
+  getTimesheets: async (orgId: string, filters?: any) => {
+    const response = await api.get(`/orgs/${orgId}/timesheets`, { params: filters });
+    return response.data;
+  },
+
+  updateTimesheet: async (id: string, data: any) => {
+    const response = await api.patch(`/timesheets/${id}`, data);
+    return response.data;
+  },
+
+  deleteTimesheet: async (id: string) => {
+    const response = await api.delete(`/timesheets/${id}`);
+    return response.data;
+  },
+
   // Generic Helpers (for direct access to new routes)
   get: async (url: string) => {
     return api.get(url); // Returns full response object to keep consistency with usage

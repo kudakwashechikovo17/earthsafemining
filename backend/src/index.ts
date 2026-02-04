@@ -23,6 +23,7 @@ import creditRoutes from './routes/creditRoutes';
 import salesRoutes from './routes/salesRoutes';
 import complianceRoutes from './routes/complianceRoutes';
 import loanRoutes from './routes/loanRoutes';
+import timesheetRoutes from './routes/timesheetRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -63,6 +64,11 @@ app.use('/api/admin', adminRoutes);
 
 // Mount shiftRoutes at base /api to support /api/shifts/:id/... endpoints
 app.use('/api', shiftRoutes);
+
+// Mount timesheetRoutes
+// First generic, but better specific:
+app.use('/api', timesheetRoutes); // for /api/timesheets/:id
+app.use('/api/orgs', timesheetRoutes); // for /api/orgs/:orgId/timesheets
 
 // Health check endpoint
 app.get('/health', (req: Request, res: Response) => {

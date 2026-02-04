@@ -104,13 +104,19 @@ const MinerDashboardScreen = ({ navigation }: MinerDashboardScreenProps) => {
           <Avatar.Text size={50} label={user?.firstName?.charAt(0) || "M"} style={{ backgroundColor: theme.colors.primaryContainer, marginLeft: 'auto' }} color={theme.colors.primary} />
         </View>
 
-        {/* Action Grid (Quick Access) */}
         <View style={styles.actionGrid}>
           <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Production')}>
             <Surface style={[styles.actionIconSurface, { backgroundColor: theme.colors.primaryContainer }]} elevation={2}>
               <Icon name="pickaxe" size={28} color={theme.colors.primary} />
             </Surface>
             <Text style={styles.actionLabel}>Log Production</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('TimesheetList')}>
+            <Surface style={[styles.actionIconSurface, { backgroundColor: '#E3F2FD' }]} elevation={2}>
+              <Icon name="clock-outline" size={28} color="#1976D2" />
+            </Surface>
+            <Text style={styles.actionLabel}>Timesheets</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Sales')}>

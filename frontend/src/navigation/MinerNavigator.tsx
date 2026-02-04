@@ -19,6 +19,7 @@ import IncidentReportScreen from '../screens/miner/IncidentReportScreen';
 import SafetyChecklistScreen from '../screens/miner/SafetyChecklistScreen';
 import LoanPreparationScreen from '../screens/miner/LoanPreparationScreen';
 import FinancialMarketplaceScreen from '../screens/miner/FinancialMarketplaceScreen';
+import TimesheetListScreen from '../screens/miner/TimesheetListScreen';
 
 // Create navigators
 const Tab = createBottomTabNavigator();
@@ -38,6 +39,7 @@ const ProductionStack = () => (
     <Stack.Screen name="Production" component={ProductionScreen} options={{ title: 'Production' }} />
     <Stack.Screen name="ShiftLog" component={ShiftLogScreen} options={{ title: 'Log Daily Shift' }} />
     <Stack.Screen name="ShiftDetails" component={ShiftDetailsScreen} options={{ title: 'Shift Details' }} />
+    <Stack.Screen name="TimesheetList" component={TimesheetListScreen} options={{ title: 'Timesheets' }} />
   </Stack.Navigator>
 );
 

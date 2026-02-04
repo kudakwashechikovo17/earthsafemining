@@ -178,11 +178,8 @@ router.delete('/:orgId/members/:userId', authenticate, checkMembership(OrgRole.A
             }
         }
 
-        // Soft delete (set status to disabled)
-        membership.status = 'disabled';
-        // If schema is strictly 'active' | 'suspended' | 'pending', use deleteOne()
-        // Checking Membership.ts... assuming deleteOne for now to be safe or updating status if schema allows.
-        // Let's use findOneAndDelete for clean removal in this iteration.
+        // Create a separate endpoint for soft-delete/suspension if needed
+        // For 'Remove Member', we hard delete the membership record to allow re-joining later
         await Membership.findOneAndDelete({ orgId, userId });
 
         res.json({ message: 'Member removed successfully' });

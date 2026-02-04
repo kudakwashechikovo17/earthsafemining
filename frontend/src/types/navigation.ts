@@ -23,6 +23,8 @@ export type MinerStackParamList = {
   Loans: undefined;
   Profile: undefined;
   BuyersList: undefined;
+  TimesheetList: undefined;
+  ShiftDetails: { shiftId: string };
 };
 
 export type BuyerStackParamList = {
