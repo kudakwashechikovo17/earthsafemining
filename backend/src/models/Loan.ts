@@ -10,6 +10,15 @@ export enum LoanStatus {
   DEFAULTED = 'defaulted'
 }
 
+export enum LoanType {
+  EQUIPMENT = 'Equipment',
+  WORKING_CAPITAL = 'Working Capital',
+  SITE_DEVELOPMENT = 'Site Development',
+  INPUTS = 'Inputs',
+  PROCESSING = 'Processing',
+  OTHER = 'Other'
+}
+
 export interface ILoan extends Document {
   orgId: mongoose.Types.ObjectId;
   applicantId: mongoose.Types.ObjectId;

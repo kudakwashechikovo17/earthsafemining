@@ -72,19 +72,21 @@ router.get('/:orgId/timesheets', authenticate, checkMembership(OrgRole.ADMIN), a
  * @desc    Update a timesheet entry
  * @access  Private (Admin/Owner)
  */
-router.patch('/timesheets/:id', authenticate, async (req: any, res) => {
+router.patch('/timesheets/:id', authenticate, async (req: any, res): Promise<void> => {
     try {
         const { hoursWorked, ratePerShift, notes, status } = req.body;
 
         const timesheet = await Timesheet.findById(req.params.id);
         if (!timesheet) {
-            return res.status(404).json({ message: 'Timesheet not found' });
+            res.status(404).json({ message: 'Timesheet not found' });
+            return;
         }
 
         // Verify cleanup permissions
         const membership = await Membership.findOne({ userId: req.user.id, orgId: timesheet.orgId });
         if (!membership || (membership.role !== OrgRole.ADMIN && membership.role !== OrgRole.OWNER)) {
-            return res.status(403).json({ message: 'Not authorized to edit timesheets' });
+            res.status(403).json({ message: 'Not authorized to edit timesheets' });
+            return;
         }
 
         if (hoursWorked !== undefined) timesheet.hoursWorked = hoursWorked;
@@ -116,16 +118,18 @@ router.patch('/timesheets/:id', authenticate, async (req: any, res) => {
  * @desc    Delete a timesheet
  * @access  Private (Admin/Owner)
  */
-router.delete('/timesheets/:id', authenticate, async (req: any, res) => {
+router.delete('/timesheets/:id', authenticate, async (req: any, res): Promise<void> => {
     try {
         const timesheet = await Timesheet.findById(req.params.id);
         if (!timesheet) {
-            return res.status(404).json({ message: 'Timesheet not found' });
+            res.status(404).json({ message: 'Timesheet not found' });
+            return;
         }
 
         const membership = await Membership.findOne({ userId: req.user.id, orgId: timesheet.orgId });
         if (!membership || (membership.role !== OrgRole.ADMIN && membership.role !== OrgRole.OWNER)) {
-            return res.status(403).json({ message: 'Not authorized to delete timesheets' });
+            res.status(403).json({ message: 'Not authorized to delete timesheets' });
+            return;
         }
 
         await timesheet.deleteOne();
