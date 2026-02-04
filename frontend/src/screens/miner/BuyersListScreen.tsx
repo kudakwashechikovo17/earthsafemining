@@ -46,32 +46,82 @@ const BuyersListScreen: React.FC<BuyersListScreenProps> = ({ navigation }) => {
   const [selectedBuyer, setSelectedBuyer] = useState<any>(null);
   const [sellModalVisible, setSellModalVisible] = useState(false);
 
+  // Mock Data for Demo fallback
+  const MOCK_BUYERS = [
+    {
+      _id: 'mock-1',
+      name: 'Fidelity Printers (Govt)',
+      type: 'government',
+      pricePerGram: 67.50,
+      previousPrice: 65.00,
+      rating: 4.8,
+      reviewCount: 124,
+      paymentTime: 'Instant',
+      distance: '5km',
+      bonuses: ['USD Cash Guarantee', 'Low Tax Rate'],
+      verified: true
+    },
+    {
+      _id: 'mock-2',
+      name: 'Aurum Byo Private Ltd',
+      type: 'private',
+      pricePerGram: 66.20,
+      previousPrice: 66.50,
+      rating: 4.2,
+      reviewCount: 45,
+      paymentTime: '24 Hours',
+      distance: '12km',
+      bonuses: ['Transport Provided'],
+      verified: true
+    },
+    {
+      _id: 'mock-3',
+      name: 'Bulawayo Gold Centre',
+      type: 'private',
+      pricePerGram: 65.80,
+      previousPrice: 65.80,
+      rating: 3.9,
+      reviewCount: 28,
+      paymentTime: 'Same Day',
+      distance: '8km',
+      bonuses: [],
+      verified: true
+    }
+  ];
+
   useEffect(() => {
     fetchBuyers();
   }, []);
 
   const fetchBuyers = async () => {
     try {
-      const data = await apiService.getBuyers();
-      // Transform backend data to UI format if needed, or use directly
-      // Enhancing with mock ratings for UI demo purposes since backend doesn't have it yet
+      let data = await apiService.getBuyers();
+
+      // FALLBACK TO MOCK DATA IF EMPTY (FOR DEMO)
+      if (!data || data.length === 0) {
+        console.log('No buyers found, using mock data');
+        data = MOCK_BUYERS;
+      }
+
       const enhancedData = data.map((b: any) => ({
         ...b,
         id: b._id,
-        // Mock type for demo purposes until backend supports sub-types
-        type: Math.random() > 0.3 ? 'private' : 'government',
-        pricePerGram: 65.50 + Math.random(),
-        previousPrice: 65.00,
-        rating: (4 + Math.random()).toFixed(1),
-        reviewCount: Math.floor(Math.random() * 100) + 10,
-        paymentTime: 'Same day',
-        distance: 'Local',
-        bonuses: [],
-        verified: true
+        // Use existing type if valid, otherwise mock
+        type: (b.type === 'government' || b.type === 'private') ? b.type : (Math.random() > 0.3 ? 'private' : 'government'),
+        pricePerGram: b.pricePerGram || (65.50 + Math.random()),
+        previousPrice: b.previousPrice || 65.00,
+        rating: b.rating || (4 + Math.random()).toFixed(1),
+        reviewCount: b.reviewCount || (Math.floor(Math.random() * 100) + 10),
+        paymentTime: b.paymentTime || 'Same day',
+        distance: b.distance || 'Local',
+        bonuses: b.bonuses || [],
+        verified: b.verified !== undefined ? b.verified : true
       }));
       setBuyers(enhancedData);
     } catch (error) {
       console.error('Failed to fetch buyers', error);
+      // Fallback to mock on error too
+      setBuyers(MOCK_BUYERS.map(b => ({ ...b, id: b._id })));
     } finally {
       setLoading(false);
     }
@@ -146,13 +196,6 @@ const BuyersListScreen: React.FC<BuyersListScreenProps> = ({ navigation }) => {
             </TouchableOpacity>
           )}
         </View>
-
-        {/* DEBUG INFO */}
-        <Surface style={{ padding: 8, backgroundColor: '#FFEBEE', marginBottom: 8, borderRadius: 4 }}>
-          <Text style={{ fontSize: 10, color: '#C62828' }}>
-            DEBUG: v1.2 | Filter: {filterValue} | Count: {filteredBuyers.length} | Total: {buyers.length}
-          </Text>
-        </Surface>
 
         <View style={styles.filterButtonsContainer}>
           <Button
