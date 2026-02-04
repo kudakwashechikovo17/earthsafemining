@@ -225,6 +225,17 @@ const SalesScreen = ({ route }: any) => {
           </View>
         </Surface>
 
+        {/* Marketplace Link */}
+        <Button
+          mode="contained-tonal"
+          icon="store-search"
+          onPress={() => navigation.navigate('BuyersList' as any)}
+          style={{ marginBottom: 24, borderColor: theme.colors.tertiary, borderWidth: 1 }}
+          textColor={theme.colors.tertiary}
+        >
+          Find Buyers in Marketplace
+        </Button>
+
         {/* Transactions List */}
         <Text variant="titleMedium" style={{ fontWeight: 'bold', marginBottom: 12, marginLeft: 4 }}>Recent Sales</Text>
 
