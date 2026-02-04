@@ -57,19 +57,20 @@ const BuyersListScreen: React.FC<BuyersListScreenProps> = ({ navigation }) => {
       const enhancedData = data.map((b: any) => ({
         ...b,
         id: b._id,
-        pricePerGram: 65.50 + Math.random(), // Mock live price
+        // Mock type for demo purposes until backend supports sub-types
+        type: Math.random() > 0.3 ? 'private' : 'government',
+        pricePerGram: 65.50 + Math.random(),
         previousPrice: 65.00,
         rating: (4 + Math.random()).toFixed(1),
         reviewCount: Math.floor(Math.random() * 100) + 10,
         paymentTime: 'Same day',
         distance: 'Local',
         bonuses: [],
-        verified: true // Assume listed buyers are verified
+        verified: true
       }));
       setBuyers(enhancedData);
     } catch (error) {
       console.error('Failed to fetch buyers', error);
-      // Fallback to empty or error state
     } finally {
       setLoading(false);
     }
@@ -81,10 +82,8 @@ const BuyersListScreen: React.FC<BuyersListScreenProps> = ({ navigation }) => {
     .filter(buyer => buyer.name.toLowerCase().includes(searchQuery.toLowerCase()))
     .filter(buyer => {
       if (filterValue === 'all') return true;
-      // Backend type mapping: 'buyer' might be generic, 
-      // but let's assume filtering relies on backend Type or just show all for now.
-      // Since all fetched are 'buyer' type.
-      return true;
+      if (filterValue === 'verified') return buyer.verified;
+      return buyer.type === filterValue;
     });
 
   const getPriceChangeColor = (current: number, previous: number): string => {
