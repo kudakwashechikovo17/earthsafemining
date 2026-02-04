@@ -82,7 +82,7 @@ const LoanPreparationScreen = () => {
                 <View style={styles.header}>
                     <Title style={styles.title}>Loan Readiness</Title>
                     <Text style={styles.subtitle}>
-                        Before accessing the financial marketplace, let's make sure you are ready for success.
+                        Before accessing the financial marketplace, let's make sure you are ready for success. (v1.3)
                     </Text>
                 </View>
 
