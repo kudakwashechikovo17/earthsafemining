@@ -119,6 +119,22 @@ const ProductionScreen = () => {
           </Card.Content>
         </Card>
 
+        {/* Quick Access Buttons */}
+        <View style={styles.quickAccessContainer}>
+          <Card style={styles.quickAccessCard} onPress={() => (navigation as any).navigate('Equipment')}>
+            <Card.Content style={styles.quickAccessContent}>
+              <Avatar.Icon size={40} icon="tools" style={{ backgroundColor: '#1976D2' }} />
+              <Text style={styles.quickAccessText}>Equipment</Text>
+            </Card.Content>
+          </Card>
+          <Card style={styles.quickAccessCard} onPress={() => (navigation as any).navigate('TimesheetList')}>
+            <Card.Content style={styles.quickAccessContent}>
+              <Avatar.Icon size={40} icon="clock-outline" style={{ backgroundColor: '#F57C00' }} />
+              <Text style={styles.quickAccessText}>Timesheets</Text>
+            </Card.Content>
+          </Card>
+        </View>
+
         {/* Recent Shifts List */}
         <Card style={styles.card}>
           <Card.Content>
@@ -218,6 +234,26 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: '#2E7D32',
+  },
+  quickAccessContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginHorizontal: 8,
+    marginBottom: 8,
+  },
+  quickAccessCard: {
+    flex: 1,
+    marginHorizontal: 4,
+    elevation: 2,
+  },
+  quickAccessContent: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  quickAccessText: {
+    marginTop: 8,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 
