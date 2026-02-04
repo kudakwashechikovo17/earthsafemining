@@ -252,6 +252,27 @@ export const apiService = {
     return response.data;
   },
 
+  // Equipment
+  getEquipment: async (orgId: string) => {
+    const response = await api.get(`/orgs/${orgId}/equipment`);
+    return response.data;
+  },
+
+  addEquipment: async (orgId: string, data: any) => {
+    const response = await api.post(`/orgs/${orgId}/equipment`, data);
+    return response.data;
+  },
+
+  updateEquipment: async (orgId: string, equipmentId: string, data: any) => {
+    const response = await api.patch(`/orgs/${orgId}/equipment/${equipmentId}`, data);
+    return response.data;
+  },
+
+  deleteEquipment: async (orgId: string, equipmentId: string) => {
+    const response = await api.delete(`/orgs/${orgId}/equipment/${equipmentId}`);
+    return response.data;
+  },
+
   // Generic Helpers (for direct access to new routes)
   get: async (url: string) => {
     return api.get(url); // Returns full response object to keep consistency with usage
