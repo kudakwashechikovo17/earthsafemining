@@ -58,8 +58,8 @@ const LoanPreparationScreen = () => {
         }
     };
 
-    const allChecksPassed = Object.values(checks).every(Boolean);
-    const canProceed = allChecksPassed && consent;
+    // Relaxed Logic: Can proceed if they consent, even if checks fail (User Request)
+    const canProceed = consent;
 
     const navigateToMarketplace = () => {
         navigation.navigate('FinancialMarketplace' as never);
@@ -82,49 +82,48 @@ const LoanPreparationScreen = () => {
                 <View style={styles.header}>
                     <Title style={styles.title}>Loan Readiness</Title>
                     <Text style={styles.subtitle}>
-                        Before accessing the financial marketplace, let's make sure you are ready for success. (v1.3)
+                        Review your status below. You can browse offers now, but approval depends on these criteria. (v1.4)
                     </Text>
                 </View>
 
                 {/* Checklist Card */}
                 <Card style={styles.card}>
                     <Card.Content>
-                        <Title>Requirements</Title>
+                        <Title>Readiness Status</Title>
 
                         <List.Item
                             title="Profile & Identity Verified"
-                            description={checks.profileComplete ? "Verified" : "Missing Details (Name/Email)"}
+                            description={checks.profileComplete ? "Verified" : "Action Required: Update Profile"}
                             left={props => <Icon name={checks.profileComplete ? "check-circle" : "alert-circle"} size={24} color={checks.profileComplete ? "green" : "orange"} style={styles.icon} />}
                         />
                         <Divider />
                         <List.Item
                             title="Production & Sales Data"
-                            description={checks.productionData ? "Data Stream Active" : "No sales history found"}
-                            left={props => <Icon name={checks.productionData ? "chart-line" : "clock-alert"} size={24} color={checks.productionData ? "green" : "orange"} style={styles.icon} />}
+                            description={checks.productionData ? "Data Stream Active" : "Recommendation: Record more sales"}
+                            left={props => <Icon name={checks.productionData ? "chart-line" : "information"} size={24} color={checks.productionData ? "green" : "#2196F3"} style={styles.icon} />}
                         />
                         <Divider />
                         <List.Item
                             title="Valid Mobile Money / Bank"
-                            description={checks.walletActive ? "Connected (Phone)" : "Add Contact Phone"}
-                            left={props => <Icon name={checks.walletActive ? "wallet" : "credit-card-off"} size={24} color={checks.walletActive ? "green" : "orange"} style={styles.icon} />}
+                            description={checks.walletActive ? "Connected (Phone)" : "Action Required: Add Phone Details"}
+                            left={props => <Icon name={checks.walletActive ? "wallet" : "alert-circle"} size={24} color={checks.walletActive ? "green" : "orange"} style={styles.icon} />}
                         />
                     </Card.Content>
                 </Card>
 
                 {/* Consent Card */}
-                <Card style={[styles.card, !allChecksPassed && { opacity: 0.7 }]}>
+                <Card style={styles.card}>
                     <Card.Content>
                         <View style={styles.consentRow}>
                             <View style={{ flex: 1 }}>
                                 <Title style={{ fontSize: 18 }}>Share Data Consent</Title>
                                 <Text style={styles.consentText}>
-                                    I agree to share my production and sales history with EarthSafe partner institutions to calculate my credit score.
+                                    I agree to share my production and sales history with EarthSafe partner institutions to calculate my credit score and view offers.
                                 </Text>
                             </View>
                             <Switch
                                 value={consent}
                                 onValueChange={setConsent}
-                                disabled={!allChecksPassed}
                                 trackColor={{ false: "#767577", true: "#2E7D32" }}
                             />
                         </View>
@@ -141,12 +140,12 @@ const LoanPreparationScreen = () => {
                         icon="lock-open"
                         contentStyle={{ height: 50 }}
                     >
-                        {canProceed ? "Unlock Marketplace" : "Complete Steps Above"}
+                        {canProceed ? "View Financial Offers" : "Accept Consent to Proceed"}
                     </Button>
 
                     {!canProceed && (
                         <Text style={{ textAlign: 'center', marginTop: 10, color: '#666' }}>
-                            Complete all requirements to view offers.
+                            Enable the consent switch above to browse the marketplace.
                         </Text>
                     )}
                 </View>
