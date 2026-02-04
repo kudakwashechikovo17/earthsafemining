@@ -185,6 +185,22 @@ const LoansScreen = ({ route }: any) => {
           </Card.Content>
         </Card>
 
+        {/* Quick Access Buttons */}
+        <View style={styles.quickAccessContainer}>
+          <Card style={styles.quickAccessCard} onPress={() => (navigation as any).navigate('Expenses')}>
+            <Card.Content style={styles.quickAccessContent}>
+              <Icon name="receipt" size={32} color="#D32F2F" />
+              <Text style={styles.quickAccessText}>Expenses</Text>
+            </Card.Content>
+          </Card>
+          <Card style={styles.quickAccessCard} onPress={() => (navigation as any).navigate('LoanPreparation')}>
+            <Card.Content style={styles.quickAccessContent}>
+              <Icon name="check-circle" size={32} color="#2E7D32" />
+              <Text style={styles.quickAccessText}>Get Loan Ready</Text>
+            </Card.Content>
+          </Card>
+        </View>
+
         {/* Active Loans Card */}
         <Card style={styles.card}>
           <Card.Content>
