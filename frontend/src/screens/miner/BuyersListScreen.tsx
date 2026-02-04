@@ -10,7 +10,8 @@ import {
   Modal,
   Paragraph,
   ActivityIndicator,
-  Avatar
+  Avatar,
+  Surface
 } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -145,6 +146,13 @@ const BuyersListScreen: React.FC<BuyersListScreenProps> = ({ navigation }) => {
             </TouchableOpacity>
           )}
         </View>
+
+        {/* DEBUG INFO */}
+        <Surface style={{ padding: 8, backgroundColor: '#FFEBEE', marginBottom: 8, borderRadius: 4 }}>
+          <Text style={{ fontSize: 10, color: '#C62828' }}>
+            DEBUG: v1.2 | Filter: {filterValue} | Count: {filteredBuyers.length} | Total: {buyers.length}
+          </Text>
+        </Surface>
 
         <View style={styles.filterButtonsContainer}>
           <Button
