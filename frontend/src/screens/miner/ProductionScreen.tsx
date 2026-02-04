@@ -127,9 +127,15 @@ const ProductionScreen = () => {
               <Text style={styles.quickAccessText}>Equipment</Text>
             </Card.Content>
           </Card>
+          <Card style={styles.quickAccessCard} onPress={() => (navigation as any).navigate('Inventory')}>
+            <Card.Content style={styles.quickAccessContent}>
+              <Avatar.Icon size={40} icon="package-variant" style={{ backgroundColor: '#F57C00' }} />
+              <Text style={styles.quickAccessText}>Inventory</Text>
+            </Card.Content>
+          </Card>
           <Card style={styles.quickAccessCard} onPress={() => (navigation as any).navigate('TimesheetList')}>
             <Card.Content style={styles.quickAccessContent}>
-              <Avatar.Icon size={40} icon="clock-outline" style={{ backgroundColor: '#F57C00' }} />
+              <Avatar.Icon size={40} icon="clock-outline" style={{ backgroundColor: '#7B1FA2' }} />
               <Text style={styles.quickAccessText}>Timesheets</Text>
             </Card.Content>
           </Card>

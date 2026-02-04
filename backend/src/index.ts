@@ -26,6 +26,10 @@ import loanRoutes from './routes/loanRoutes';
 import timesheetRoutes from './routes/timesheetRoutes';
 import complianceDocumentRoutes from './routes/complianceDocumentRoutes';
 import equipmentRoutes from './routes/equipmentRoutes';
+import expenseRoutes from './routes/expenseRoutes';
+import receiptRoutes from './routes/receiptRoutes';
+import inventoryRoutes from './routes/inventoryRoutes';
+import loanRepaymentRoutes from './routes/loanRepaymentRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -54,6 +58,11 @@ app.use('/api/orgs', salesRoutes); // Base route involves orgs
 app.use('/api/orgs', complianceRoutes);
 app.use('/api/orgs', complianceDocumentRoutes); // NEW: Compliance documents
 app.use('/api/orgs', equipmentRoutes); // NEW: Equipment tracking
+app.use('/api/orgs', expenseRoutes); // NEW: Expense tracking
+app.use('/api/orgs', receiptRoutes); // NEW: Receipt management
+app.use('/api/orgs', inventoryRoutes); // NEW: Inventory management
+app.use('/api/orgs', loanRepaymentRoutes); // NEW: Loan repayments
+app.use('/api/orgs', timesheetRoutes); // Timesheet management
 app.use('/api/orgs', loanRoutes);
 app.use('/api/orgs', orgRoutes); // Generic org routes last
 

@@ -273,6 +273,90 @@ export const apiService = {
     return response.data;
   },
 
+  // Expenses
+  getExpenses: async (orgId: string) => {
+    const response = await api.get(`/orgs/${orgId}/expenses`);
+    return response.data;
+  },
+
+  addExpense: async (orgId: string, data: any) => {
+    const response = await api.post(`/orgs/${orgId}/expenses`, data);
+    return response.data;
+  },
+
+  updateExpense: async (orgId: string, expenseId: string, data: any) => {
+    const response = await api.patch(`/orgs/${orgId}/expenses/${expenseId}`, data);
+    return response.data;
+  },
+
+  deleteExpense: async (orgId: string, expenseId: string) => {
+    const response = await api.delete(`/orgs/${orgId}/expenses/${expenseId}`);
+    return response.data;
+  },
+
+  // Receipts
+  getReceipts: async (orgId: string) => {
+    const response = await api.get(`/orgs/${orgId}/receipts`);
+    return response.data;
+  },
+
+  addReceipt: async (orgId: string, data: any) => {
+    const response = await api.post(`/orgs/${orgId}/receipts`, data);
+    return response.data;
+  },
+
+  updateReceipt: async (orgId: string, receiptId: string, data: any) => {
+    const response = await api.patch(`/orgs/${orgId}/receipts/${receiptId}`, data);
+    return response.data;
+  },
+
+  deleteReceipt: async (orgId: string, receiptId: string) => {
+    const response = await api.delete(`/orgs/${orgId}/receipts/${receiptId}`);
+    return response.data;
+  },
+
+  // Inventory
+  getInventory: async (orgId: string) => {
+    const response = await api.get(`/orgs/${orgId}/inventory`);
+    return response.data;
+  },
+
+  addInventoryItem: async (orgId: string, data: any) => {
+    const response = await api.post(`/orgs/${orgId}/inventory`, data);
+    return response.data;
+  },
+
+  updateInventoryItem: async (orgId: string, itemId: string, data: any) => {
+    const response = await api.patch(`/orgs/${orgId}/inventory/${itemId}`, data);
+    return response.data;
+  },
+
+  deleteInventoryItem: async (orgId: string, itemId: string) => {
+    const response = await api.delete(`/orgs/${orgId}/inventory/${itemId}`);
+    return response.data;
+  },
+
+  // Loan Repayments
+  getLoanRepayments: async (orgId: string, loanId: string) => {
+    const response = await api.get(`/orgs/${orgId}/loans/${loanId}/repayments`);
+    return response.data;
+  },
+
+  addLoanRepayment: async (orgId: string, loanId: string, data: any) => {
+    const response = await api.post(`/orgs/${orgId}/loans/${loanId}/repayments`, data);
+    return response.data;
+  },
+
+  updateLoanRepayment: async (orgId: string, repaymentId: string, data: any) => {
+    const response = await api.patch(`/orgs/${orgId}/repayments/${repaymentId}`, data);
+    return response.data;
+  },
+
+  deleteLoanRepayment: async (orgId: string, repaymentId: string) => {
+    const response = await api.delete(`/orgs/${orgId}/repayments/${repaymentId}`);
+    return response.data;
+  },
+
   // Generic Helpers (for direct access to new routes)
   get: async (url: string) => {
     return api.get(url); // Returns full response object to keep consistency with usage
