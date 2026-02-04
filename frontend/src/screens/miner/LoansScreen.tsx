@@ -461,6 +461,27 @@ const styles = StyleSheet.create({
   modalButton: {
     marginLeft: 8,
   },
+  quickAccessContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginHorizontal: 8,
+    marginBottom: 16,
+  },
+  quickAccessCard: {
+    flex: 1,
+    marginHorizontal: 4,
+    elevation: 2,
+  },
+  quickAccessContent: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  quickAccessText: {
+    marginTop: 8,
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
 });
 
-export default LoansScreen; 
+export default LoansScreen;
