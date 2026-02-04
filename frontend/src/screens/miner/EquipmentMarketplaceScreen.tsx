@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { Card, Title, Text, Button, Chip, Searchbar } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { Card, Title, Text, Button, Chip, Searchbar, Portal, Modal, TextInput, List, Divider } from 'react-native-paper';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
 
-// Mock equipment listings (in production, this would come from backend)
+// Mock equipment listings
 const EQUIPMENT_LISTINGS = [
     {
         id: '1',
@@ -64,8 +66,33 @@ const EQUIPMENT_LISTINGS = [
 ];
 
 const EquipmentMarketplaceScreen = () => {
+    const { user, currentOrg } = useSelector((state: RootState) => state.auth);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedType, setSelectedType] = useState<string | null>(null);
+
+    // Modal states
+    const [quoteModalVisible, setQuoteModalVisible] = useState(false);
+    const [financingModalVisible, setFinancingModalVisible] = useState(false);
+    const [selectedEquipment, setSelectedEquipment] = useState<any>(null);
+
+    // Form states
+    const [quoteForm, setQuoteForm] = useState({
+        quantity: '1',
+        deliveryDate: '',
+        notes: '',
+    });
+
+    const [financingForm, setFinancingForm] = useState({
+        requestedAmount: '',
+        leaseTerm: '36',
+        downPayment: '',
+        purpose: '',
+    });
+
+    // Submitted requests
+    const [quoteRequests, setQuoteRequests] = useState<any[]>([]);
+    const [financingApplications, setFinancingApplications] = useState<any[]>([]);
+    const [showRequests, setShowRequests] = useState(false);
 
     const filteredEquipment = EQUIPMENT_LISTINGS.filter((item) => {
         const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -91,6 +118,67 @@ const EquipmentMarketplaceScreen = () => {
         }
     };
 
+    // Handle Request Quote
+    const handleRequestQuote = (equipment: any) => {
+        setSelectedEquipment(equipment);
+        setQuoteForm({ quantity: '1', deliveryDate: '', notes: '' });
+        setQuoteModalVisible(true);
+    };
+
+    const submitQuote = () => {
+        if (!quoteForm.quantity || !quoteForm.deliveryDate) {
+            Alert.alert('Error', 'Please fill in all required fields');
+            return;
+        }
+
+        const newRequest = {
+            id: Date.now().toString(),
+            equipment: selectedEquipment,
+            ...quoteForm,
+            requestedBy: user?.firstName + ' ' + user?.lastName,
+            organization: currentOrg?.name,
+            status: 'Pending',
+            submittedAt: new Date().toISOString(),
+        };
+
+        setQuoteRequests([...quoteRequests, newRequest]);
+        setQuoteModalVisible(false);
+        Alert.alert('Success', 'Quote request submitted successfully!');
+    };
+
+    // Handle Apply for Financing
+    const handleApplyFinancing = (equipment: any) => {
+        setSelectedEquipment(equipment);
+        setFinancingForm({
+            requestedAmount: equipment.purchasePrice.toString(),
+            leaseTerm: '36',
+            downPayment: '',
+            purpose: '',
+        });
+        setFinancingModalVisible(true);
+    };
+
+    const submitFinancing = () => {
+        if (!financingForm.requestedAmount || !financingForm.purpose) {
+            Alert.alert('Error', 'Please fill in all required fields');
+            return;
+        }
+
+        const newApplication = {
+            id: Date.now().toString(),
+            equipment: selectedEquipment,
+            ...financingForm,
+            applicant: user?.firstName + ' ' + user?.lastName,
+            organization: currentOrg?.name,
+            status: 'Under Review',
+            submittedAt: new Date().toISOString(),
+        };
+
+        setFinancingApplications([...financingApplications, newApplication]);
+        setFinancingModalVisible(false);
+        Alert.alert('Success', 'Financing application submitted successfully!');
+    };
+
     return (
         <ScreenWrapper>
             <ScrollView style={styles.container}>
@@ -100,6 +188,46 @@ const EquipmentMarketplaceScreen = () => {
                         Browse equipment for purchase or lease with flexible financing options
                     </Text>
                 </View>
+
+                {/* View Requests Button */}
+                {(quoteRequests.length > 0 || financingApplications.length > 0) && (
+                    <Button
+                        mode="outlined"
+                        icon="clipboard-list"
+                        onPress={() => setShowRequests(!showRequests)}
+                        style={{ marginBottom: 12 }}
+                    >
+                        {showRequests ? 'Hide' : 'View'} My Requests ({quoteRequests.length + financingApplications.length})
+                    </Button>
+                )}
+
+                {/* Show Submitted Requests */}
+                {showRequests && (
+                    <Card style={styles.requestsCard}>
+                        <Card.Content>
+                            <Title>My Requests</Title>
+                            <Divider style={{ marginVertical: 8 }} />
+
+                            {quoteRequests.map((req) => (
+                                <List.Item
+                                    key={req.id}
+                                    title={`Quote: ${req.equipment.name}`}
+                                    description={`Qty: ${req.quantity} | Status: ${req.status}`}
+                                    left={props => <List.Icon {...props} icon="file-document" />}
+                                />
+                            ))}
+
+                            {financingApplications.map((app) => (
+                                <List.Item
+                                    key={app.id}
+                                    title={`Financing: ${app.equipment.name}`}
+                                    description={`Amount: ${formatCurrency(parseInt(app.requestedAmount))} | Status: ${app.status}`}
+                                    left={props => <List.Icon {...props} icon="bank" />}
+                                />
+                            ))}
+                        </Card.Content>
+                    </Card>
+                )}
 
                 {/* Search Bar */}
                 <Searchbar
@@ -207,14 +335,14 @@ const EquipmentMarketplaceScreen = () => {
                                     <Button
                                         mode="outlined"
                                         style={{ flex: 1, marginRight: 8 }}
-                                        onPress={() => { }}
+                                        onPress={() => handleRequestQuote(item)}
                                     >
                                         Request Quote
                                     </Button>
                                     <Button
                                         mode="contained"
                                         style={{ flex: 1, backgroundColor: '#2E7D32' }}
-                                        onPress={() => { }}
+                                        onPress={() => handleApplyFinancing(item)}
                                     >
                                         Apply for Financing
                                     </Button>
@@ -226,6 +354,126 @@ const EquipmentMarketplaceScreen = () => {
 
                 <View style={{ height: 20 }} />
             </ScrollView>
+
+            {/* Quote Request Modal */}
+            <Portal>
+                <Modal
+                    visible={quoteModalVisible}
+                    onDismiss={() => setQuoteModalVisible(false)}
+                    contentContainerStyle={styles.modal}
+                >
+                    <ScrollView>
+                        <Title>Request Quote</Title>
+                        {selectedEquipment && (
+                            <Text style={{ marginBottom: 16, color: '#666' }}>
+                                {selectedEquipment.name} - {selectedEquipment.provider}
+                            </Text>
+                        )}
+
+                        <TextInput
+                            label="Quantity *"
+                            value={quoteForm.quantity}
+                            onChangeText={(text) => setQuoteForm({ ...quoteForm, quantity: text })}
+                            keyboardType="numeric"
+                            mode="outlined"
+                            style={styles.input}
+                        />
+
+                        <TextInput
+                            label="Desired Delivery Date (YYYY-MM-DD) *"
+                            value={quoteForm.deliveryDate}
+                            onChangeText={(text) => setQuoteForm({ ...quoteForm, deliveryDate: text })}
+                            mode="outlined"
+                            placeholder="2024-06-15"
+                            style={styles.input}
+                        />
+
+                        <TextInput
+                            label="Additional Notes"
+                            value={quoteForm.notes}
+                            onChangeText={(text) => setQuoteForm({ ...quoteForm, notes: text })}
+                            mode="outlined"
+                            multiline
+                            numberOfLines={3}
+                            style={styles.input}
+                        />
+
+                        <View style={styles.modalButtons}>
+                            <Button mode="outlined" onPress={() => setQuoteModalVisible(false)} style={{ marginRight: 8 }}>
+                                Cancel
+                            </Button>
+                            <Button mode="contained" onPress={submitQuote} style={{ backgroundColor: '#2E7D32' }}>
+                                Submit Request
+                            </Button>
+                        </View>
+                    </ScrollView>
+                </Modal>
+            </Portal>
+
+            {/* Financing Application Modal */}
+            <Portal>
+                <Modal
+                    visible={financingModalVisible}
+                    onDismiss={() => setFinancingModalVisible(false)}
+                    contentContainerStyle={styles.modal}
+                >
+                    <ScrollView>
+                        <Title>Apply for Financing</Title>
+                        {selectedEquipment && (
+                            <Text style={{ marginBottom: 16, color: '#666' }}>
+                                {selectedEquipment.name} - {formatCurrency(selectedEquipment.purchasePrice)}
+                            </Text>
+                        )}
+
+                        <TextInput
+                            label="Requested Amount *"
+                            value={financingForm.requestedAmount}
+                            onChangeText={(text) => setFinancingForm({ ...financingForm, requestedAmount: text })}
+                            keyboardType="numeric"
+                            mode="outlined"
+                            style={styles.input}
+                        />
+
+                        <TextInput
+                            label="Lease Term (months)"
+                            value={financingForm.leaseTerm}
+                            onChangeText={(text) => setFinancingForm({ ...financingForm, leaseTerm: text })}
+                            keyboardType="numeric"
+                            mode="outlined"
+                            style={styles.input}
+                        />
+
+                        <TextInput
+                            label="Down Payment"
+                            value={financingForm.downPayment}
+                            onChangeText={(text) => setFinancingForm({ ...financingForm, downPayment: text })}
+                            keyboardType="numeric"
+                            mode="outlined"
+                            style={styles.input}
+                        />
+
+                        <TextInput
+                            label="Purpose of Equipment *"
+                            value={financingForm.purpose}
+                            onChangeText={(text) => setFinancingForm({ ...financingForm, purpose: text })}
+                            mode="outlined"
+                            multiline
+                            numberOfLines={3}
+                            placeholder="e.g., Expanding mining operations"
+                            style={styles.input}
+                        />
+
+                        <View style={styles.modalButtons}>
+                            <Button mode="outlined" onPress={() => setFinancingModalVisible(false)} style={{ marginRight: 8 }}>
+                                Cancel
+                            </Button>
+                            <Button mode="contained" onPress={submitFinancing} style={{ backgroundColor: '#2E7D32' }}>
+                                Submit Application
+                            </Button>
+                        </View>
+                    </ScrollView>
+                </Modal>
+            </Portal>
         </ScreenWrapper>
     );
 };
@@ -247,6 +495,10 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#666',
         marginTop: 4,
+    },
+    requestsCard: {
+        marginBottom: 16,
+        elevation: 2,
     },
     searchBar: {
         marginBottom: 12,
@@ -348,6 +600,21 @@ const styles = StyleSheet.create({
     actionButtons: {
         flexDirection: 'row',
         marginTop: 8,
+    },
+    modal: {
+        backgroundColor: 'white',
+        padding: 20,
+        margin: 20,
+        borderRadius: 8,
+        maxHeight: '90%',
+    },
+    input: {
+        marginBottom: 12,
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        marginTop: 16,
     },
 });
 
