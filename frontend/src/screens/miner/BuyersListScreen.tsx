@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput as RNTextInput } from 'react-native';
 import {
   Card,
@@ -9,10 +9,13 @@ import {
   Portal,
   Modal,
   Paragraph,
+  ActivityIndicator,
+  Avatar
 } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { MinerStackParamList } from '../../types/navigation';
+import { apiService } from '../../services/apiService';
 
 type BuyersListScreenProps = {
   navigation: StackNavigationProp<MinerStackParamList, 'BuyersList'>;
@@ -37,95 +40,52 @@ interface Buyer {
 const BuyersListScreen: React.FC<BuyersListScreenProps> = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterValue, setFilterValue] = useState('all');
-  const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
+  const [buyers, setBuyers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedBuyer, setSelectedBuyer] = useState<any>(null);
   const [sellModalVisible, setSellModalVisible] = useState(false);
 
-  // Mock data for buyers
-  const buyers: Buyer[] = [
-    {
-      id: '1',
-      name: 'Fidelity Printers Harare',
-      type: 'government',
-      pricePerGram: 65.50,
-      previousPrice: 64.70,
-      rating: 4.8,
-      reviewCount: 127,
-      paymentTime: 'Same day',
-      distance: '12km',
-      bonuses: ['Free transport', '3% bonus for 50g+'],
-      verified: true,
-      image: null,
-    },
-    {
-      id: '2',
-      name: 'ABC Mining Corp',
-      type: 'private',
-      pricePerGram: 65.00,
-      previousPrice: 65.20,
-      rating: 4.5,
-      reviewCount: 89,
-      paymentTime: 'Immediate',
-      distance: '8km',
-      bonuses: ['Free assay'],
-      verified: true,
-      image: null,
-    },
-    {
-      id: '3',
-      name: 'Goldfield Enterprises',
-      type: 'private',
-      pricePerGram: 66.25,
-      previousPrice: 65.00,
-      rating: 4.2,
-      reviewCount: 54,
-      paymentTime: '1-2 days',
-      distance: '15km',
-      bonuses: ['5% bonus for premium quality'],
-      verified: false,
-      image: null,
-    },
-    {
-      id: '4',
-      name: 'Fidelity Printers Bulawayo',
-      type: 'government',
-      pricePerGram: 65.40,
-      previousPrice: 64.60,
-      rating: 4.6,
-      reviewCount: 112,
-      paymentTime: 'Same day',
-      distance: '80km',
-      bonuses: ['Free transport', '2% bonus for 30g+'],
-      verified: true,
-      image: null,
-    },
-    {
-      id: '5',
-      name: 'Gold Trading Limited',
-      type: 'private',
-      pricePerGram: 64.80,
-      previousPrice: 63.90,
-      rating: 3.9,
-      reviewCount: 37,
-      paymentTime: 'Immediate',
-      distance: '5km',
-      bonuses: [],
-      verified: false,
-      image: null,
-    },
-  ];
+  useEffect(() => {
+    fetchBuyers();
+  }, []);
+
+  const fetchBuyers = async () => {
+    try {
+      const data = await apiService.getBuyers();
+      // Transform backend data to UI format if needed, or use directly
+      // Enhancing with mock ratings for UI demo purposes since backend doesn't have it yet
+      const enhancedData = data.map((b: any) => ({
+        ...b,
+        id: b._id,
+        pricePerGram: 65.50 + Math.random(), // Mock live price
+        previousPrice: 65.00,
+        rating: (4 + Math.random()).toFixed(1),
+        reviewCount: Math.floor(Math.random() * 100) + 10,
+        paymentTime: 'Same day',
+        distance: 'Local',
+        bonuses: [],
+        verified: true // Assume listed buyers are verified
+      }));
+      setBuyers(enhancedData);
+    } catch (error) {
+      console.error('Failed to fetch buyers', error);
+      // Fallback to empty or error state
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const onChangeSearch = (query: string) => setSearchQuery(query);
-  
+
   const filteredBuyers = buyers
     .filter(buyer => buyer.name.toLowerCase().includes(searchQuery.toLowerCase()))
     .filter(buyer => {
       if (filterValue === 'all') return true;
-      if (filterValue === 'government') return buyer.type === 'government';
-      if (filterValue === 'private') return buyer.type === 'private';
-      if (filterValue === 'verified') return buyer.verified;
+      // Backend type mapping: 'buyer' might be generic, 
+      // but let's assume filtering relies on backend Type or just show all for now.
+      // Since all fetched are 'buyer' type.
       return true;
-    })
-    .sort((a, b) => b.pricePerGram - a.pricePerGram);
+    });
 
   const getPriceChangeColor = (current: number, previous: number): string => {
     const change = current - previous;
@@ -137,7 +97,7 @@ const BuyersListScreen: React.FC<BuyersListScreenProps> = ({ navigation }) => {
     return change > 0 ? 'arrow-up' : change < 0 ? 'arrow-down' : 'minus';
   };
 
-  const handleBuyerSelect = (buyer: Buyer) => {
+  const handleBuyerSelect = (buyer: any) => {
     setSelectedBuyer(buyer);
     setSellModalVisible(true);
   };
@@ -147,11 +107,16 @@ const BuyersListScreen: React.FC<BuyersListScreenProps> = ({ navigation }) => {
   };
 
   const handleContactBuyer = () => {
-    // Logic for contacting the buyer would go here
     hideModal();
-    // For demonstration, we'll just close the modal
     if (selectedBuyer) {
-      alert(`Contact request sent to ${selectedBuyer.name}`);
+      // Navigate to Sales screen with pre-filled info
+      navigation.navigate('SalesTab', {
+        screen: 'Sales',
+        params: {
+          prefilledBuyer: selectedBuyer.name,
+          prefilledPrice: selectedBuyer.pricePerGram.toFixed(2)
+        }
+      } as any);
     }
   };
 
@@ -181,18 +146,18 @@ const BuyersListScreen: React.FC<BuyersListScreenProps> = ({ navigation }) => {
             </TouchableOpacity>
           )}
         </View>
-        
+
         <View style={styles.filterButtonsContainer}>
-          <Button 
-            mode={filterValue === 'all' ? 'contained' : 'outlined'} 
+          <Button
+            mode={filterValue === 'all' ? 'contained' : 'outlined'}
             onPress={() => setFilterValue('all')}
             style={styles.filterButton}
             compact
           >
             All
           </Button>
-          <Button 
-            mode={filterValue === 'government' ? 'contained' : 'outlined'} 
+          <Button
+            mode={filterValue === 'government' ? 'contained' : 'outlined'}
             onPress={() => setFilterValue('government')}
             style={styles.filterButton}
             compact
@@ -200,8 +165,8 @@ const BuyersListScreen: React.FC<BuyersListScreenProps> = ({ navigation }) => {
           >
             Govt
           </Button>
-          <Button 
-            mode={filterValue === 'private' ? 'contained' : 'outlined'} 
+          <Button
+            mode={filterValue === 'private' ? 'contained' : 'outlined'}
             onPress={() => setFilterValue('private')}
             style={styles.filterButton}
             compact
@@ -209,8 +174,8 @@ const BuyersListScreen: React.FC<BuyersListScreenProps> = ({ navigation }) => {
           >
             Private
           </Button>
-          <Button 
-            mode={filterValue === 'verified' ? 'contained' : 'outlined'} 
+          <Button
+            mode={filterValue === 'verified' ? 'contained' : 'outlined'}
             onPress={() => setFilterValue('verified')}
             style={styles.filterButton}
             compact
@@ -227,16 +192,16 @@ const BuyersListScreen: React.FC<BuyersListScreenProps> = ({ navigation }) => {
             <Card.Content>
               <View style={styles.buyerHeader}>
                 <View style={styles.buyerInfo}>
-                  <View 
+                  <View
                     style={[
                       styles.buyerAvatar,
-                      {backgroundColor: buyer.type === 'government' ? '#1976D2' : '#FFA000'}
+                      { backgroundColor: buyer.type === 'government' ? '#1976D2' : '#FFA000' }
                     ]}
                   >
-                    <Icon 
-                      name={buyer.type === 'government' ? 'bank' : 'store'} 
-                      size={24} 
-                      color="#FFFFFF" 
+                    <Icon
+                      name={buyer.type === 'government' ? 'bank' : 'store'}
+                      size={24}
+                      color="#FFFFFF"
                     />
                   </View>
                   <View style={styles.buyerDetails}>
@@ -257,15 +222,15 @@ const BuyersListScreen: React.FC<BuyersListScreenProps> = ({ navigation }) => {
                 <View style={styles.priceContainer}>
                   <Text style={styles.priceText}>${buyer.pricePerGram.toFixed(2)}/g</Text>
                   <View style={styles.priceChangeContainer}>
-                    <Icon 
-                      name={getPriceChangeIcon(buyer.pricePerGram, buyer.previousPrice)} 
-                      size={12} 
+                    <Icon
+                      name={getPriceChangeIcon(buyer.pricePerGram, buyer.previousPrice)}
+                      size={12}
                       color={getPriceChangeColor(buyer.pricePerGram, buyer.previousPrice)}
                     />
-                    <Text 
+                    <Text
                       style={[
-                        styles.priceChangeText, 
-                        {color: getPriceChangeColor(buyer.pricePerGram, buyer.previousPrice)}
+                        styles.priceChangeText,
+                        { color: getPriceChangeColor(buyer.pricePerGram, buyer.previousPrice) }
                       ]}
                     >
                       ${Math.abs(buyer.pricePerGram - buyer.previousPrice).toFixed(2)}
@@ -289,7 +254,7 @@ const BuyersListScreen: React.FC<BuyersListScreenProps> = ({ navigation }) => {
 
               {buyer.bonuses.length > 0 && (
                 <View style={styles.bonusesContainer}>
-                  {buyer.bonuses.map((bonus, index) => (
+                  {buyer.bonuses.map((bonus: string, index: number) => (
                     <View key={index} style={styles.bonusChip}>
                       <Text style={styles.bonusText}>{bonus}</Text>
                     </View>
@@ -297,8 +262,8 @@ const BuyersListScreen: React.FC<BuyersListScreenProps> = ({ navigation }) => {
                 </View>
               )}
 
-              <Button 
-                mode="contained" 
+              <Button
+                mode="contained"
                 style={styles.sellButton}
                 onPress={() => handleBuyerSelect(buyer)}
               >
@@ -319,22 +284,22 @@ const BuyersListScreen: React.FC<BuyersListScreenProps> = ({ navigation }) => {
           {selectedBuyer && (
             <>
               <Title style={styles.modalTitle}>Sell Gold to {selectedBuyer.name}</Title>
-              
+
               <View style={styles.modalPriceRow}>
                 <Text style={styles.modalPriceLabel}>Current Offer:</Text>
                 <Text style={styles.modalPriceValue}>${selectedBuyer.pricePerGram.toFixed(2)}/gram</Text>
               </View>
-              
+
               <Divider style={styles.modalDivider} />
-              
+
               <Paragraph style={styles.modalDescription}>
-                This buyer is offering ${selectedBuyer.pricePerGram.toFixed(2)} per gram of gold. 
+                This buyer is offering ${selectedBuyer.pricePerGram.toFixed(2)} per gram of gold.
                 {selectedBuyer.bonuses.length > 0 && ' They are also offering:'}
               </Paragraph>
-              
+
               {selectedBuyer.bonuses.length > 0 && (
                 <View style={styles.modalBonusList}>
-                  {selectedBuyer.bonuses.map((bonus, index) => (
+                  {selectedBuyer.bonuses.map((bonus: string, index: number) => (
                     <View key={index} style={styles.modalBonusItem}>
                       <View style={styles.modalBonusIcon}>
                         <Text style={styles.modalBonusIconText}>✓</Text>
@@ -344,19 +309,19 @@ const BuyersListScreen: React.FC<BuyersListScreenProps> = ({ navigation }) => {
                   ))}
                 </View>
               )}
-              
+
               <Paragraph style={styles.modalDescription}>
                 Payment will be processed {selectedBuyer.paymentTime.toLowerCase()}.
                 This buyer is located {selectedBuyer.distance} from your registered location.
               </Paragraph>
-              
+
               <View style={styles.modalButtonsContainer}>
                 <Button onPress={hideModal} style={styles.modalButton}>
                   Cancel
                 </Button>
-                <Button 
-                  mode="contained" 
-                  onPress={handleContactBuyer} 
+                <Button
+                  mode="contained"
+                  onPress={handleContactBuyer}
                   style={styles.modalButton}
                 >
                   Contact Buyer

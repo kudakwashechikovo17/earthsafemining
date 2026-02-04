@@ -25,6 +25,7 @@ export type MinerStackParamList = {
   BuyersList: undefined;
   TimesheetList: undefined;
   ShiftDetails: { shiftId: string };
+  SalesTab: { screen: 'Sales', params?: { prefilledBuyer: string; prefilledPrice: string } };
 };
 
 export type BuyerStackParamList = {

@@ -25,7 +25,7 @@ import { RootState } from '../../store';
 import { apiService } from '../../services/apiService';
 import ScreenWrapper from '../../components/ScreenWrapper';
 
-const SalesScreen = () => {
+const SalesScreen = ({ route }: any) => {
   const theme = useTheme();
   const navigation = useNavigation();
   const { currentOrg } = useSelector((state: RootState) => state.auth);
@@ -43,6 +43,17 @@ const SalesScreen = () => {
   const [receiptNumber, setReceiptNumber] = useState('');
   const [notes, setNotes] = useState('');
   const [receiptImage, setReceiptImage] = useState<string | null>(null);
+
+  // Effect to handle params from Marketplace
+  useEffect(() => {
+    if (route.params?.prefilledBuyer) {
+      setBuyer(route.params.prefilledBuyer);
+      setVisible(true); // Open modal immediately
+    }
+    if (route.params?.prefilledPrice) {
+      setPricePerUnit(route.params.prefilledPrice);
+    }
+  }, [route.params]);
 
   const fetchSales = useCallback(async () => {
     if (!currentOrg) return;

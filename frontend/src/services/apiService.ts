@@ -104,6 +104,11 @@ export const apiService = {
     return response.data;
   },
 
+  getBuyers: async () => {
+    const response = await api.get('/orgs/buyers');
+    return response.data;
+  },
+
   // Dashboard
   getMinerDashboard: async () => {
     const response = await api.get('/miner/dashboard');

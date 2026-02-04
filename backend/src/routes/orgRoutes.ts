@@ -84,6 +84,22 @@ router.get('/my-orgs', authenticate, async (req: any, res) => {
 });
 
 /**
+ * @route   GET /api/orgs/buyers
+ * @desc    Get all organizations of type 'buyer'
+ * @access  Private
+ */
+router.get('/buyers', authenticate, async (req: any, res) => {
+    try {
+        const buyers = await Organization.find({ type: 'buyer', status: 'active' })
+            .select('name location contactEmail contactPhone country commodity type')
+            .sort({ name: 1 });
+        res.json(buyers);
+    } catch (error: any) {
+        res.status(500).json({ message: 'Server error retrieving buyers', error: error.message });
+    }
+});
+
+/**
  * @route   GET /api/orgs/:orgId
  * @desc    Get org details
  * @access  Private (Member only)
