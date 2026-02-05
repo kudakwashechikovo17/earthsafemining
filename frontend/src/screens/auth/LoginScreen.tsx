@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useDispatch } from 'react-redux';
 import { loginStart, loginSuccess, loginFailure } from '../../store/slices/authSlice';
-import { authAPI, LoginRequest } from '../../services/api';
+import { apiService } from '../../services/apiService';
 import ScreenWrapper from '../../components/ScreenWrapper';
 
 // Define navigation types
@@ -68,26 +68,17 @@ const LoginScreen = () => {
     dispatch(loginStart());
 
     try {
-      const credentials: LoginRequest = { email, password };
-      const response = await authAPI.login(credentials);
+      const response = await apiService.login(email, password);
 
       console.log('Login successful:', response);
       dispatch(loginSuccess(response.user));
     } catch (error: any) {
       console.error('Login error details:', JSON.stringify(error, null, 2));
-      if (error.response) {
-        console.error('Response data:', error.response.data);
-        console.error('Response status:', error.response.status);
-      } else if (error.request) {
-        console.error('No response received:', error.request);
-      } else {
-        console.error('Error message:', error.message);
-      }
 
       let errorMessage = 'An error occurred during login.';
 
       if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        errorMessage = 'Server connection timed out. The server might be waking up, please try again in a moment.';
+        errorMessage = 'Server connection timed out. The server might be waking up (Cold Start), please try again in 30 seconds.';
       } else if (error.response) {
         if (error.response.data?.message) {
           errorMessage = error.response.data.message;

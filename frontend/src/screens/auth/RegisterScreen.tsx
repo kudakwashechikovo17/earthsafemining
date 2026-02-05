@@ -4,7 +4,8 @@ import { Text, TextInput, Button, HelperText, RadioButton, Card, useTheme, Surfa
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { UserRole } from '../../store/slices/authSlice';
-import { authAPI, RegisterRequest } from '../../services/api';
+import { apiService } from '../../services/apiService';
+import { RegisterRequest } from '../../services/api'; // Keep type for now or redefine
 import ScreenWrapper from '../../components/ScreenWrapper';
 
 type AuthStackParamList = {
@@ -69,7 +70,7 @@ const RegisterScreen = () => {
         firstName, lastName, email, password, role, phone
       };
 
-      await authAPI.register(userData);
+      await apiService.register(userData);
 
       Alert.alert(
         'Account Created',

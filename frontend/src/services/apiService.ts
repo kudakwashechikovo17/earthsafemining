@@ -11,7 +11,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 60000, // 60 seconds timeout to handle Render cold starts
+  timeout: 120000, // 120 seconds timeout to handle Render cold starts
 });
 
 // Add token to requests
@@ -41,18 +41,35 @@ export const apiService = {
   },
 
   // Authentication
+  register: async (userData: any) => {
+    const response = await api.post('/users/register', userData);
+    if (response.data.token) {
+      await AsyncStorage.setItem('token', response.data.token);
+    }
+    return response.data;
+  },
+
   login: async (email: string, password: string) => {
-    const response = await api.post('/auth/login', { email, password });
+    const response = await api.post('/users/login', { email, password });
+    if (response.data.token) {
+      await AsyncStorage.setItem('token', response.data.token);
+    }
     return response.data;
   },
 
   logout: async () => {
-    await AsyncStorage.removeItem('token');
+    try {
+      await api.post('/users/logout');
+    } catch (error) {
+      console.log('Logout API call failed', error);
+    } finally {
+      await AsyncStorage.removeItem('token');
+    }
   },
 
   // User
   getCurrentUser: async () => {
-    const response = await api.get('/users/me');
+    const response = await api.get('/users/profile');
     return response.data;
   },
 
