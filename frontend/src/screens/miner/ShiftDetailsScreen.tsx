@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
 import { Card, Title, Text, Divider, Appbar, Avatar, Surface, ActivityIndicator, useTheme, Chip, Portal, Modal, TextInput, Button } from 'react-native-paper';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
@@ -69,8 +69,25 @@ const ShiftDetailsScreen = () => {
         }
     };
 
-    const handleDeleteShift = () => {
+    const handleDeleteShift = async () => {
         if (!data || !data.shift) return;
+
+        if (Platform.OS === 'web') {
+            if (window.confirm('Are you sure you want to delete this shift? This will remove all associated timesheets and material records.')) {
+                try {
+                    if (!currentOrg) return;
+                    setLoading(true);
+                    await apiService.deleteShift(currentOrg._id, shiftId);
+                    navigation.goBack();
+                } catch (error: any) {
+                    console.error('Delete error', error);
+                    alert('Failed to delete shift: ' + (error.response?.data?.message || error.message));
+                    setLoading(false);
+                }
+            }
+            return;
+        }
+
         Alert.alert(
             'Delete Shift',
             'Are you sure you want to delete this shift? This will remove all associated timesheets and material records.',

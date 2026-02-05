@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, TouchableOpacity, Platform } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { apiService } from '../../services/apiService';
@@ -211,7 +211,23 @@ const ComplianceScreen = () => {
     }
   };
 
-  const handleDeleteDocument = (docId: string) => {
+  const handleDeleteDocument = async (docId: string) => {
+    if (Platform.OS === 'web') {
+      if (window.confirm('Are you sure you want to delete this document?')) {
+        try {
+          if (!currentOrg) return;
+          setLoading(true);
+          await apiService.deleteComplianceDocument(currentOrg._id, docId);
+          fetchDocuments();
+        } catch (error) {
+          console.error('Delete error', error);
+          alert('Failed to delete document');
+          setLoading(false);
+        }
+      }
+      return;
+    }
+
     Alert.alert(
       'Delete Document',
       'Are you sure you want to delete this document?',
@@ -239,7 +255,24 @@ const ComplianceScreen = () => {
 
   // --- Incident Logic ---
 
-  const handleDeleteIncident = (incidentId: string) => {
+  const handleDeleteIncident = async (incidentId: string) => {
+    if (Platform.OS === 'web') {
+      if (window.confirm('Are you sure you want to delete this incident report?')) {
+        try {
+          if (!currentOrg) return;
+          setLoading(true);
+          await apiService.deleteIncident(currentOrg._id, incidentId);
+          fetchIncidents();
+          setLoading(false);
+        } catch (error) {
+          console.error('Delete error', error);
+          alert('Failed to delete incident');
+          setLoading(false);
+        }
+      }
+      return;
+    }
+
     Alert.alert(
       'Delete Report',
       'Are you sure you want to delete this incident report?',

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, Alert, TouchableOpacity, RefreshControl, Image } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, TouchableOpacity, RefreshControl, Image, Platform } from 'react-native';
 import {
   Card,
   Title,
@@ -173,7 +173,24 @@ const SalesScreen = ({ route }: any) => {
     }
   };
 
-  const handleDeleteSale = (saleId: string) => {
+  const handleDeleteSale = async (saleId: string) => {
+    if (Platform.OS === 'web') {
+      if (window.confirm('Are you sure you want to delete this sale record?')) {
+        try {
+          if (!currentOrg) return;
+          setLoading(true);
+          await apiService.deleteSale(currentOrg._id, saleId);
+          hideModal();
+          fetchSales();
+        } catch (error: any) {
+          alert('Failed to delete sale');
+        } finally {
+          setLoading(false);
+        }
+      }
+      return;
+    }
+
     Alert.alert(
       'Delete Sale',
       'Are you sure you want to delete this sale record?',
