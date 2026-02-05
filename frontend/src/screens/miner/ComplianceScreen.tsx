@@ -233,411 +233,410 @@ const ComplianceScreen = () => {
             }
           }
         }
+      ]
+    );
+  };
+
+  // --- Incident Logic ---
+
+  const handleDeleteIncident = (incidentId: string) => {
+    Alert.alert(
+      'Delete Report',
+      'Are you sure you want to delete this incident report?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              if (!currentOrg) return;
+              setLoading(true);
+              await apiService.deleteIncident(currentOrg._id, incidentId);
+              fetchIncidents();
+              setLoading(false);
+            } catch (error) {
+              console.error('Delete error', error);
+              Alert.alert('Error', 'Failed to delete incident');
+              setLoading(false);
+            }
+          }
         }
       ]
     );
   };
 
-// --- Incident Logic ---
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+      case 'resolved':
+      case 'closed':
+        return '#2E7D32';
+      case 'expiring':
+      case 'open':
+      case 'investigating':
+        return '#FFA000';
+      case 'expired':
+      case 'critical':
+        return '#D32F2F';
+      default:
+        return '#757575';
+    }
+  };
 
-const handleDeleteIncident = (incidentId: string) => {
-  Alert.alert(
-    'Delete Report',
-    'Are you sure you want to delete this incident report?',
-    [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            if (!currentOrg) return;
-            setLoading(true);
-            await apiService.deleteIncident(currentOrg._id, incidentId);
-            fetchIncidents();
-            setLoading(false);
-          } catch (error) {
-            console.error('Delete error', error);
-            Alert.alert('Error', 'Failed to delete incident');
-            setLoading(false);
-          }
-        }
-      }
-    ]
-  );
-};
+  // Helpers
+  const getMissingDocuments = () => {
+    const activeDocumentTypes = documents
+      .filter(doc => doc.status !== 'expired')
+      .map(doc => doc.type);
+    return REQUIRED_DOCUMENT_TYPES.filter(
+      type => !activeDocumentTypes.includes(type)
+    );
+  };
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'active':
-    case 'resolved':
-    case 'closed':
-      return '#2E7D32';
-    case 'expiring':
-    case 'open':
-    case 'investigating':
-      return '#FFA000';
-    case 'expired':
-    case 'critical':
-      return '#D32F2F';
-    default:
-      return '#757575';
-  }
-};
+  const getComplianceScore = () => {
+    const total = REQUIRED_DOCUMENT_TYPES.length;
+    const validDocuments = documents.filter(doc => doc.status !== 'expired');
+    const uniqueValidTypes = new Set(validDocuments.map(doc => doc.type));
+    const valid = uniqueValidTypes.size;
+    const score = (valid / total) * 100;
+    return score.toString();
+  };
 
-// Helpers
-const getMissingDocuments = () => {
-  const activeDocumentTypes = documents
-    .filter(doc => doc.status !== 'expired')
-    .map(doc => doc.type);
-  return REQUIRED_DOCUMENT_TYPES.filter(
-    type => !activeDocumentTypes.includes(type)
-  );
-};
+  return (
+    <View style={styles.container}>
+      <ScrollView>
+        {/* Safety Hub Actions */}
+        <Card style={styles.card}>
+          <Card.Content>
+            <Title>Safety Hub</Title>
+            <View style={styles.actionButtons}>
+              <Button
+                mode="contained"
+                icon="alert-octagon"
+                onPress={() => (navigation as any).navigate('IncidentReport')}
+                style={[styles.actionButton, { backgroundColor: '#D32F2F' }]}
+              >
+                Report Incident
+              </Button>
+              <Button
+                mode="contained"
+                icon="clipboard-check"
+                onPress={() => (navigation as any).navigate('SafetyChecklist')}
+                style={[styles.actionButton, { backgroundColor: '#0288D1' }]}
+              >
+                Daily Checklist
+              </Button>
+            </View>
+          </Card.Content>
+        </Card>
 
-const getComplianceScore = () => {
-  const total = REQUIRED_DOCUMENT_TYPES.length;
-  const validDocuments = documents.filter(doc => doc.status !== 'expired');
-  const uniqueValidTypes = new Set(validDocuments.map(doc => doc.type));
-  const valid = uniqueValidTypes.size;
-  const score = (valid / total) * 100;
-  return score.toString();
-};
+        {/* Tabs */}
+        <View style={{ marginHorizontal: 8, marginBottom: 8 }}>
+          <SegmentedButtons
+            value={tab}
+            onValueChange={setTab}
+            buttons={[
+              { value: 'documents', label: 'Documents', icon: 'file-document' },
+              { value: 'incidents', label: 'Incidents', icon: 'alert' },
+            ]}
+          />
+        </View>
 
-return (
-  <View style={styles.container}>
-    <ScrollView>
-      {/* Safety Hub Actions */}
-      <Card style={styles.card}>
-        <Card.Content>
-          <Title>Safety Hub</Title>
-          <View style={styles.actionButtons}>
-            <Button
-              mode="contained"
-              icon="alert-octagon"
-              onPress={() => (navigation as any).navigate('IncidentReport')}
-              style={[styles.actionButton, { backgroundColor: '#D32F2F' }]}
-            >
-              Report Incident
-            </Button>
-            <Button
-              mode="contained"
-              icon="clipboard-check"
-              onPress={() => (navigation as any).navigate('SafetyChecklist')}
-              style={[styles.actionButton, { backgroundColor: '#0288D1' }]}
-            >
-              Daily Checklist
-            </Button>
-          </View>
-        </Card.Content>
-      </Card>
-
-      {/* Tabs */}
-      <View style={{ marginHorizontal: 8, marginBottom: 8 }}>
-        <SegmentedButtons
-          value={tab}
-          onValueChange={setTab}
-          buttons={[
-            { value: 'documents', label: 'Documents', icon: 'file-document' },
-            { value: 'incidents', label: 'Incidents', icon: 'alert' },
-          ]}
-        />
-      </View>
-
-      {tab === 'documents' ? (
-        <>
-          {/* Score Card */}
-          <Card style={styles.card}>
-            <Card.Content>
-              <Title>Compliance Documents</Title>
-              <View style={styles.scoreContainer}>
-                <Text style={styles.scoreValue}>{Math.round(parseFloat(getComplianceScore()))}%</Text>
-                <Text style={styles.scoreLabel}>Compliance Score</Text>
-                <ProgressBar
-                  progress={parseFloat(getComplianceScore()) / 100}
-                  color={getStatusColor('active')}
-                  style={styles.progressBar}
-                />
-              </View>
-              <View style={styles.statsContainer}>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>
-                    {documents.filter(doc => doc.status === 'active').length}
-                  </Text>
-                  <Text style={styles.statLabel}>Active</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>
-                    {documents.filter(doc => doc.status === 'expiring').length}
-                  </Text>
-                  <Text style={styles.statLabel}>Expiring Soon</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>
-                    {documents.filter(doc => doc.status === 'expired').length}
-                  </Text>
-                  <Text style={styles.statLabel}>Expired</Text>
-                </View>
-              </View>
-            </Card.Content>
-          </Card>
-
-          {/* Missing Documents */}
-          {getMissingDocuments().length > 0 && (
+        {tab === 'documents' ? (
+          <>
+            {/* Score Card */}
             <Card style={styles.card}>
               <Card.Content>
-                <Title>Missing Documents</Title>
-                <Text style={styles.missingDocumentsText}>
-                  To achieve 100% compliance, please upload the following documents:
-                </Text>
-                {getMissingDocuments().map((docType, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={styles.missingDocumentItem}
-                    onPress={() => showDocModal(docType)}
-                  >
-                    <Icon name="file-alert-outline" size={20} color="#D32F2F" style={styles.missingDocumentIcon} />
-                    <Text style={styles.missingDocumentText}>{docType}</Text>
-                    <Icon name="chevron-right" size={20} color="#666" style={{ marginLeft: 'auto' }} />
-                  </TouchableOpacity>
-                ))}
+                <Title>Compliance Documents</Title>
+                <View style={styles.scoreContainer}>
+                  <Text style={styles.scoreValue}>{Math.round(parseFloat(getComplianceScore()))}%</Text>
+                  <Text style={styles.scoreLabel}>Compliance Score</Text>
+                  <ProgressBar
+                    progress={parseFloat(getComplianceScore()) / 100}
+                    color={getStatusColor('active')}
+                    style={styles.progressBar}
+                  />
+                </View>
+                <View style={styles.statsContainer}>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>
+                      {documents.filter(doc => doc.status === 'active').length}
+                    </Text>
+                    <Text style={styles.statLabel}>Active</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>
+                      {documents.filter(doc => doc.status === 'expiring').length}
+                    </Text>
+                    <Text style={styles.statLabel}>Expiring Soon</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>
+                      {documents.filter(doc => doc.status === 'expired').length}
+                    </Text>
+                    <Text style={styles.statLabel}>Expired</Text>
+                  </View>
+                </View>
               </Card.Content>
             </Card>
-          )}
 
-          {/* Documents List */}
-          <Card style={styles.card}>
-            <Card.Content>
-              <Title>All Documents</Title>
-              {documents.length === 0 ?
-                <Text style={{ textAlign: 'center', margin: 20, color: '#999' }}>No documents uploaded yet.</Text>
-                : documents.map((document) => (
-                  <View key={document._id}>
-                    <List.Item
-                      title={document.type}
-                      description={`Number: ${document.number || 'N/A'}\nExp: ${document.expiryDate ? new Date(document.expiryDate).toLocaleDateString() : 'N/A'}`}
-                      left={() => (
-                        <Avatar.Icon
-                          size={40}
-                          icon="file-document"
-                          style={{
-                            backgroundColor: getStatusColor(document.status),
-                          }}
-                        />
-                      )}
-                      right={() => (
-                        <View style={styles.documentMetadata}>
-                          <View
-                            style={[
-                              styles.statusBadge,
-                              { borderColor: getStatusColor(document.status) }
-                            ]}
-                          >
-                            <Text style={[styles.statusText, { color: getStatusColor(document.status) }]}>
-                              {document.status ? (document.status.charAt(0).toUpperCase() + document.status.slice(1)) : 'Unknown'}
-                            </Text>
+            {/* Missing Documents */}
+            {getMissingDocuments().length > 0 && (
+              <Card style={styles.card}>
+                <Card.Content>
+                  <Title>Missing Documents</Title>
+                  <Text style={styles.missingDocumentsText}>
+                    To achieve 100% compliance, please upload the following documents:
+                  </Text>
+                  {getMissingDocuments().map((docType, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.missingDocumentItem}
+                      onPress={() => showDocModal(docType)}
+                    >
+                      <Icon name="file-alert-outline" size={20} color="#D32F2F" style={styles.missingDocumentIcon} />
+                      <Text style={styles.missingDocumentText}>{docType}</Text>
+                      <Icon name="chevron-right" size={20} color="#666" style={{ marginLeft: 'auto' }} />
+                    </TouchableOpacity>
+                  ))}
+                </Card.Content>
+              </Card>
+            )}
+
+            {/* Documents List */}
+            <Card style={styles.card}>
+              <Card.Content>
+                <Title>All Documents</Title>
+                {documents.length === 0 ?
+                  <Text style={{ textAlign: 'center', margin: 20, color: '#999' }}>No documents uploaded yet.</Text>
+                  : documents.map((document) => (
+                    <View key={document._id}>
+                      <List.Item
+                        title={document.type}
+                        description={`Number: ${document.number || 'N/A'}\nExp: ${document.expiryDate ? new Date(document.expiryDate).toLocaleDateString() : 'N/A'}`}
+                        left={() => (
+                          <Avatar.Icon
+                            size={40}
+                            icon="file-document"
+                            style={{
+                              backgroundColor: getStatusColor(document.status),
+                            }}
+                          />
+                        )}
+                        right={() => (
+                          <View style={styles.documentMetadata}>
+                            <View
+                              style={[
+                                styles.statusBadge,
+                                { borderColor: getStatusColor(document.status) }
+                              ]}
+                            >
+                              <Text style={[styles.statusText, { color: getStatusColor(document.status) }]}>
+                                {document.status ? (document.status.charAt(0).toUpperCase() + document.status.slice(1)) : 'Unknown'}
+                              </Text>
+                            </View>
+                            <IconButton
+                              icon="delete-outline"
+                              size={20}
+                              iconColor={theme.colors.error}
+                              onPress={() => handleDeleteDocument(document._id)}
+                            />
                           </View>
-                          <IconButton
-                            icon="delete-outline"
-                            size={20}
-                            iconColor={theme.colors.error}
-                            onPress={() => handleDeleteDocument(document._id)}
-                          />
-                        </View>
-                      )}
-                    />
-                    <Divider />
-                  </View>
-                ))}
-            </Card.Content>
-          </Card>
-        </>
-      ) : (
-        <>
-          {/* Incidents List */}
-          <Card style={styles.card}>
-            <Card.Content>
-              <Title>Reported Incidents</Title>
-              {incidents.length === 0 ? (
-                <Text style={{ textAlign: 'center', margin: 20, color: '#999' }}>No incidents reported.</Text>
-              ) : (
-                incidents.map((incident) => (
-                  <View key={incident._id}>
-                    <List.Item
-                      title={incident.type ? incident.type.toUpperCase() : 'INCIDENT'}
-                      description={`${incident.description}\nLocation: ${incident.location}`}
-                      left={props => <Avatar.Icon {...props} icon="alert" style={{ backgroundColor: getStatusColor(incident.severity || 'low') }} />}
-                      right={props => (
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <Chip compact textStyle={{ fontSize: 10 }}>{incident.status}</Chip>
-                          <IconButton
-                            icon="delete"
-                            size={20}
-                            iconColor={theme.colors.error}
-                            onPress={() => handleDeleteIncident(incident._id)}
-                          />
-                        </View>
-                      )}
-                    />
-                    <Divider />
-                  </View>
-                ))
-              )}
-            </Card.Content>
-          </Card>
-        </>
+                        )}
+                      />
+                      <Divider />
+                    </View>
+                  ))}
+              </Card.Content>
+            </Card>
+          </>
+        ) : (
+          <>
+            {/* Incidents List */}
+            <Card style={styles.card}>
+              <Card.Content>
+                <Title>Reported Incidents</Title>
+                {incidents.length === 0 ? (
+                  <Text style={{ textAlign: 'center', margin: 20, color: '#999' }}>No incidents reported.</Text>
+                ) : (
+                  incidents.map((incident) => (
+                    <View key={incident._id}>
+                      <List.Item
+                        title={incident.type ? incident.type.toUpperCase() : 'INCIDENT'}
+                        description={`${incident.description}\nLocation: ${incident.location}`}
+                        left={props => <Avatar.Icon {...props} icon="alert" style={{ backgroundColor: getStatusColor(incident.severity || 'low') }} />}
+                        right={props => (
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Chip compact textStyle={{ fontSize: 10 }}>{incident.status}</Chip>
+                            <IconButton
+                              icon="delete"
+                              size={20}
+                              iconColor={theme.colors.error}
+                              onPress={() => handleDeleteIncident(incident._id)}
+                            />
+                          </View>
+                        )}
+                      />
+                      <Divider />
+                    </View>
+                  ))
+                )}
+              </Card.Content>
+            </Card>
+          </>
+        )}
+
+        <View style={{ height: 80 }} />
+      </ScrollView>
+
+      {/* Add Document FAB (Only show on document tab) */}
+      {tab === 'documents' && (
+        <FAB
+          icon="plus"
+          style={styles.fab}
+          onPress={() => showDocModal()}
+        />
       )}
 
-      <View style={{ height: 80 }} />
-    </ScrollView>
+      {/* Add Document Modal */}
+      <Portal>
+        <Modal
+          visible={docModalVisible}
+          onDismiss={hideDocModal}
+          contentContainerStyle={styles.modalContainer}
+        >
+          <ScrollView>
+            <Title style={styles.modalTitle}>Add Document</Title>
 
-    {/* Add Document FAB (Only show on document tab) */}
-    {tab === 'documents' && (
-      <FAB
-        icon="plus"
-        style={styles.fab}
-        onPress={() => showDocModal()}
-      />
-    )}
+            <View style={styles.documentTypeContainer}>
+              <Text style={styles.inputLabel}>Document Type*</Text>
+              <Button
+                mode="outlined"
+                onPress={showDocumentTypeMenu}
+                style={styles.documentTypeButton}
+              >
+                {newDocument.type || 'Select Document Type'}
+                <Icon name="menu-down" size={20} />
+              </Button>
 
-    {/* Add Document Modal */}
-    <Portal>
-      <Modal
-        visible={docModalVisible}
-        onDismiss={hideDocModal}
-        contentContainerStyle={styles.modalContainer}
-      >
-        <ScrollView>
-          <Title style={styles.modalTitle}>Add Document</Title>
+              <Portal>
+                <Modal
+                  visible={documentTypeMenuVisible}
+                  onDismiss={hideDocumentTypeMenu}
+                  contentContainerStyle={styles.documentTypeModal}
+                >
+                  <Title style={styles.documentTypeModalTitle}>Select Document Type</Title>
+                  <ScrollView style={{ maxHeight: 300 }}>
+                    {REQUIRED_DOCUMENT_TYPES.map((docType) => (
+                      <Button
+                        key={docType}
+                        mode="text"
+                        style={styles.documentTypeOption}
+                        onPress={() => {
+                          setNewDocument({ ...newDocument, type: docType });
+                          hideDocumentTypeMenu();
+                        }}
+                      >
+                        {docType}
+                      </Button>
+                    ))}
+                  </ScrollView>
+                  <Button
+                    mode="outlined"
+                    onPress={hideDocumentTypeMenu}
+                    style={styles.cancelButton}
+                  >
+                    Cancel
+                  </Button>
+                </Modal>
+              </Portal>
+            </View>
 
-          <View style={styles.documentTypeContainer}>
-            <Text style={styles.inputLabel}>Document Type*</Text>
+            <TextInput
+              label="Document Number"
+              value={newDocument.number}
+              onChangeText={(text) => setNewDocument({ ...newDocument, number: text })}
+              style={styles.input}
+            />
+
+            <TextInput
+              label="Issuing Authority"
+              value={newDocument.issuer}
+              onChangeText={(text) => setNewDocument({ ...newDocument, issuer: text })}
+              style={styles.input}
+            />
+
+            <TextInput
+              label="Issue Date"
+              value={newDocument.issuedDate}
+              onChangeText={(text) => setNewDocument({ ...newDocument, issuedDate: text })}
+              style={styles.input}
+              placeholder="YYYY-MM-DD"
+            />
+
+            <TextInput
+              label="Expiry Date"
+              value={newDocument.expiryDate}
+              onChangeText={(text) => setNewDocument({ ...newDocument, expiryDate: text })}
+              style={styles.input}
+              placeholder="YYYY-MM-DD"
+            />
+
+            <TextInput
+              label="Notes"
+              value={newDocument.notes}
+              onChangeText={(text) => setNewDocument({ ...newDocument, notes: text })}
+              multiline
+              numberOfLines={3}
+              style={styles.input}
+            />
+
             <Button
               mode="outlined"
-              onPress={showDocumentTypeMenu}
-              style={styles.documentTypeButton}
+              onPress={handleDocumentPicker}
+              style={styles.documentButton}
+              icon="file-upload"
             >
-              {newDocument.type || 'Select Document Type'}
-              <Icon name="menu-down" size={20} />
+              {newDocument.file ? 'Change Document' : 'Upload Document'}
             </Button>
 
-            <Portal>
-              <Modal
-                visible={documentTypeMenuVisible}
-                onDismiss={hideDocumentTypeMenu}
-                contentContainerStyle={styles.documentTypeModal}
+            {newDocument.file && (
+              <Text style={styles.fileConfirmation}>File selected: ...{newDocument.file.slice(-20)}</Text>
+            )}
+
+            <View style={styles.modalActions}>
+              <Button onPress={hideDocModal} style={styles.modalButton} disabled={isUploading}>
+                Cancel
+              </Button>
+              <Button
+                mode="contained"
+                onPress={handleSubmitDocument}
+                style={styles.modalButton}
+                loading={isUploading}
+                disabled={isUploading}
               >
-                <Title style={styles.documentTypeModalTitle}>Select Document Type</Title>
-                <ScrollView style={{ maxHeight: 300 }}>
-                  {REQUIRED_DOCUMENT_TYPES.map((docType) => (
-                    <Button
-                      key={docType}
-                      mode="text"
-                      style={styles.documentTypeOption}
-                      onPress={() => {
-                        setNewDocument({ ...newDocument, type: docType });
-                        hideDocumentTypeMenu();
-                      }}
-                    >
-                      {docType}
-                    </Button>
-                  ))}
-                </ScrollView>
-                <Button
-                  mode="outlined"
-                  onPress={hideDocumentTypeMenu}
-                  style={styles.cancelButton}
-                >
-                  Cancel
-                </Button>
-              </Modal>
-            </Portal>
-          </View>
-
-          <TextInput
-            label="Document Number"
-            value={newDocument.number}
-            onChangeText={(text) => setNewDocument({ ...newDocument, number: text })}
-            style={styles.input}
-          />
-
-          <TextInput
-            label="Issuing Authority"
-            value={newDocument.issuer}
-            onChangeText={(text) => setNewDocument({ ...newDocument, issuer: text })}
-            style={styles.input}
-          />
-
-          <TextInput
-            label="Issue Date"
-            value={newDocument.issuedDate}
-            onChangeText={(text) => setNewDocument({ ...newDocument, issuedDate: text })}
-            style={styles.input}
-            placeholder="YYYY-MM-DD"
-          />
-
-          <TextInput
-            label="Expiry Date"
-            value={newDocument.expiryDate}
-            onChangeText={(text) => setNewDocument({ ...newDocument, expiryDate: text })}
-            style={styles.input}
-            placeholder="YYYY-MM-DD"
-          />
-
-          <TextInput
-            label="Notes"
-            value={newDocument.notes}
-            onChangeText={(text) => setNewDocument({ ...newDocument, notes: text })}
-            multiline
-            numberOfLines={3}
-            style={styles.input}
-          />
-
-          <Button
-            mode="outlined"
-            onPress={handleDocumentPicker}
-            style={styles.documentButton}
-            icon="file-upload"
-          >
-            {newDocument.file ? 'Change Document' : 'Upload Document'}
-          </Button>
-
-          {newDocument.file && (
-            <Text style={styles.fileConfirmation}>File selected: ...{newDocument.file.slice(-20)}</Text>
-          )}
-
-          <View style={styles.modalActions}>
-            <Button onPress={hideDocModal} style={styles.modalButton} disabled={isUploading}>
-              Cancel
-            </Button>
-            <Button
-              mode="contained"
-              onPress={handleSubmitDocument}
-              style={styles.modalButton}
-              loading={isUploading}
-              disabled={isUploading}
-            >
-              {isUploading ? 'Uploading...' : 'Save'}
-            </Button>
-          </View>
-
-          {isUploading && (
-            <View style={styles.uploadingContainer}>
-              <Text style={styles.uploadingText}>
-                Uploading Document... {Math.round(uploadProgress * 100)}%
-              </Text>
-              <ProgressBar
-                progress={uploadProgress}
-                color="#2E7D32"
-                style={styles.uploadProgressBar}
-              />
+                {isUploading ? 'Uploading...' : 'Save'}
+              </Button>
             </View>
-          )}
-        </ScrollView>
-      </Modal>
-    </Portal>
-  </View>
-);
+
+            {isUploading && (
+              <View style={styles.uploadingContainer}>
+                <Text style={styles.uploadingText}>
+                  Uploading Document... {Math.round(uploadProgress * 100)}%
+                </Text>
+                <ProgressBar
+                  progress={uploadProgress}
+                  color="#2E7D32"
+                  style={styles.uploadProgressBar}
+                />
+              </View>
+            )}
+          </ScrollView>
+        </Modal>
+      </Portal>
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
