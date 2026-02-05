@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { Card, Title, Text, Divider, Appbar, Avatar, Surface, ActivityIndicator, useTheme, Chip } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { Card, Title, Text, Divider, Appbar, Avatar, Surface, ActivityIndicator, useTheme, Chip, Portal, Modal, TextInput, Button } from 'react-native-paper';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
 import { apiService } from '../../services/apiService';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -10,11 +12,17 @@ const ShiftDetailsScreen = () => {
     const theme = useTheme();
     const route = useRoute();
     const navigation = useNavigation();
+    const { currentOrg } = useSelector((state: RootState) => state.auth);
 
     const { shiftId } = route.params as any;
 
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<any>(null);
+
+    // Edit State
+    const [editModalVisible, setEditModalVisible] = useState(false);
+    const [editingShift, setEditingShift] = useState<any>(null);
+    const [updating, setUpdating] = useState(false);
 
     useEffect(() => {
         loadDetails();
@@ -29,6 +37,64 @@ const ShiftDetailsScreen = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleEditShift = () => {
+        if (!data || !data.shift) return;
+        setEditingShift({
+            ...data.shift,
+            notes: data.shift.notes || '',
+            status: data.shift.status || 'open'
+        });
+        setEditModalVisible(true);
+    };
+
+    const handleUpdateShift = async () => {
+        if (!editingShift || !currentOrg) return;
+        try {
+            setUpdating(true);
+            await apiService.updateShift(currentOrg._id, editingShift._id, {
+                notes: editingShift.notes,
+                status: editingShift.status
+            });
+            setEditModalVisible(false);
+            setEditingShift(null);
+            await loadDetails();
+            Alert.alert('Success', 'Shift updated');
+        } catch (error: any) {
+            console.error('Update error:', error);
+            Alert.alert('Error', 'Failed to update shift');
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    const handleDeleteShift = () => {
+        if (!data || !data.shift) return;
+        Alert.alert(
+            'Delete Shift',
+            'Are you sure you want to delete this shift? This will remove all associated timesheets and material records.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            if (!currentOrg) return;
+                            setLoading(true);
+                            await apiService.deleteShift(currentOrg._id, shiftId);
+                            navigation.goBack();
+                        } catch (error: any) {
+                            console.error('Delete error', error);
+                            const msg = error.response?.data?.message || 'Failed to delete shift';
+                            Alert.alert('Error', msg);
+                            setLoading(false);
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     if (loading) {
@@ -66,6 +132,8 @@ const ShiftDetailsScreen = () => {
             <Appbar.Header style={{ backgroundColor: theme.colors.surface }}>
                 <Appbar.BackAction onPress={() => navigation.goBack()} />
                 <Appbar.Content title={`Shift Log - ${new Date(shift.date).toLocaleDateString()}`} />
+                <Appbar.Action icon="pencil" onPress={handleEditShift} />
+                <Appbar.Action icon="delete" onPress={handleDeleteShift} color={theme.colors.error} />
             </Appbar.Header>
 
             <ScrollView contentContainerStyle={styles.container}>
@@ -133,6 +201,51 @@ const ShiftDetailsScreen = () => {
 
                 <View style={{ height: 40 }} />
             </ScrollView>
+
+            <Portal>
+                <Modal
+                    visible={editModalVisible}
+                    onDismiss={() => setEditModalVisible(false)}
+                    contentContainerStyle={styles.modalContainer}
+                >
+                    <Title style={styles.modalTitle}>Edit Shift</Title>
+                    <ScrollView>
+                        <View style={{ marginBottom: 16 }}>
+                            <Text style={{ marginBottom: 8 }}>Status:</Text>
+                            <View style={{ flexDirection: 'row' }}>
+                                <Chip
+                                    selected={editingShift?.status === 'open'}
+                                    onPress={() => setEditingShift((prev: any) => ({ ...prev, status: 'open' }))}
+                                    style={{ marginRight: 8 }}
+                                >
+                                    Open
+                                </Chip>
+                                <Chip
+                                    selected={editingShift?.status === 'closed'}
+                                    onPress={() => setEditingShift((prev: any) => ({ ...prev, status: 'closed' }))}
+                                >
+                                    Closed
+                                </Chip>
+                            </View>
+                        </View>
+
+                        <TextInput
+                            label="Overview / Notes"
+                            value={editingShift?.notes || ''}
+                            onChangeText={(text) => setEditingShift((prev: any) => ({ ...prev, notes: text }))}
+                            mode="outlined"
+                            multiline
+                            numberOfLines={3}
+                            style={{ marginBottom: 16, backgroundColor: 'white' }}
+                        />
+
+                        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8 }}>
+                            <Button onPress={() => setEditModalVisible(false)} style={{ marginRight: 8 }}>Cancel</Button>
+                            <Button mode="contained" onPress={handleUpdateShift} loading={updating}>Update</Button>
+                        </View>
+                    </ScrollView>
+                </Modal>
+            </Portal>
         </ScreenWrapper>
     );
 };
@@ -157,6 +270,15 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         alignItems: 'center',
         marginBottom: 16
+    },
+    modalContainer: {
+        backgroundColor: 'white',
+        padding: 20,
+        margin: 20,
+        borderRadius: 8,
+    },
+    modalTitle: {
+        marginBottom: 16,
     }
 });
 

@@ -253,11 +253,11 @@ router.get('/shifts/:shiftId', authenticate, async (req: any, res) => {
 });
 
 /**
- * @route   PATCH /api/shifts/:shiftId
- * @desc    Update shift details (e.g. notes, status, end time)
+ * @route   PATCH /api/orgs/:orgId/shifts/:shiftId
+ * @desc    Update shift details
  * @access  Private
  */
-router.patch('/shifts/:shiftId', authenticate, async (req: any, res) => {
+router.patch('/:orgId/shifts/:shiftId', authenticate, checkMembership(), async (req: any, res) => {
     try {
         const { notes, status, endTime, weatherCondition } = req.body;
         const shift = await Shift.findById(req.params.shiftId);
@@ -265,10 +265,11 @@ router.patch('/shifts/:shiftId', authenticate, async (req: any, res) => {
             return res.status(404).json({ message: 'Shift not found' });
         }
 
-        const membership = await Membership.findOne({ userId: req.user.id, orgId: shift.orgId });
-        if (!membership) {
-            return res.status(403).json({ message: 'Not authorized' });
+        if (shift.orgId.toString() !== req.params.orgId) {
+            return res.status(400).json({ message: 'Shift does not belong to this organization' });
         }
+
+        // checkMembership already validates user is in the org
 
         if (notes !== undefined) shift.notes = notes;
         if (status !== undefined) shift.status = status;
@@ -283,21 +284,22 @@ router.patch('/shifts/:shiftId', authenticate, async (req: any, res) => {
 });
 
 /**
- * @route   DELETE /api/shifts/:shiftId
+ * @route   DELETE /api/orgs/:orgId/shifts/:shiftId
  * @desc    Delete shift and all associated data
  * @access  Private (Admin/Owner/Supervisor)
  */
-router.delete('/shifts/:shiftId', authenticate, async (req: any, res) => {
+router.delete('/:orgId/shifts/:shiftId', authenticate, checkMembership(), async (req: any, res) => {
     try {
         const shift = await Shift.findById(req.params.shiftId);
         if (!shift) {
             return res.status(404).json({ message: 'Shift not found' });
         }
 
-        const membership = await Membership.findOne({ userId: req.user.id, orgId: shift.orgId });
-        if (!membership) {
-            return res.status(403).json({ message: 'Not authorized' });
+        if (shift.orgId.toString() !== req.params.orgId) {
+            return res.status(400).json({ message: 'Shift does not belong to this organization' });
         }
+
+        const membership = (req as any).membership; // Set by checkMembership
 
         // Only Creator or Admin can delete
         const isCreator = shift.createdById.toString() === req.user.id;

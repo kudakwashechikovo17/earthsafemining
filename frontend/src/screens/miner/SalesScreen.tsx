@@ -155,7 +155,7 @@ const SalesScreen = ({ route }: any) => {
       };
 
       if (editingSaleId) {
-        await apiService.updateSale(editingSaleId, payload);
+        await apiService.updateSale(currentOrg._id, editingSaleId, payload);
         Alert.alert('Success', 'Sale updated successfully');
       } else {
         await apiService.createSale(currentOrg._id, payload);
@@ -184,11 +184,14 @@ const SalesScreen = ({ route }: any) => {
           style: 'destructive',
           onPress: async () => {
             try {
+              if (!currentOrg) return;
               setLoading(true);
-              await apiService.deleteSale(saleId);
+              await apiService.deleteSale(currentOrg._id, saleId);
+              hideModal(); // Hide modal if open
               fetchSales(); // Reload list
-            } catch (error) {
+            } catch (error: any) {
               Alert.alert('Error', 'Failed to delete sale');
+            } finally {
               setLoading(false);
             }
           }
@@ -281,42 +284,36 @@ const SalesScreen = ({ route }: any) => {
           </Surface>
         ) : (
           transactions.map((t) => (
-            <Surface key={t._id} style={styles.transactionCard} elevation={1}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Avatar.Icon
-                    size={40}
-                    icon="sale"
-                    style={{ backgroundColor: `${getStatusColor(t.status)}20` }}
-                    color={getStatusColor(t.status)}
-                  />
-                  <View style={{ marginLeft: 12 }}>
-                    <Text variant="titleSmall" style={{ fontWeight: 'bold' }}>{t.buyerName}</Text>
-                    <Text variant="labelSmall" style={{ color: theme.colors.outline }}>{new Date(t.date).toLocaleDateString()}</Text>
+            <TouchableOpacity key={t._id} onPress={() => handleEditSale(t)} activeOpacity={0.7}>
+              <Surface style={styles.transactionCard} elevation={1}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Avatar.Icon
+                      size={40}
+                      icon="sale"
+                      style={{ backgroundColor: `${getStatusColor(t.status)}20` }}
+                      color={getStatusColor(t.status)}
+                    />
+                    <View style={{ marginLeft: 12 }}>
+                      <Text variant="titleSmall" style={{ fontWeight: 'bold' }}>{t.buyerName}</Text>
+                      <Text variant="labelSmall" style={{ color: theme.colors.outline }}>{new Date(t.date).toLocaleDateString()}</Text>
+                    </View>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text variant="titleMedium" style={{ fontWeight: 'bold', color: theme.colors.primary }}>+${t.totalValue?.toLocaleString()}</Text>
+                    <Text variant="labelSmall">{t.grams}g @ ${t.pricePerGram}/g</Text>
                   </View>
                 </View>
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text variant="titleMedium" style={{ fontWeight: 'bold', color: theme.colors.primary }}>+${t.totalValue?.toLocaleString()}</Text>
-                  <Text variant="labelSmall">{t.grams}g @ ${t.pricePerGram}/g</Text>
-                </View>
-              </View>
 
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                {t.referenceId ? (
-                  <View style={{ padding: 4, backgroundColor: '#f5f5f5', borderRadius: 4 }}>
-                    <Text variant="labelSmall" style={{ color: theme.colors.outline }}>Ref: {t.referenceId}</Text>
+                {t.referenceId && (
+                  <View style={{ flexDirection: 'row', justifyContent: 'flex-start', marginTop: 12 }}>
+                    <View style={{ padding: 4, backgroundColor: '#f5f5f5', borderRadius: 4 }}>
+                      <Text variant="labelSmall" style={{ color: theme.colors.outline }}>Ref: {t.referenceId}</Text>
+                    </View>
                   </View>
-                ) : <View />}
-
-                <IconButton
-                  icon="delete"
-                  size={20}
-                  iconColor={theme.colors.error}
-                  onPress={() => handleDeleteSale(t._id)}
-                  style={{ margin: 0 }}
-                />
-              </View>
-            </Surface>
+                )}
+              </Surface>
+            </TouchableOpacity>
           ))
         )}
 
@@ -411,6 +408,16 @@ const SalesScreen = ({ route }: any) => {
               )}
 
               <View style={styles.modalActions}>
+                {editingSaleId && (
+                  <Button
+                    mode="outlined"
+                    textColor={theme.colors.error}
+                    style={{ borderColor: theme.colors.error, marginRight: 'auto' }}
+                    onPress={() => handleDeleteSale(editingSaleId)}
+                  >
+                    Delete
+                  </Button>
+                )}
                 <Button onPress={hideModal} style={{ marginRight: 8 }} textColor={theme.colors.secondary}>Cancel</Button>
                 <Button
                   mode="contained"
@@ -418,7 +425,7 @@ const SalesScreen = ({ route }: any) => {
                   loading={submitting}
                   contentStyle={{ paddingHorizontal: 24 }}
                 >
-                  Save Record
+                  {editingSaleId ? "Update" : "Save Record"}
                 </Button>
               </View>
             </ScrollView>

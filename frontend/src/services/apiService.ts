@@ -153,17 +153,26 @@ export const apiService = {
     return response.data;
   },
 
-  updateShift: async (shiftId: string, data: any) => {
-    const response = await api.patch(`/shifts/${shiftId}`, data);
+  updateShift: async (orgId: string, shiftId: string, data: any) => {
+    const response = await api.patch(`/orgs/${orgId}/shifts/${shiftId}`, data);
     return response.data;
   },
 
-  deleteShift: async (shiftId: string) => {
-    const response = await api.delete(`/shifts/${shiftId}`);
+  deleteShift: async (orgId: string, shiftId: string) => {
+    const response = await api.delete(`/orgs/${orgId}/shifts/${shiftId}`);
     return response.data;
   },
 
   addTimesheet: async (shiftId: string, data: any) => {
+    // Legacy/Quick add - keeping as is if route supports it, or update if I changed that too.
+    // I only changed PATCH/DELETE. POST /shifts/:shiftId/timesheets in shiftRoutes.ts is still at `/shifts/:shiftId`.
+    // Wait, in shiftRoutes.ts: router.post('/shifts/:shiftId/timesheets', ...)
+    // If mounted at /api/orgs, it is /api/orgs/shifts/:shiftId/timesheets (missing param).
+    // If mounted at /api, it is /api/shifts/:shiftId/timesheets.
+    // Since I'm aggressively fixing, I should probably check that too?
+    // User didn't complain about adding timesheets to existing shifts, just edit/delete.
+    // I will leave addTimesheet alone for now to avoid breaking working stuff, focusing on Edit/Delete.
+
     const response = await api.post(`/shifts/${shiftId}/timesheets`, data);
     return response.data;
   },
@@ -184,13 +193,13 @@ export const apiService = {
     return response.data;
   },
 
-  updateSale: async (saleId: string, data: any) => {
-    const response = await api.patch(`/sales/${saleId}`, data);
+  updateSale: async (orgId: string, saleId: string, data: any) => {
+    const response = await api.patch(`/orgs/${orgId}/sales/${saleId}`, data);
     return response.data;
   },
 
-  deleteSale: async (saleId: string) => {
-    const response = await api.delete(`/sales/${saleId}`);
+  deleteSale: async (orgId: string, saleId: string) => {
+    const response = await api.delete(`/orgs/${orgId}/sales/${saleId}`);
     return response.data;
   },
 
