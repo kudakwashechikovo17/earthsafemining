@@ -28,7 +28,7 @@ const checkMembership = () => {
  * @desc    Get all payroll records for an organization
  * @access  Private
  */
-router.get('/:orgId/payroll', authenticate, checkMembership(), async (req, res) => {
+router.get('/:orgId/payroll', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const payroll = await Payroll.find({ orgId: req.params.orgId })
             .populate('paidBy', 'firstName lastName')
@@ -104,7 +104,7 @@ router.post('/:orgId/payroll', authenticate, checkMembership(), async (req: any,
  * @desc    Update payroll record
  * @access  Private
  */
-router.patch('/:orgId/payroll/:id', authenticate, checkMembership(), async (req, res) => {
+router.patch('/:orgId/payroll/:id', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const updates = req.body;
 
@@ -134,7 +134,7 @@ router.patch('/:orgId/payroll/:id', authenticate, checkMembership(), async (req,
  * @desc    Delete payroll record
  * @access  Private
  */
-router.delete('/:orgId/payroll/:id', authenticate, checkMembership(), async (req, res) => {
+router.delete('/:orgId/payroll/:id', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const payroll = await Payroll.findOneAndDelete({
             _id: req.params.id,
@@ -157,7 +157,7 @@ router.delete('/:orgId/payroll/:id', authenticate, checkMembership(), async (req
  * @desc    Get payroll statistics
  * @access  Private
  */
-router.get('/:orgId/payroll/stats', authenticate, checkMembership(), async (req, res) => {
+router.get('/:orgId/payroll/stats', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const payroll = await Payroll.find({ orgId: req.params.orgId, status: 'paid' });
 

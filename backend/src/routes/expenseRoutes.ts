@@ -29,7 +29,7 @@ const checkMembership = () => {
  * @desc    Get all expenses for an organization
  * @access  Private
  */
-router.get('/:orgId/expenses', authenticate, checkMembership(), async (req, res) => {
+router.get('/:orgId/expenses', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const expenses = await Expense.find({ orgId: req.params.orgId })
             .populate('enteredBy', 'firstName lastName')
@@ -46,7 +46,7 @@ router.get('/:orgId/expenses', authenticate, checkMembership(), async (req, res)
  * @desc    Create new expense
  * @access  Private
  */
-router.post('/:orgId/expenses', authenticate, checkMembership(), async (req: any, res) => {
+router.post('/:orgId/expenses', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const {
             date,
@@ -87,7 +87,7 @@ router.post('/:orgId/expenses', authenticate, checkMembership(), async (req: any
  * @desc    Update expense
  * @access  Private
  */
-router.patch('/:orgId/expenses/:id', authenticate, checkMembership(), async (req, res) => {
+router.patch('/:orgId/expenses/:id', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const updates = req.body;
 
@@ -115,7 +115,7 @@ router.patch('/:orgId/expenses/:id', authenticate, checkMembership(), async (req
  * @desc    Delete expense
  * @access  Private
  */
-router.delete('/:orgId/expenses/:id', authenticate, checkMembership(), async (req, res) => {
+router.delete('/:orgId/expenses/:id', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const expense = await Expense.findOneAndDelete({
             _id: req.params.id,
@@ -138,7 +138,7 @@ router.delete('/:orgId/expenses/:id', authenticate, checkMembership(), async (re
  * @desc    Get expense statistics
  * @access  Private
  */
-router.get('/:orgId/expenses/stats', authenticate, checkMembership(), async (req, res) => {
+router.get('/:orgId/expenses/stats', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const expenses = await Expense.find({ orgId: req.params.orgId });
 

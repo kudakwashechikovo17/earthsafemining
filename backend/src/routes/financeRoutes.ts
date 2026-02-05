@@ -24,7 +24,7 @@ const checkAuth = async (req: any, res: any, next: any) => {
  * @route   POST /api/orgs/:orgId/expenses
  * @desc    Log an expense
  */
-router.post('/:orgId/expenses', authenticate, checkAuth, async (req: any, res) => {
+router.post('/:orgId/expenses', authenticate, checkAuth, async (req: any, res: any) => {
     try {
         const { date, category, description, amount, supplier } = req.body;
         const expense = await Expense.create({
@@ -46,7 +46,7 @@ router.post('/:orgId/expenses', authenticate, checkAuth, async (req: any, res) =
  * @route   GET /api/orgs/:orgId/expenses
  * @desc    Get expenses
  */
-router.get('/:orgId/expenses', authenticate, checkAuth, async (req, res) => {
+router.get('/:orgId/expenses', authenticate, checkAuth, async (req: any, res: any) => {
     try {
         const expenses = await Expense.find({ orgId: req.params.orgId })
             .sort({ date: -1 })
@@ -61,7 +61,7 @@ router.get('/:orgId/expenses', authenticate, checkAuth, async (req, res) => {
  * @route   GET /api/orgs/:orgId/sales
  * @desc    Get verified sales
  */
-router.get('/:orgId/sales', authenticate, checkAuth, async (req, res) => {
+router.get('/:orgId/sales', authenticate, checkAuth, async (req: any, res: any) => {
     try {
         const sales = await SalesTransaction.find({ orgId: req.params.orgId })
             .sort({ date: -1 });

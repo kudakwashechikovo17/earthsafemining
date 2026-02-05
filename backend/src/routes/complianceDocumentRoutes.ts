@@ -40,7 +40,7 @@ const calculateStatus = (expiryDate: Date): 'active' | 'expiring' | 'expired' =>
  * @desc    Get all compliance documents for an organization
  * @access  Private
  */
-router.get('/:orgId/compliance/documents', authenticate, checkMembership(), async (req, res) => {
+router.get('/:orgId/compliance/documents', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const documents = await ComplianceDocument.find({ orgId: req.params.orgId }).sort({ createdAt: -1 });
 
@@ -61,11 +61,7 @@ router.get('/:orgId/compliance/documents', authenticate, checkMembership(), asyn
     }
 });
 
-import { upload } from '../middleware/upload';
 
-// ... (imports remain)
-// Note: I will need to add upload import if not present, but replace_file_content replaces chunks.
-// I should use strict replacement.
 
 /**
  * @route   POST /api/orgs/:orgId/compliance/documents
@@ -114,7 +110,7 @@ router.post('/:orgId/compliance/documents', authenticate, checkMembership(), upl
  * @desc    Delete a compliance document
  * @access  Private
  */
-router.delete('/:orgId/compliance/documents/:id', authenticate, checkMembership(), async (req, res) => {
+router.delete('/:orgId/compliance/documents/:id', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const document = await ComplianceDocument.findOneAndDelete({
             _id: req.params.id,

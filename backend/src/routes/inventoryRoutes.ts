@@ -24,7 +24,7 @@ const checkMembership = () => {
 };
 
 // GET all inventory items
-router.get('/:orgId/inventory', authenticate, checkMembership(), async (req, res) => {
+router.get('/:orgId/inventory', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const inventory = await Inventory.find({ orgId: req.params.orgId })
             .sort({ itemType: 1, name: 1 });
@@ -62,7 +62,7 @@ router.post('/:orgId/inventory', authenticate, checkMembership(), async (req: an
 });
 
 // PATCH update inventory item
-router.patch('/:orgId/inventory/:id', authenticate, checkMembership(), async (req, res) => {
+router.patch('/:orgId/inventory/:id', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const updates = req.body;
 
@@ -90,7 +90,7 @@ router.patch('/:orgId/inventory/:id', authenticate, checkMembership(), async (re
 });
 
 // DELETE inventory item
-router.delete('/:orgId/inventory/:id', authenticate, checkMembership(), async (req, res) => {
+router.delete('/:orgId/inventory/:id', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const item = await Inventory.findOneAndDelete({
             _id: req.params.id,
@@ -109,7 +109,7 @@ router.delete('/:orgId/inventory/:id', authenticate, checkMembership(), async (r
 });
 
 // GET inventory stats
-router.get('/:orgId/inventory/stats', authenticate, checkMembership(), async (req, res) => {
+router.get('/:orgId/inventory/stats', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const items = await Inventory.find({ orgId: req.params.orgId });
 

@@ -38,7 +38,7 @@ router.get('/:orgId/loans/:loanId/repayments', authenticate, checkMembership(), 
 });
 
 // GET all repayments for an organization
-router.get('/:orgId/repayments', authenticate, checkMembership(), async (req, res) => {
+router.get('/:orgId/repayments', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const repayments = await LoanRepayment.find({ orgId: req.params.orgId })
             .populate('recordedBy', 'firstName lastName')
@@ -91,7 +91,7 @@ router.post('/:orgId/loans/:loanId/repayments', authenticate, checkMembership(),
 });
 
 // PATCH update repayment
-router.patch('/:orgId/repayments/:id', authenticate, checkMembership(), async (req, res) => {
+router.patch('/:orgId/repayments/:id', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const updates = req.body;
 
@@ -115,7 +115,7 @@ router.patch('/:orgId/repayments/:id', authenticate, checkMembership(), async (r
 });
 
 // DELETE repayment
-router.delete('/:orgId/repayments/:id', authenticate, checkMembership(), async (req, res) => {
+router.delete('/:orgId/repayments/:id', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const repayment = await LoanRepayment.findOneAndDelete({
             _id: req.params.id,

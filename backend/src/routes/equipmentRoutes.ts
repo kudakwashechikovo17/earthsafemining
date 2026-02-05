@@ -29,7 +29,7 @@ const checkMembership = () => {
  * @desc    Get all equipment for an organization
  * @access  Private
  */
-router.get('/:orgId/equipment', authenticate, checkMembership(), async (req, res) => {
+router.get('/:orgId/equipment', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const equipment = await Equipment.find({ orgId: req.params.orgId }).sort({ createdAt: -1 });
         res.json(equipment);
@@ -88,7 +88,7 @@ router.post('/:orgId/equipment', authenticate, checkMembership(), async (req: an
  * @desc    Update equipment
  * @access  Private
  */
-router.patch('/:orgId/equipment/:id', authenticate, checkMembership(), async (req, res) => {
+router.patch('/:orgId/equipment/:id', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const updates = req.body;
 
@@ -119,7 +119,7 @@ router.patch('/:orgId/equipment/:id', authenticate, checkMembership(), async (re
  * @desc    Delete equipment
  * @access  Private
  */
-router.delete('/:orgId/equipment/:id', authenticate, checkMembership(), async (req, res) => {
+router.delete('/:orgId/equipment/:id', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const equipment = await Equipment.findOneAndDelete({
             _id: req.params.id,

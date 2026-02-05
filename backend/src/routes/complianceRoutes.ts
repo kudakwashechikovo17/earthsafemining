@@ -30,7 +30,7 @@ const checkMembership = () => {
  * @desc    Report a safety incident
  * @access  Private
  */
-router.post('/:orgId/compliance/incidents', authenticate, checkMembership(), async (req: any, res) => {
+router.post('/:orgId/compliance/incidents', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const { type, severity, description, location, photos, date } = req.body;
         const orgId = req.params.orgId;
@@ -58,7 +58,7 @@ router.post('/:orgId/compliance/incidents', authenticate, checkMembership(), asy
  * @desc    Get all incidents for org
  * @access  Private
  */
-router.get('/:orgId/compliance/incidents', authenticate, checkMembership(), async (req, res) => {
+router.get('/:orgId/compliance/incidents', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const incidents = await IncidentReport.find({ orgId: req.params.orgId })
             .sort({ date: -1 })
@@ -75,7 +75,7 @@ router.get('/:orgId/compliance/incidents', authenticate, checkMembership(), asyn
  * @desc    Update incident report
  * @access  Private
  */
-router.patch('/:orgId/compliance/incidents/:id', authenticate, checkMembership(), async (req: any, res) => {
+router.patch('/:orgId/compliance/incidents/:id', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const incident = await IncidentReport.findById(req.params.id);
         if (!incident) return res.status(404).json({ message: 'Incident not found' });
@@ -119,7 +119,7 @@ router.patch('/:orgId/compliance/incidents/:id', authenticate, checkMembership()
  * @desc    Delete incident report
  * @access  Private
  */
-router.delete('/:orgId/compliance/incidents/:id', authenticate, checkMembership(), async (req: any, res) => {
+router.delete('/:orgId/compliance/incidents/:id', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const incident = await IncidentReport.findById(req.params.id);
         if (!incident) return res.status(404).json({ message: 'Incident not found' });
@@ -148,7 +148,7 @@ router.delete('/:orgId/compliance/incidents/:id', authenticate, checkMembership(
  * @desc    Submit daily safety checklist
  * @access  Private
  */
-router.post('/:orgId/compliance/checklist', authenticate, checkMembership(), async (req: any, res) => {
+router.post('/:orgId/compliance/checklist', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const { items, notes, date } = req.body;
         const orgId = req.params.orgId;
@@ -175,7 +175,7 @@ router.post('/:orgId/compliance/checklist', authenticate, checkMembership(), asy
  * @desc    Get today's checklist for user
  * @access  Private
  */
-router.get('/:orgId/compliance/checklist/today', authenticate, checkMembership(), async (req: any, res) => {
+router.get('/:orgId/compliance/checklist/today', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
