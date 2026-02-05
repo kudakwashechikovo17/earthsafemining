@@ -40,11 +40,6 @@ const SalesScreen = ({ route }: any) => {
   const [editingSaleId, setEditingSaleId] = useState<string | null>(null);
 
   // New Sale Form State
-  const [buyer, setBuyer] = useState('Fidelity Printers');
-  // ... (rest of state stays same, but I need to include it if I'm replacing chunk)
-  // Actually, I can just insert the new state and functions.
-
-  // Let's replace the whole block effectively to be safe.
 
   // New Sale Form State
   const [buyer, setBuyer] = useState('Fidelity Printers');
