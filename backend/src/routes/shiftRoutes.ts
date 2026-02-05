@@ -289,6 +289,7 @@ router.patch('/:orgId/shifts/:shiftId', authenticate, checkMembership(), async (
  * @access  Private (Admin/Owner/Supervisor)
  */
 router.delete('/:orgId/shifts/:shiftId', authenticate, checkMembership(), async (req: any, res) => {
+    console.log(`[ShiftDelete] Hit with params:`, req.params);
     try {
         const shift = await Shift.findById(req.params.shiftId);
         if (!shift) {

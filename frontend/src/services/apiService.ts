@@ -159,6 +159,7 @@ export const apiService = {
   },
 
   deleteShift: async (orgId: string, shiftId: string) => {
+    console.log(`[API] Deleting shift. Org: ${orgId}, Shift: ${shiftId}, URL: /orgs/${orgId}/shifts/${shiftId}`);
     const response = await api.delete(`/orgs/${orgId}/shifts/${shiftId}`);
     return response.data;
   },
