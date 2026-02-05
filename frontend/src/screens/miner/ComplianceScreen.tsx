@@ -153,23 +153,33 @@ const ComplianceScreen = () => {
 
     const progressInterval = setInterval(() => {
       setUploadProgress(prev => {
-        const newProgress = prev + 0.25;
+        const newProgress = prev + 0.1;
         return newProgress > 0.9 ? 0.9 : newProgress;
       });
     }, 500);
 
     try {
-      const documentData = {
-        type: newDocument.type,
-        number: newDocument.number,
-        issuedDate: newDocument.issuedDate,
-        expiryDate: newDocument.expiryDate,
-        issuer: newDocument.issuer,
-        notes: newDocument.notes,
-        fileUrl: newDocument.file,
-      };
+      const formData = new FormData();
+      formData.append('type', newDocument.type);
+      formData.append('number', newDocument.number);
+      formData.append('issuedDate', newDocument.issuedDate);
+      formData.append('expiryDate', newDocument.expiryDate);
+      formData.append('issuer', newDocument.issuer);
+      formData.append('notes', newDocument.notes);
 
-      await apiService.uploadComplianceDocument(currentOrg._id, documentData);
+      if (newDocument.file) {
+        // Construct file object for FormData
+        const filename = newDocument.file.split('/').pop() || 'document.jpg';
+        const fileType = filename.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg';
+
+        formData.append('file', {
+          uri: newDocument.file,
+          name: filename,
+          type: fileType,
+        } as any);
+      }
+
+      await apiService.uploadComplianceDocument(currentOrg._id, formData);
 
       clearInterval(progressInterval);
       setUploadProgress(1);
@@ -191,12 +201,13 @@ const ComplianceScreen = () => {
         hideDocModal();
         Alert.alert('Success', 'Document uploaded successfully');
       }, 500);
-    } catch (error) {
+    } catch (error: any) {
       clearInterval(progressInterval);
       setIsUploading(false);
       setUploadProgress(0);
       console.error('Upload error:', error);
-      Alert.alert('Error', 'Failed to upload document. Please try again.');
+      const errorMsg = error.response?.data?.message || 'Failed to upload document. Please try again.';
+      Alert.alert('Error', errorMsg);
     }
   };
 

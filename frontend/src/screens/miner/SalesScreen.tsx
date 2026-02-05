@@ -37,6 +37,15 @@ const SalesScreen = ({ route }: any) => {
   const [visible, setVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const [editingSaleId, setEditingSaleId] = useState<string | null>(null);
+
+  // New Sale Form State
+  const [buyer, setBuyer] = useState('Fidelity Printers');
+  // ... (rest of state stays same, but I need to include it if I'm replacing chunk)
+  // Actually, I can just insert the new state and functions.
+
+  // Let's replace the whole block effectively to be safe.
+
   // New Sale Form State
   const [buyer, setBuyer] = useState('Fidelity Printers');
   const [quantity, setQuantity] = useState('');
@@ -85,6 +94,7 @@ const SalesScreen = ({ route }: any) => {
   }
 
   const resetForm = () => {
+    setEditingSaleId(null);
     setBuyer('Fidelity Printers');
     setQuantity('');
     setPricePerUnit('');
@@ -92,6 +102,17 @@ const SalesScreen = ({ route }: any) => {
     setNotes('');
     setReceiptImage(null);
   }
+
+  const handleEditSale = (sale: any) => {
+    setEditingSaleId(sale._id);
+    setBuyer(sale.buyerName || '');
+    setQuantity(sale.quantity?.toString() || '');
+    setPricePerUnit(sale.pricePerUnit?.toString() || '');
+    setReceiptNumber(sale.receiptNumber || '');
+    setNotes(sale.notes || '');
+    // setReceiptImage(sale.receiptUrl); // Handle if exists
+    setVisible(true);
+  };
 
   const handleImagePicker = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -138,14 +159,19 @@ const SalesScreen = ({ route }: any) => {
         // receiptImage todo: upload logic
       };
 
-      await apiService.createSale(currentOrg._id, payload);
+      if (editingSaleId) {
+        await apiService.updateSale(editingSaleId, payload);
+        Alert.alert('Success', 'Sale updated successfully');
+      } else {
+        await apiService.createSale(currentOrg._id, payload);
+        Alert.alert('Success', 'Sale recorded successfully');
+      }
 
-      Alert.alert('Success', 'Sale recorded successfully');
       hideModal();
       fetchSales();
     } catch (error: any) {
-      console.error('Create Sale Error:', error);
-      const msg = error.response?.data?.message || error.message || 'Failed to record sale';
+      console.error('Save Sale Error:', error);
+      const msg = error.response?.data?.message || error.message || 'Failed to save sale';
       Alert.alert('Error', msg);
     } finally {
       setSubmitting(false);
@@ -318,7 +344,7 @@ const SalesScreen = ({ route }: any) => {
           contentContainerStyle={styles.modalContainer}
         >
           <View style={styles.modalContent}>
-            <Title style={styles.modalTitle}>Record New Sale</Title>
+            <Title style={styles.modalTitle}>{editingSaleId ? 'Edit Sale' : 'Record New Sale'}</Title>
             <ScrollView showsVerticalScrollIndicator={false}>
 
               <TextInput

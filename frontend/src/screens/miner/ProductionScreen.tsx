@@ -11,7 +11,11 @@ import {
   ActivityIndicator,
   Chip,
   useTheme,
-  IconButton
+  IconButton,
+  TextInput, // Add this
+  Button, // Add this
+  Portal, // Add this
+  Modal // Add this
 } from 'react-native-paper';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
@@ -32,6 +36,10 @@ const ProductionScreen = () => {
   const [totalShifts, setTotalShifts] = useState(0);
   const [activeShifts, setActiveShifts] = useState(0);
   const [productionStats, setProductionStats] = useState({ ore: 0, waste: 0 });
+
+  // Edit State
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingShift, setEditingShift] = useState<any>(null);
 
   const fetchShifts = async () => {
     if (!currentOrg) return;
@@ -88,6 +96,31 @@ const ProductionScreen = () => {
     });
   };
 
+  const handleEditShift = (shift: any) => {
+    setEditingShift({ ...shift });
+    setEditModalVisible(true);
+  };
+
+  const handleUpdateShift = async () => {
+    if (!editingShift) return;
+    try {
+      setLoading(true);
+      await apiService.updateShift(editingShift._id, {
+        notes: editingShift.notes,
+        status: editingShift.status
+      });
+      setEditModalVisible(false);
+      setEditingShift(null);
+      await fetchShifts();
+      Alert.alert('Success', 'Shift updated');
+    } catch (error: any) {
+      console.error('Update error:', error);
+      Alert.alert('Error', 'Failed to update shift');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDeleteShift = (shiftId: string) => {
     Alert.alert(
       'Delete Shift',
@@ -102,8 +135,9 @@ const ProductionScreen = () => {
               setLoading(true);
               await apiService.deleteShift(shiftId);
               loadData(); // Reload list
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete shift');
+            } catch (error: any) {
+              const msg = error.response?.data?.message || 'Failed to delete shift';
+              Alert.alert('Error', msg);
               setLoading(false);
             }
           }
@@ -204,6 +238,12 @@ const ProductionScreen = () => {
                         {shift.status.toUpperCase()}
                       </Chip>
                       <IconButton
+                        icon="pencil"
+                        size={20}
+                        iconColor={theme.colors.primary}
+                        onPress={() => handleEditShift(shift)}
+                      />
+                      <IconButton
                         icon="delete"
                         size={20}
                         iconColor={theme.colors.error}
@@ -227,6 +267,52 @@ const ProductionScreen = () => {
         style={styles.fab}
         onPress={handleStartShift}
       />
+
+      {/* Edit Shift Modal */}
+      <Portal>
+        <Modal
+          visible={editModalVisible}
+          onDismiss={() => setEditModalVisible(false)}
+          contentContainerStyle={styles.modalContainer}
+        >
+          <Title style={styles.modalTitle}>Edit Shift</Title>
+          <ScrollView>
+            <View style={{ marginBottom: 16 }}>
+              <Text style={{ marginBottom: 8 }}>Status:</Text>
+              <View style={{ flexDirection: 'row' }}>
+                <Chip
+                  selected={editingShift?.status === 'open'}
+                  onPress={() => setEditingShift(prev => ({ ...prev, status: 'open' }))}
+                  style={{ marginRight: 8 }}
+                >
+                  Open
+                </Chip>
+                <Chip
+                  selected={editingShift?.status === 'closed'}
+                  onPress={() => setEditingShift(prev => ({ ...prev, status: 'closed' }))}
+                >
+                  Closed
+                </Chip>
+              </View>
+            </View>
+
+            <TextInput
+              label="Overview / Notes"
+              value={editingShift?.notes || ''}
+              onChangeText={(text) => setEditingShift((prev: any) => ({ ...prev, notes: text }))}
+              mode="outlined"
+              multiline
+              numberOfLines={3}
+              style={{ marginBottom: 16, backgroundColor: 'white' }}
+            />
+
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8 }}>
+              <Button onPress={() => setEditModalVisible(false)} style={{ marginRight: 8 }}>Cancel</Button>
+              <Button mode="contained" onPress={handleUpdateShift} loading={loading}>Update</Button>
+            </View>
+          </ScrollView>
+        </Modal>
+      </Portal>
     </ScreenWrapper>
   );
 };
@@ -291,6 +377,15 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 14,
     fontWeight: '600',
+  },
+  modalContainer: {
+    backgroundColor: 'white',
+    padding: 20,
+    margin: 20,
+    borderRadius: 8,
+  },
+  modalTitle: {
+    marginBottom: 16,
   },
 });
 

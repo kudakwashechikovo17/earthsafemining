@@ -2,6 +2,7 @@ import express from 'express';
 import { authenticate } from '../middleware/auth';
 import { Membership } from '../models/Membership';
 import { ComplianceDocument } from '../models/ComplianceDocument';
+import { upload } from '../middleware/upload';
 
 const router = express.Router({ mergeParams: true });
 
@@ -60,15 +61,31 @@ router.get('/:orgId/compliance/documents', authenticate, checkMembership(), asyn
     }
 });
 
+import { upload } from '../middleware/upload';
+
+// ... (imports remain)
+// Note: I will need to add upload import if not present, but replace_file_content replaces chunks.
+// I should use strict replacement.
+
 /**
  * @route   POST /api/orgs/:orgId/compliance/documents
  * @desc    Upload a new compliance document
  * @access  Private
  */
-router.post('/:orgId/compliance/documents', authenticate, checkMembership(), async (req: any, res) => {
+router.post('/:orgId/compliance/documents', authenticate, checkMembership(), upload.single('file'), async (req: any, res) => {
     try {
-        const { type, number, issuedDate, expiryDate, issuer, fileUrl, notes } = req.body;
+        const { type, number, issuedDate, expiryDate, issuer, notes } = req.body;
         const orgId = req.params.orgId;
+
+        let fileUrl = '';
+        if (req.file) {
+            // Store the relative path or full URL depending on how you serve static files
+            // Assuming static serve at /uploads
+            fileUrl = `/uploads/${req.file.filename}`;
+        } else if (req.body.fileUrl) {
+            // Fallback if just sending string (legacy or testing)
+            fileUrl = req.body.fileUrl;
+        }
 
         // Calculate status based on expiry date
         const status = calculateStatus(new Date(expiryDate));
