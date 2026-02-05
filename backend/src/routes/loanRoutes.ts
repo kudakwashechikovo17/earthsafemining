@@ -33,7 +33,7 @@ const checkMembership = () => {
  * @desc    Get list of financial institutions
  * @access  Private
  */
-router.get('/:orgId/loans/institutions', authenticate, checkMembership(), async (req, res) => {
+router.get('/:orgId/loans/institutions', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         let institutions = await FinancialInstitution.find({ isActive: true });
 
@@ -85,7 +85,7 @@ router.get('/:orgId/loans/institutions', authenticate, checkMembership(), async 
  * @desc    Apply for a loan
  * @access  Private
  */
-router.post('/:orgId/loans', authenticate, checkMembership(), async (req: any, res) => {
+router.post('/:orgId/loans', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const { amount, purpose, term, collateral, institution, documents, notes } = req.body;
         const orgId = req.params.orgId;
@@ -132,7 +132,7 @@ router.post('/:orgId/loans', authenticate, checkMembership(), async (req: any, r
  * @desc    Get loan applications
  * @access  Private
  */
-router.get('/:orgId/loans', authenticate, checkMembership(), async (req, res) => {
+router.get('/:orgId/loans', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const loans = await Loan.find({ orgId: req.params.orgId }).sort({ createdAt: -1 });
         res.json(loans);
@@ -146,7 +146,7 @@ router.get('/:orgId/loans', authenticate, checkMembership(), async (req, res) =>
  * @desc    Get or Calculate Financial Health Score
  * @access  Private
  */
-router.get('/:orgId/financial-health', authenticate, checkMembership(), async (req, res) => {
+router.get('/:orgId/financial-health', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const orgId = req.params.orgId;
 
