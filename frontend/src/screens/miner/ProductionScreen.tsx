@@ -183,12 +183,13 @@ const ProductionScreen = () => {
                       >
                         {shift.status.toUpperCase()}
                       </Chip>
+                    </View>
                   )}
                 />
-                      <Divider />
-                    </View>
-                  ))}
-              </Card.Content>
+                <Divider />
+              </View>
+            ))}
+          </Card.Content>
         </Card>
 
         <View style={{ height: 80 }} />
