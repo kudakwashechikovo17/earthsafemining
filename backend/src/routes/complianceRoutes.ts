@@ -71,6 +71,63 @@ router.get('/:orgId/compliance/incidents', authenticate, checkMembership(), asyn
 });
 
 /**
+ * @route   PATCH /api/compliance/incidents/:id
+ * @desc    Update incident report
+ * @access  Private
+ */
+router.patch('/compliance/incidents/:id', authenticate, async (req: any, res) => {
+    try {
+        const incident = await IncidentReport.findById(req.params.id);
+        if (!incident) return res.status(404).json({ message: 'Incident not found' });
+
+        const membership = await Membership.findOne({ userId: req.user.id, orgId: incident.orgId });
+        if (!membership) return res.status(403).json({ message: 'Not authorized' });
+
+        // Only reporter or Admin can edit
+        const canEdit = incident.reporterId.toString() === req.user.id || membership.role === OrgRole.ADMIN || membership.role === OrgRole.OWNER;
+        if (!canEdit) return res.status(403).json({ message: 'Insufficient permissions' });
+
+        const { type, severity, description, location, status, resolutionNotes } = req.body;
+
+        if (type) incident.type = type;
+        if (severity) incident.severity = severity;
+        if (description) incident.description = description;
+        if (location) incident.location = location;
+        if (status) incident.status = status;
+        if (resolutionNotes) incident.resolutionNotes = resolutionNotes;
+
+        await incident.save();
+        res.json(incident);
+    } catch (error: any) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
+/**
+ * @route   DELETE /api/compliance/incidents/:id
+ * @desc    Delete incident report
+ * @access  Private
+ */
+router.delete('/compliance/incidents/:id', authenticate, async (req: any, res) => {
+    try {
+        const incident = await IncidentReport.findById(req.params.id);
+        if (!incident) return res.status(404).json({ message: 'Incident not found' });
+
+        const membership = await Membership.findOne({ userId: req.user.id, orgId: incident.orgId });
+        if (!membership) return res.status(403).json({ message: 'Not authorized' });
+
+        // Only reporter or Admin can delete
+        const canDelete = incident.reporterId.toString() === req.user.id || membership.role === OrgRole.ADMIN || membership.role === OrgRole.OWNER;
+        if (!canDelete) return res.status(403).json({ message: 'Insufficient permissions' });
+
+        await incident.deleteOne();
+        res.json({ message: 'Incident deleted' });
+    } catch (error: any) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
+/**
  * @route   POST /api/orgs/:orgId/compliance/checklist
  * @desc    Submit daily safety checklist
  * @access  Private

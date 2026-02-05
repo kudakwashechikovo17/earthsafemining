@@ -93,6 +93,61 @@ router.get('/:orgId/sales', authenticate, checkMembership(), async (req, res) =>
     }
 });
 
+/**
+ * @route   DELETE /api/sales/:id
+ * @desc    Delete a sale
+ * @access  Private (Admin/Owner)
+ */
+router.delete('/sales/:id', authenticate, async (req: any, res) => {
+    try {
+        const sale = await SalesTransaction.findById(req.params.id);
+        if (!sale) return res.status(404).json({ message: 'Sale not found' });
+
+        // Check ownership/admin permissions
+        const membership = await Membership.findOne({ userId: req.user.id, orgId: sale.orgId });
+        if (!membership || (membership.role !== OrgRole.ADMIN && membership.role !== OrgRole.OWNER)) {
+            return res.status(403).json({ message: 'Not authorized to delete sales' });
+        }
+
+        await sale.deleteOne();
+        res.json({ message: 'Sale deleted' });
+    } catch (error: any) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
+/**
+ * @route   PATCH /api/sales/:id
+ * @desc    Update a sale
+ * @access  Private (Admin/Owner)
+ */
+router.patch('/sales/:id', authenticate, async (req: any, res) => {
+    try {
+        const sale = await SalesTransaction.findById(req.params.id);
+        if (!sale) return res.status(404).json({ message: 'Sale not found' });
+
+        const membership = await Membership.findOne({ userId: req.user.id, orgId: sale.orgId });
+        if (!membership || (membership.role !== OrgRole.ADMIN && membership.role !== OrgRole.OWNER)) {
+            return res.status(403).json({ message: 'Not authorized to update sales' });
+        }
+
+        const { buyerName, quantity, pricePerUnit, receiptNumber, notes, date } = req.body;
+
+        if (buyerName) sale.buyerName = buyerName;
+        if (quantity) sale.grams = quantity;
+        if (pricePerUnit) sale.pricePerGram = pricePerUnit;
+        if (quantity && pricePerUnit) sale.totalValue = parseFloat(quantity) * parseFloat(pricePerUnit);
+        if (receiptNumber) sale.referenceId = receiptNumber;
+        if (notes) sale.notes = notes; // Add notes to schema if missing or use existing field
+        if (date) sale.date = date;
+
+        await sale.save();
+        res.json(sale);
+    } catch (error: any) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
 // Stats endpoint
 router.get('/:orgId/sales/stats', authenticate, checkMembership(), async (req, res) => {
     try {

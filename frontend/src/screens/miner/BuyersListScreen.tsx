@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput as RNTextInput } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput as RNTextInput, Alert, Linking } from 'react-native';
 import {
   Card,
   Title,
@@ -11,7 +11,8 @@ import {
   Paragraph,
   ActivityIndicator,
   Avatar,
-  Surface
+  Surface,
+  TextInput
 } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -36,6 +37,9 @@ interface Buyer {
   bonuses: string[];
   verified: boolean;
   image: string | null;
+  phone: string;
+  email: string;
+  address: string;
 }
 
 const BuyersListScreen: React.FC<BuyersListScreenProps> = ({ navigation }) => {
@@ -43,8 +47,10 @@ const BuyersListScreen: React.FC<BuyersListScreenProps> = ({ navigation }) => {
   const [filterValue, setFilterValue] = useState('all');
   const [buyers, setBuyers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
   const [selectedBuyer, setSelectedBuyer] = useState<any>(null);
-  const [sellModalVisible, setSellModalVisible] = useState(false);
+  const [connectModalVisible, setConnectModalVisible] = useState(false);
+  const [requestMessage, setRequestMessage] = useState('');
 
   // Mock Data for Demo fallback
   const MOCK_BUYERS = [
@@ -59,7 +65,10 @@ const BuyersListScreen: React.FC<BuyersListScreenProps> = ({ navigation }) => {
       paymentTime: 'Instant',
       distance: '5km',
       bonuses: ['USD Cash Guarantee', 'Low Tax Rate'],
-      verified: true
+      verified: true,
+      phone: '+263 77 123 4567',
+      email: 'buying@fidelity.co.zw',
+      address: '1 Robert Mugabe Way, Harare'
     },
     {
       _id: 'mock-2',
@@ -72,7 +81,10 @@ const BuyersListScreen: React.FC<BuyersListScreenProps> = ({ navigation }) => {
       paymentTime: '24 Hours',
       distance: '12km',
       bonuses: ['Transport Provided'],
-      verified: true
+      verified: true,
+      phone: '+263 71 987 6543',
+      email: 'info@aurumbyo.com',
+      address: 'Industrial Site, Bulawayo'
     },
     {
       _id: 'mock-3',
@@ -85,7 +97,10 @@ const BuyersListScreen: React.FC<BuyersListScreenProps> = ({ navigation }) => {
       paymentTime: 'Same Day',
       distance: '8km',
       bonuses: [],
-      verified: true
+      verified: true,
+      phone: '+263 29 222 3333',
+      email: 'contact@bgc.co.zw',
+      address: 'Main Street, Bulawayo'
     }
   ];
 
@@ -115,7 +130,10 @@ const BuyersListScreen: React.FC<BuyersListScreenProps> = ({ navigation }) => {
         paymentTime: b.paymentTime || 'Same day',
         distance: b.distance || 'Local',
         bonuses: b.bonuses || [],
-        verified: b.verified !== undefined ? b.verified : true
+        verified: b.verified !== undefined ? b.verified : true,
+        phone: b.phone || '+263 77 000 0000',
+        email: b.email || 'buyer@example.com',
+        address: b.address || 'Harare, Zimbabwe'
       }));
       setBuyers(enhancedData);
     } catch (error) {
@@ -147,19 +165,26 @@ const BuyersListScreen: React.FC<BuyersListScreenProps> = ({ navigation }) => {
     return change > 0 ? 'arrow-up' : change < 0 ? 'arrow-down' : 'minus';
   };
 
-  const handleBuyerSelect = (buyer: any) => {
+  const handleConnect = (buyer: any) => {
     setSelectedBuyer(buyer);
-    setSellModalVisible(true);
+    setConnectModalVisible(true);
+    setRequestMessage(`Hi ${buyer.name}, I am interested in selling gold to you. Please contact me.`);
   };
 
   const hideModal = () => {
-    setSellModalVisible(false);
+    setConnectModalVisible(false);
   };
 
-  const handleContactBuyer = () => {
+  const handleSendRequest = () => {
+    // Logic to send request (backend interaction would go here)
+    // For now, simple alert
+    Alert.alert('Request Sent', `Your message has been sent to ${selectedBuyer?.name}. They will contact you shortly.`);
+    hideModal();
+  };
+
+  const handleInitiateSale = () => {
     hideModal();
     if (selectedBuyer) {
-      // Navigate to Sales screen with pre-filled info
       navigation.navigate('SalesTab', {
         screen: 'Sales',
         params: {
@@ -315,69 +340,76 @@ const BuyersListScreen: React.FC<BuyersListScreenProps> = ({ navigation }) => {
               <Button
                 mode="contained"
                 style={styles.sellButton}
-                onPress={() => handleBuyerSelect(buyer)}
+                onPress={() => handleConnect(buyer)}
+                icon="account-network"
               >
-                Sell to this buyer
+                Connect
               </Button>
             </Card.Content>
           </Card>
         ))}
       </ScrollView>
 
-      {/* Sell Modal */}
+      {/* Connect Modal */}
       <Portal>
         <Modal
-          visible={sellModalVisible}
+          visible={connectModalVisible}
           onDismiss={hideModal}
           contentContainerStyle={styles.modalContainer}
         >
           {selectedBuyer && (
-            <>
-              <Title style={styles.modalTitle}>Sell Gold to {selectedBuyer.name}</Title>
+            <ScrollView>
+              <Title style={styles.modalTitle}>Connect with {selectedBuyer.name}</Title>
 
-              <View style={styles.modalPriceRow}>
-                <Text style={styles.modalPriceLabel}>Current Offer:</Text>
-                <Text style={styles.modalPriceValue}>${selectedBuyer.pricePerGram.toFixed(2)}/gram</Text>
+              <View style={styles.contactDetails}>
+                <View style={styles.contactItem}>
+                  <Icon name="phone" size={20} color="#2E7D32" />
+                  <Text style={styles.contactText}>{selectedBuyer.phone}</Text>
+                </View>
+                <View style={styles.contactItem}>
+                  <Icon name="email" size={20} color="#2E7D32" />
+                  <Text style={styles.contactText}>{selectedBuyer.email}</Text>
+                </View>
+                <View style={styles.contactItem}>
+                  <Icon name="map-marker" size={20} color="#2E7D32" />
+                  <Text style={styles.contactText}>{selectedBuyer.address}</Text>
+                </View>
               </View>
 
               <Divider style={styles.modalDivider} />
 
-              <Paragraph style={styles.modalDescription}>
-                This buyer is offering ${selectedBuyer.pricePerGram.toFixed(2)} per gram of gold.
-                {selectedBuyer.bonuses.length > 0 && ' They are also offering:'}
-              </Paragraph>
+              <Title style={{ fontSize: 16, marginBottom: 8 }}>Send a Request</Title>
+              <TextInput
+                label="Message"
+                value={requestMessage}
+                onChangeText={setRequestMessage}
+                mode="outlined"
+                multiline
+                numberOfLines={4}
+                style={{ backgroundColor: 'white', marginBottom: 16 }}
+              />
 
-              {selectedBuyer.bonuses.length > 0 && (
-                <View style={styles.modalBonusList}>
-                  {selectedBuyer.bonuses.map((bonus: string, index: number) => (
-                    <View key={index} style={styles.modalBonusItem}>
-                      <View style={styles.modalBonusIcon}>
-                        <Text style={styles.modalBonusIconText}>✓</Text>
-                      </View>
-                      <Text style={styles.modalBonusText}>{bonus}</Text>
-                    </View>
-                  ))}
-                </View>
-              )}
+              <Button
+                mode="contained"
+                onPress={handleSendRequest}
+                style={{ marginBottom: 12, backgroundColor: '#2E7D32' }}
+              >
+                Send Request
+              </Button>
 
-              <Paragraph style={styles.modalDescription}>
-                Payment will be processed {selectedBuyer.paymentTime.toLowerCase()}.
-                This buyer is located {selectedBuyer.distance} from your registered location.
-              </Paragraph>
+              <Button
+                mode="outlined"
+                onPress={handleInitiateSale}
+                style={{ marginBottom: 12 }}
+                icon="currency-usd"
+              >
+                Record Sale (I already sold)
+              </Button>
 
-              <View style={styles.modalButtonsContainer}>
-                <Button onPress={hideModal} style={styles.modalButton}>
-                  Cancel
-                </Button>
-                <Button
-                  mode="contained"
-                  onPress={handleContactBuyer}
-                  style={styles.modalButton}
-                >
-                  Contact Buyer
-                </Button>
-              </View>
-            </>
+              <Button onPress={hideModal} textColor="#666">
+                Close
+              </Button>
+            </ScrollView>
           )}
         </Modal>
       </Portal>
@@ -531,7 +563,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   sellButton: {
-    backgroundColor: '#FFA000',
+    backgroundColor: '#0277bd', // Changed to blueish for Connect
   },
   modalContainer: {
     backgroundColor: 'white',
@@ -542,48 +574,8 @@ const styles = StyleSheet.create({
   modalTitle: {
     marginBottom: 16,
   },
-  modalPriceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  modalPriceLabel: {
-    fontSize: 16,
-  },
-  modalPriceValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2E7D32',
-  },
   modalDivider: {
     marginVertical: 16,
-  },
-  modalDescription: {
-    marginBottom: 12,
-  },
-  modalBonusList: {
-    marginBottom: 16,
-  },
-  modalBonusItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  modalBonusIcon: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#2E7D32',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalBonusIconText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  modalBonusText: {
-    marginLeft: 8,
   },
   modalButtonsContainer: {
     flexDirection: 'row',
@@ -600,6 +592,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  contactDetails: {
+    marginBottom: 10,
+    backgroundColor: '#f9f9f9',
+    padding: 12,
+    borderRadius: 8
+  },
+  contactItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8
+  },
+  contactText: {
+    marginLeft: 12,
+    fontSize: 14,
+    color: '#333'
+  }
 });
 
-export default BuyersListScreen; 
+export default BuyersListScreen;

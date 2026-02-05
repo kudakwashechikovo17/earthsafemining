@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, Alert } from 'react-native';
 import {
   Card,
   Title,
@@ -10,7 +10,8 @@ import {
   Avatar,
   ActivityIndicator,
   Chip,
-  useTheme
+  useTheme,
+  IconButton
 } from 'react-native-paper';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
@@ -85,6 +86,30 @@ const ProductionScreen = () => {
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  const handleDeleteShift = (shiftId: string) => {
+    Alert.alert(
+      'Delete Shift',
+      'Are you sure you want to delete this shift? This will remove all associated timesheets and material records.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await apiService.deleteShift(shiftId);
+              loadData(); // Reload list
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete shift');
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
   };
 
   return (
@@ -169,15 +194,21 @@ const ProductionScreen = () => {
                     />
                   )}
                   right={props => (
-                    <View style={{ justifyContent: 'center' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <Chip
                         mode="outlined"
                         compact
                         textStyle={{ fontSize: 10 }}
-                        style={{ borderColor: shift.status === 'open' ? theme.colors.primary : '#666' }}
+                        style={{ borderColor: shift.status === 'open' ? theme.colors.primary : '#666', marginRight: 8 }}
                       >
                         {shift.status.toUpperCase()}
                       </Chip>
+                      <IconButton
+                        icon="delete"
+                        size={20}
+                        iconColor={theme.colors.error}
+                        onPress={() => handleDeleteShift(shift._id)}
+                      />
                     </View>
                   )}
                 />

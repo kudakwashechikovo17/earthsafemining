@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { apiService } from '../../services/apiService';
@@ -18,8 +18,11 @@ import {
   ProgressBar,
   Chip,
   Menu,
+  IconButton,
+  SegmentedButtons,
+  useTheme
 } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as DocumentPicker from 'expo-document-picker';
 
@@ -34,34 +37,19 @@ const REQUIRED_DOCUMENT_TYPES = [
 
 const ComplianceScreen = () => {
   const navigation = useNavigation();
+  const theme = useTheme();
   const { currentOrg } = useSelector((state: RootState) => state.auth);
-  const [visible, setVisible] = useState(false);
+
+  // State
+  const [tab, setTab] = useState('documents');
+  const [loading, setLoading] = useState(true);
+
+  // Documents State
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [docModalVisible, setDocModalVisible] = useState(false);
   const [documentTypeMenuVisible, setDocumentTypeMenuVisible] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [documents, setDocuments] = useState<any[]>([]);
-
-  useEffect(() => {
-    if (currentOrg) {
-      fetchDocuments();
-    }
-  }, [currentOrg]);
-
-  const fetchDocuments = async () => {
-    if (!currentOrg) return;
-    try {
-      setLoading(true);
-      const data = await apiService.getComplianceDocuments(currentOrg._id);
-      setDocuments(data);
-    } catch (error) {
-      console.error('Failed to fetch compliance documents:', error);
-      Alert.alert('Error', 'Failed to load compliance documents');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const [newDocument, setNewDocument] = useState({
     type: '',
     number: '',
@@ -72,8 +60,53 @@ const ComplianceScreen = () => {
     notes: '',
   });
 
-  const showModal = () => setVisible(true);
-  const hideModal = () => setVisible(false);
+  // Incidents State
+  const [incidents, setIncidents] = useState<any[]>([]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (currentOrg) {
+        loadData();
+      }
+    }, [currentOrg])
+  );
+
+  const loadData = async () => {
+    setLoading(true);
+    await Promise.all([fetchDocuments(), fetchIncidents()]);
+    setLoading(false);
+  }
+
+  const fetchDocuments = async () => {
+    if (!currentOrg) return;
+    try {
+      const data = await apiService.getComplianceDocuments(currentOrg._id);
+      setDocuments(data);
+    } catch (error) {
+      console.error('Failed to fetch compliance documents:', error);
+    }
+  };
+
+  const fetchIncidents = async () => {
+    if (!currentOrg) return;
+    try {
+      const data = await apiService.getIncidents(currentOrg._id);
+      setIncidents(data);
+    } catch (error) {
+      console.error('Failed to fetch incidents:', error);
+    }
+  };
+
+  // --- Document Logic ---
+
+  const showDocModal = (prefilledType?: string) => {
+    if (prefilledType) {
+      setNewDocument(prev => ({ ...prev, type: prefilledType }));
+    }
+    setDocModalVisible(true);
+  };
+
+  const hideDocModal = () => setDocModalVisible(false);
 
   const showDocumentTypeMenu = () => setDocumentTypeMenuVisible(true);
   const hideDocumentTypeMenu = () => setDocumentTypeMenuVisible(false);
@@ -95,7 +128,7 @@ const ComplianceScreen = () => {
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmitDocument = async () => {
     if (!newDocument.type) {
       Alert.alert('Error', 'Please select a document type');
       return;
@@ -106,7 +139,6 @@ const ComplianceScreen = () => {
       return;
     }
 
-    // Check if document type already exists and is not expired
     const existingDoc = documents.find(
       doc => doc.type === newDocument.type && doc.status !== 'expired'
     );
@@ -116,11 +148,9 @@ const ComplianceScreen = () => {
       return;
     }
 
-    // Start the upload
     setIsUploading(true);
     setUploadProgress(0);
 
-    // Simulate progress for UX
     const progressInterval = setInterval(() => {
       setUploadProgress(prev => {
         const newProgress = prev + 0.25;
@@ -136,7 +166,7 @@ const ComplianceScreen = () => {
         expiryDate: newDocument.expiryDate,
         issuer: newDocument.issuer,
         notes: newDocument.notes,
-        fileUrl: newDocument.file, // Placeholder for now
+        fileUrl: newDocument.file,
       };
 
       await apiService.uploadComplianceDocument(currentOrg._id, documentData);
@@ -144,10 +174,8 @@ const ComplianceScreen = () => {
       clearInterval(progressInterval);
       setUploadProgress(1);
 
-      // Refresh documents list
       await fetchDocuments();
 
-      // Reset form and states
       setTimeout(() => {
         setIsUploading(false);
         setUploadProgress(0);
@@ -160,7 +188,7 @@ const ComplianceScreen = () => {
           file: null,
           notes: '',
         });
-        hideModal();
+        hideDocModal();
         Alert.alert('Success', 'Document uploaded successfully');
       }, 500);
     } catch (error) {
@@ -172,42 +200,92 @@ const ComplianceScreen = () => {
     }
   };
 
+  const handleDeleteDocument = (docId: string) => {
+    Alert.alert(
+      'Delete Document',
+      'Are you sure you want to delete this document?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await apiService.deleteComplianceDocument(docId);
+              fetchDocuments();
+            } catch (error) {
+              console.error('Delete error', error);
+              Alert.alert('Error', 'Failed to delete document');
+              setLoading(false); // Restore state
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  // --- Incident Logic ---
+
+  const handleDeleteIncident = (incidentId: string) => {
+    Alert.alert(
+      'Delete Report',
+      'Are you sure you want to delete this incident report?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await apiService.deleteIncident(incidentId);
+              fetchIncidents();
+              setLoading(false);
+            } catch (error) {
+              console.error('Delete error', error);
+              Alert.alert('Error', 'Failed to delete incident');
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
+      case 'resolved':
+      case 'closed':
         return '#2E7D32';
       case 'expiring':
+      case 'open':
+      case 'investigating':
         return '#FFA000';
       case 'expired':
+      case 'critical':
         return '#D32F2F';
       default:
         return '#757575';
     }
   };
 
-  // Get missing document types
+  // Helpers
   const getMissingDocuments = () => {
-    // Get all active and expiring document types (not expired)
     const activeDocumentTypes = documents
       .filter(doc => doc.status !== 'expired')
       .map(doc => doc.type);
-
-    // Find required documents that are not in the active documents list
     return REQUIRED_DOCUMENT_TYPES.filter(
       type => !activeDocumentTypes.includes(type)
     );
   };
 
-  // Calculate compliance score based on required documents
   const getComplianceScore = () => {
     const total = REQUIRED_DOCUMENT_TYPES.length;
-
-    // Only count active and expiring documents (not expired)
     const validDocuments = documents.filter(doc => doc.status !== 'expired');
     const uniqueValidTypes = new Set(validDocuments.map(doc => doc.type));
     const valid = uniqueValidTypes.size;
-
-    // Ensure we return a number, not a string
     const score = (valid / total) * 100;
     return score.toString();
   };
@@ -215,7 +293,7 @@ const ComplianceScreen = () => {
   return (
     <View style={styles.container}>
       <ScrollView>
-        {/* Safety Hub */}
+        {/* Safety Hub Actions */}
         <Card style={styles.card}>
           <Card.Content>
             <Title>Safety Hub</Title>
@@ -240,133 +318,184 @@ const ComplianceScreen = () => {
           </Card.Content>
         </Card>
 
-        {/* Compliance Summary Card */}
-        <Card style={styles.card}>
-          <Card.Content>
-            <Title>Compliance Documents</Title>
-            <View style={styles.scoreContainer}>
-              <Text style={styles.scoreValue}>{getComplianceScore()}%</Text>
-              <Text style={styles.scoreLabel}>Compliance Score</Text>
-              <ProgressBar
-                progress={parseFloat(getComplianceScore()) / 100}
-                color={getStatusColor('active')}
-                style={styles.progressBar}
-              />
-            </View>
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>
-                  {documents.filter(doc => doc.status === 'active').length}
-                </Text>
-                <Text style={styles.statLabel}>Active</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>
-                  {documents.filter(doc => doc.status === 'expiring').length}
-                </Text>
-                <Text style={styles.statLabel}>Expiring Soon</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>
-                  {documents.filter(doc => doc.status === 'expired').length}
-                </Text>
-                <Text style={styles.statLabel}>Expired</Text>
-              </View>
-            </View>
-          </Card.Content>
-        </Card>
+        {/* Tabs */}
+        <View style={{ marginHorizontal: 8, marginBottom: 8 }}>
+          <SegmentedButtons
+            value={tab}
+            onValueChange={setTab}
+            buttons={[
+              { value: 'documents', label: 'Documents', icon: 'file-document' },
+              { value: 'incidents', label: 'Incidents', icon: 'alert' },
+            ]}
+          />
+        </View>
 
-        {/* Missing Documents */}
-        {getMissingDocuments().length > 0 && (
-          <Card style={styles.card}>
-            <Card.Content>
-              <Title>Missing Documents</Title>
-              <Text style={styles.missingDocumentsText}>
-                To achieve 100% compliance, please upload the following documents:
-              </Text>
-              {getMissingDocuments().map((docType, index) => (
-                <View key={index} style={styles.missingDocumentItem}>
-                  <Icon name="file-alert-outline" size={20} color="#D32F2F" style={styles.missingDocumentIcon} />
-                  <Text style={styles.missingDocumentText}>{docType}</Text>
+        {tab === 'documents' ? (
+          <>
+            {/* Score Card */}
+            <Card style={styles.card}>
+              <Card.Content>
+                <Title>Compliance Documents</Title>
+                <View style={styles.scoreContainer}>
+                  <Text style={styles.scoreValue}>{Math.round(parseFloat(getComplianceScore()))}%</Text>
+                  <Text style={styles.scoreLabel}>Compliance Score</Text>
+                  <ProgressBar
+                    progress={parseFloat(getComplianceScore()) / 100}
+                    color={getStatusColor('active')}
+                    style={styles.progressBar}
+                  />
                 </View>
-              ))}
-            </Card.Content>
-          </Card>
+                <View style={styles.statsContainer}>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>
+                      {documents.filter(doc => doc.status === 'active').length}
+                    </Text>
+                    <Text style={styles.statLabel}>Active</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>
+                      {documents.filter(doc => doc.status === 'expiring').length}
+                    </Text>
+                    <Text style={styles.statLabel}>Expiring Soon</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>
+                      {documents.filter(doc => doc.status === 'expired').length}
+                    </Text>
+                    <Text style={styles.statLabel}>Expired</Text>
+                  </View>
+                </View>
+              </Card.Content>
+            </Card>
+
+            {/* Missing Documents */}
+            {getMissingDocuments().length > 0 && (
+              <Card style={styles.card}>
+                <Card.Content>
+                  <Title>Missing Documents</Title>
+                  <Text style={styles.missingDocumentsText}>
+                    To achieve 100% compliance, please upload the following documents:
+                  </Text>
+                  {getMissingDocuments().map((docType, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.missingDocumentItem}
+                      onPress={() => showDocModal(docType)}
+                    >
+                      <Icon name="file-alert-outline" size={20} color="#D32F2F" style={styles.missingDocumentIcon} />
+                      <Text style={styles.missingDocumentText}>{docType}</Text>
+                      <Icon name="chevron-right" size={20} color="#666" style={{ marginLeft: 'auto' }} />
+                    </TouchableOpacity>
+                  ))}
+                </Card.Content>
+              </Card>
+            )}
+
+            {/* Documents List */}
+            <Card style={styles.card}>
+              <Card.Content>
+                <Title>All Documents</Title>
+                {documents.length === 0 ?
+                  <Text style={{ textAlign: 'center', margin: 20, color: '#999' }}>No documents uploaded yet.</Text>
+                  : documents.map((document) => (
+                    <View key={document._id}>
+                      <List.Item
+                        title={document.type}
+                        description={`Number: ${document.number || 'N/A'}\nExp: ${document.expiryDate ? new Date(document.expiryDate).toLocaleDateString() : 'N/A'}`}
+                        left={() => (
+                          <Avatar.Icon
+                            size={40}
+                            icon="file-document"
+                            style={{
+                              backgroundColor: getStatusColor(document.status),
+                            }}
+                          />
+                        )}
+                        right={() => (
+                          <View style={styles.documentMetadata}>
+                            <View
+                              style={[
+                                styles.statusBadge,
+                                { borderColor: getStatusColor(document.status) }
+                              ]}
+                            >
+                              <Text style={[styles.statusText, { color: getStatusColor(document.status) }]}>
+                                {document.status ? (document.status.charAt(0).toUpperCase() + document.status.slice(1)) : 'Unknown'}
+                              </Text>
+                            </View>
+                            <IconButton
+                              icon="delete-outline"
+                              size={20}
+                              iconColor={theme.colors.error}
+                              onPress={() => handleDeleteDocument(document._id)}
+                            />
+                          </View>
+                        )}
+                      />
+                      <Divider />
+                    </View>
+                  ))}
+              </Card.Content>
+            </Card>
+          </>
+        ) : (
+          <>
+            {/* Incidents List */}
+            <Card style={styles.card}>
+              <Card.Content>
+                <Title>Reported Incidents</Title>
+                {incidents.length === 0 ? (
+                  <Text style={{ textAlign: 'center', margin: 20, color: '#999' }}>No incidents reported.</Text>
+                ) : (
+                  incidents.map((incident) => (
+                    <View key={incident._id}>
+                      <List.Item
+                        title={incident.type ? incident.type.toUpperCase() : 'INCIDENT'}
+                        description={`${incident.description}\nLocation: ${incident.location}`}
+                        left={props => <Avatar.Icon {...props} icon="alert" style={{ backgroundColor: getStatusColor(incident.severity || 'low') }} />}
+                        right={props => (
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Chip compact textStyle={{ fontSize: 10 }}>{incident.status}</Chip>
+                            <IconButton
+                              icon="delete"
+                              size={20}
+                              iconColor={theme.colors.error}
+                              onPress={() => handleDeleteIncident(incident._id)}
+                            />
+                          </View>
+                        )}
+                      />
+                      <Divider />
+                    </View>
+                  ))
+                )}
+              </Card.Content>
+            </Card>
+          </>
         )}
 
-        {/* Documents List */}
-        <Card style={styles.card}>
-          <Card.Content>
-            <Title>Required Documents</Title>
-            {documents.map((document) => (
-              <View key={document.id}>
-                <List.Item
-                  title={document.type}
-                  description={`Number: ${document.number}\nIssued by: ${document.issuer}\nValid until: ${document.expiryDate}`}
-                  left={() => (
-                    <Avatar.Icon
-                      size={40}
-                      icon="file-document"
-                      style={{
-                        backgroundColor: getStatusColor(document.status),
-                      }}
-                    />
-                  )}
-                  right={() => (
-                    <View style={styles.documentMetadata}>
-                      <View
-                        style={[
-                          styles.statusBadge,
-                          { borderColor: getStatusColor(document.status) }
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.statusText,
-                            { color: getStatusColor(document.status) }
-                          ]}
-                        >
-                          {document.status.charAt(0).toUpperCase() + document.status.slice(1)}
-                        </Text>
-                      </View>
-                      {document.daysLeft > 0 && (
-                        <Text
-                          style={[
-                            styles.daysLeft,
-                            { color: getStatusColor(document.status) },
-                          ]}
-                        >
-                          {document.daysLeft} days left
-                        </Text>
-                      )}
-                    </View>
-                  )}
-                />
-                <Divider />
-              </View>
-            ))}
-          </Card.Content>
-        </Card>
+        <View style={{ height: 80 }} />
       </ScrollView>
 
-      {/* Add Document FAB */}
-      <FAB
-        icon="plus"
-        style={styles.fab}
-        onPress={showModal}
-      />
+      {/* Add Document FAB (Only show on document tab) */}
+      {tab === 'documents' && (
+        <FAB
+          icon="plus"
+          style={styles.fab}
+          onPress={() => showDocModal()}
+        />
+      )}
 
       {/* Add Document Modal */}
       <Portal>
         <Modal
-          visible={visible}
-          onDismiss={hideModal}
+          visible={docModalVisible}
+          onDismiss={hideDocModal}
           contentContainerStyle={styles.modalContainer}
         >
           <ScrollView>
             <Title style={styles.modalTitle}>Add Document</Title>
 
-            {/* Document Type Selection */}
             <View style={styles.documentTypeContainer}>
               <Text style={styles.inputLabel}>Document Type*</Text>
               <Button
@@ -385,19 +514,21 @@ const ComplianceScreen = () => {
                   contentContainerStyle={styles.documentTypeModal}
                 >
                   <Title style={styles.documentTypeModalTitle}>Select Document Type</Title>
-                  {REQUIRED_DOCUMENT_TYPES.map((docType) => (
-                    <Button
-                      key={docType}
-                      mode="text"
-                      style={styles.documentTypeOption}
-                      onPress={() => {
-                        setNewDocument({ ...newDocument, type: docType });
-                        hideDocumentTypeMenu();
-                      }}
-                    >
-                      {docType}
-                    </Button>
-                  ))}
+                  <ScrollView style={{ maxHeight: 300 }}>
+                    {REQUIRED_DOCUMENT_TYPES.map((docType) => (
+                      <Button
+                        key={docType}
+                        mode="text"
+                        style={styles.documentTypeOption}
+                        onPress={() => {
+                          setNewDocument({ ...newDocument, type: docType });
+                          hideDocumentTypeMenu();
+                        }}
+                      >
+                        {docType}
+                      </Button>
+                    ))}
+                  </ScrollView>
                   <Button
                     mode="outlined"
                     onPress={hideDocumentTypeMenu}
@@ -454,20 +585,20 @@ const ComplianceScreen = () => {
               style={styles.documentButton}
               icon="file-upload"
             >
-              Upload Document
+              {newDocument.file ? 'Change Document' : 'Upload Document'}
             </Button>
 
             {newDocument.file && (
-              <Text style={styles.fileConfirmation}>Document uploaded</Text>
+              <Text style={styles.fileConfirmation}>File selected: ...{newDocument.file.slice(-20)}</Text>
             )}
 
             <View style={styles.modalActions}>
-              <Button onPress={hideModal} style={styles.modalButton} disabled={isUploading}>
+              <Button onPress={hideDocModal} style={styles.modalButton} disabled={isUploading}>
                 Cancel
               </Button>
               <Button
                 mode="contained"
-                onPress={handleSubmit}
+                onPress={handleSubmitDocument}
                 style={styles.modalButton}
                 loading={isUploading}
                 disabled={isUploading}
@@ -503,6 +634,7 @@ const styles = StyleSheet.create({
   card: {
     margin: 8,
     elevation: 2,
+    backgroundColor: 'white'
   },
   actionButtons: {
     flexDirection: 'row',
@@ -556,19 +688,14 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   statusBadge: {
-    padding: 6,
-    paddingHorizontal: 8,
+    padding: 2,
+    paddingHorizontal: 6,
     borderWidth: 1,
     borderRadius: 4,
     marginBottom: 4,
   },
   statusText: {
-    fontSize: 13,
-    fontWeight: 'bold',
-    lineHeight: 18,
-  },
-  daysLeft: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: 'bold',
   },
   fab: {
@@ -583,13 +710,14 @@ const styles = StyleSheet.create({
     padding: 20,
     margin: 20,
     borderRadius: 8,
-    maxHeight: '80%',
+    maxHeight: '90%',
   },
   modalTitle: {
     marginBottom: 16,
   },
   input: {
     marginBottom: 16,
+    backgroundColor: 'white'
   },
   documentButton: {
     marginBottom: 16,
@@ -597,6 +725,7 @@ const styles = StyleSheet.create({
   fileConfirmation: {
     marginBottom: 16,
     color: '#2E7D32',
+    fontStyle: 'italic'
   },
   modalActions: {
     flexDirection: 'row',
@@ -613,13 +742,18 @@ const styles = StyleSheet.create({
   missingDocumentItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 4,
+    marginVertical: 8,
+    padding: 12,
+    backgroundColor: '#FFEBEE',
+    borderRadius: 8
   },
   missingDocumentIcon: {
     marginRight: 8,
   },
   missingDocumentText: {
     color: '#D32F2F',
+    fontWeight: 'bold',
+    flex: 1
   },
   documentTypeContainer: {
     marginBottom: 16,
@@ -665,4 +799,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ComplianceScreen; 
+export default ComplianceScreen;

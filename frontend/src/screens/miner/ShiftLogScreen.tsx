@@ -57,9 +57,6 @@ const ShiftLogScreen = ({ navigation }: any) => {
     };
 
     const submitShift = async () => {
-        // DEBUG: Force alert to prove button works
-        Alert.alert('DEBUG', `Pressed! Org: ${currentOrg?._id ? 'Yes' : 'No'}, Items: ${materialMovements.length + timesheets.length}`);
-
         if (!currentOrg) {
             Alert.alert('Error', 'Organization not validated. Please restart the app.');
             return;
@@ -71,37 +68,17 @@ const ShiftLogScreen = ({ navigation }: any) => {
         }
 
         setSubmitting(true);
-        // Alert.alert('Debug', 'Starting submission...'); // Uncomment if needed
 
         try {
-            // 1. Create Shift
+            // Atomic Shift Creation
             const shiftData = {
                 type: shiftType,
                 notes,
+                timesheets: timesheets.map(ts => ({ ...ts, hoursWorked: parseFloat(ts.hoursWorked) || 0 })),
+                materials: materialMovements.map(mat => ({ ...mat, quantity: parseFloat(mat.quantity) || 0, destination: 'Processing' }))
             };
-            const shiftRes = await apiService.createShift(currentOrg._id, shiftData);
 
-            if (!shiftRes || !shiftRes._id) {
-                throw new Error('Failed to create shift ID');
-            }
-            const shiftId = shiftRes._id;
-
-            // 2. Add Timesheets (Sequential)
-            for (const ts of timesheets) {
-                await apiService.addTimesheet(shiftId, {
-                    ...ts,
-                    hoursWorked: parseFloat(ts.hoursWorked) || 0
-                });
-            }
-
-            // 3. Add Materials (Sequential)
-            for (const mat of materialMovements) {
-                await apiService.addMaterialMovement(shiftId, {
-                    ...mat,
-                    quantity: parseFloat(mat.quantity) || 0,
-                    destination: 'Processing'
-                });
-            }
+            await apiService.createShift(currentOrg._id, shiftData);
 
             Alert.alert('Success', 'Shift Logged Successfully', [
                 { text: 'OK', onPress: () => navigation.goBack() }

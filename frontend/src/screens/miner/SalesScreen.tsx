@@ -15,7 +15,8 @@ import {
   SegmentedButtons,
   Surface,
   useTheme,
-  ActivityIndicator
+  ActivityIndicator,
+  IconButton
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -119,15 +120,6 @@ const SalesScreen = ({ route }: any) => {
     }
 
     setSubmitting(true);
-    // DEBUG: Alert to confirm button press
-    Alert.alert('DEBUG', `Submitting Sale... \nBuyer: ${buyer}\nQty: ${quantity}\nOrg: ${currentOrg?._id ? 'Yes' : 'No'}`);
-
-    console.log('Submitting sale:', {
-      orgId: currentOrg?._id,
-      buyer,
-      quantity,
-      pricePerUnit
-    });
 
     try {
       if (!currentOrg?._id) {
@@ -146,8 +138,6 @@ const SalesScreen = ({ route }: any) => {
         // receiptImage todo: upload logic
       };
 
-      console.log('Sale payload:', payload);
-
       await apiService.createSale(currentOrg._id, payload);
 
       Alert.alert('Success', 'Sale recorded successfully');
@@ -160,6 +150,30 @@ const SalesScreen = ({ route }: any) => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleDeleteSale = (saleId: string) => {
+    Alert.alert(
+      'Delete Sale',
+      'Are you sure you want to delete this sale record?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await apiService.deleteSale(saleId);
+              fetchSales(); // Reload list
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete sale');
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const getStatusColor = (status: string) => {
@@ -265,11 +279,22 @@ const SalesScreen = ({ route }: any) => {
                   <Text variant="labelSmall">{t.grams}g @ ${t.pricePerGram}/g</Text>
                 </View>
               </View>
-              {t.referenceId && (
-                <View style={{ marginTop: 8, padding: 4, backgroundColor: '#f5f5f5', alignSelf: 'flex-start', borderRadius: 4 }}>
-                  <Text variant="labelSmall" style={{ color: theme.colors.outline }}>Ref: {t.referenceId}</Text>
-                </View>
-              )}
+
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                {t.referenceId ? (
+                  <View style={{ padding: 4, backgroundColor: '#f5f5f5', borderRadius: 4 }}>
+                    <Text variant="labelSmall" style={{ color: theme.colors.outline }}>Ref: {t.referenceId}</Text>
+                  </View>
+                ) : <View />}
+
+                <IconButton
+                  icon="delete"
+                  size={20}
+                  iconColor={theme.colors.error}
+                  onPress={() => handleDeleteSale(t._id)}
+                  style={{ margin: 0 }}
+                />
+              </View>
             </Surface>
           ))
         )}
@@ -445,4 +470,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SalesScreen; 
+export default SalesScreen;

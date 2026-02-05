@@ -36,14 +36,15 @@ const checkMembership = (role?: OrgRole) => {
 
 /**
  * @route   POST /api/orgs/:orgId/shifts
- * @desc    Start a new shift
+ * @desc    Start a new shift (Atomic operation for Shift + Logic)
  * @access  Private (Miner+)
  */
 router.post('/:orgId/shifts', authenticate, checkMembership(OrgRole.MINER), async (req: any, res) => {
     try {
-        const { type, supervisorId, notes } = req.body;
+        const { type, supervisorId, notes, startTime, weatherCondition, timesheets, materials } = req.body;
         const orgId = req.params.orgId;
 
+        // 1. Create Shift
         const shift = await Shift.create({
             orgId,
             date: new Date(),
@@ -51,12 +52,43 @@ router.post('/:orgId/shifts', authenticate, checkMembership(OrgRole.MINER), asyn
             supervisorId: supervisorId || req.user.id,
             createdById: req.user.id,
             status: ShiftStatus.OPEN,
-            startTime: new Date(),
-            notes
+            startTime: startTime || new Date(),
+            notes,
+            weatherCondition
         });
+
+        const shiftId = shift._id;
+
+        // 2. Add Timesheets if present (Bulk Insert)
+        if (timesheets && Array.isArray(timesheets) && timesheets.length > 0) {
+            const timesheetDocs = timesheets.map((ts: any) => ({
+                shiftId,
+                orgId,
+                workerName: ts.workerName,
+                role: ts.role,
+                hoursWorked: ts.hoursWorked,
+                notes: ts.notes
+            }));
+            await Timesheet.insertMany(timesheetDocs);
+        }
+
+        // 3. Add Materials if present (Bulk Insert)
+        if (materials && Array.isArray(materials) && materials.length > 0) {
+            const materialDocs = materials.map((mat: any) => ({
+                shiftId,
+                orgId,
+                type: mat.type,
+                quantity: mat.quantity,
+                unit: mat.unit || 'tonnes',
+                source: mat.source,
+                destination: mat.destination || 'Processing'
+            }));
+            await MaterialMovement.insertMany(materialDocs);
+        }
 
         res.status(201).json(shift);
     } catch (error: any) {
+        console.error('Create Shift Error:', error);
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
@@ -115,19 +147,17 @@ router.get('/:orgId/production/stats', authenticate, checkMembership(), async (r
 
 /**
  * @route   POST /api/shifts/:shiftId/timesheets
- * @desc    Add timesheet entry
+ * @desc    Add timesheet entry (Legacy support or late entry)
  * @access  Private
  */
 router.post('/shifts/:shiftId/timesheets', authenticate, async (req: any, res) => {
     try {
-        // First get shift to know Org
         const shift = await Shift.findById(req.params.shiftId);
         if (!shift) {
             res.status(404).json({ message: 'Shift not found' });
             return;
         }
 
-        // Check auth against shift's org
         const membership = await Membership.findOne({ userId: req.user.id, orgId: shift.orgId });
         if (!membership) {
             res.status(403).json({ message: 'Not authorized' });
@@ -153,7 +183,7 @@ router.post('/shifts/:shiftId/timesheets', authenticate, async (req: any, res) =
 
 /**
  * @route   POST /api/shifts/:shiftId/material
- * @desc    Add material movement
+ * @desc    Add material movement (Legacy support or late entry)
  * @access  Private
  */
 router.post('/shifts/:shiftId/material', authenticate, async (req: any, res) => {
@@ -201,7 +231,6 @@ router.get('/shifts/:shiftId', authenticate, async (req: any, res) => {
             return;
         }
 
-        // Check auth
         const membership = await Membership.findOne({ userId: req.user.id, orgId: shift.orgId });
         if (!membership) {
             res.status(403).json({ message: 'Not authorized' });
@@ -218,6 +247,74 @@ router.get('/shifts/:shiftId', authenticate, async (req: any, res) => {
             timesheets,
             materials
         });
+    } catch (error: any) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
+/**
+ * @route   PATCH /api/shifts/:shiftId
+ * @desc    Update shift details (e.g. notes, status, end time)
+ * @access  Private
+ */
+router.patch('/shifts/:shiftId', authenticate, async (req: any, res) => {
+    try {
+        const { notes, status, endTime, weatherCondition } = req.body;
+        const shift = await Shift.findById(req.params.shiftId);
+        if (!shift) {
+            return res.status(404).json({ message: 'Shift not found' });
+        }
+
+        const membership = await Membership.findOne({ userId: req.user.id, orgId: shift.orgId });
+        if (!membership) {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        if (notes !== undefined) shift.notes = notes;
+        if (status !== undefined) shift.status = status;
+        if (endTime !== undefined) shift.endTime = endTime;
+        if (weatherCondition !== undefined) shift.weatherCondition = weatherCondition;
+
+        await shift.save();
+        res.json(shift);
+    } catch (error: any) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
+/**
+ * @route   DELETE /api/shifts/:shiftId
+ * @desc    Delete shift and all associated data
+ * @access  Private (Admin/Owner/Supervisor)
+ */
+router.delete('/shifts/:shiftId', authenticate, async (req: any, res) => {
+    try {
+        const shift = await Shift.findById(req.params.shiftId);
+        if (!shift) {
+            return res.status(404).json({ message: 'Shift not found' });
+        }
+
+        const membership = await Membership.findOne({ userId: req.user.id, orgId: shift.orgId });
+        if (!membership) {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        // Only Creator or Admin can delete
+        const isCreator = shift.createdById.toString() === req.user.id;
+        const isAdmin = membership.role === OrgRole.ADMIN || membership.role === OrgRole.OWNER;
+
+        if (!isCreator && !isAdmin) {
+            return res.status(403).json({ message: 'Insufficient permissions to delete this shift' });
+        }
+
+        // Delete associated records first
+        await Promise.all([
+            Timesheet.deleteMany({ shiftId: shift._id }),
+            MaterialMovement.deleteMany({ shiftId: shift._id })
+        ]);
+
+        await shift.deleteOne();
+        res.json({ message: 'Shift and associated data deleted successfully' });
     } catch (error: any) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
