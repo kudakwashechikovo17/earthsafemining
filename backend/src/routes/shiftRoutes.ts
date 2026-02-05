@@ -323,4 +323,43 @@ router.delete('/:orgId/shifts/:shiftId', authenticate, checkMembership(), async 
     }
 });
 
+/**
+ * @route   DELETE /api/shifts/:shiftId
+ * @desc    Delete shift (fallback endpoint matching getDetails pattern)
+ * @access  Private
+ */
+router.delete('/shifts/:shiftId', authenticate, async (req: any, res) => {
+    console.log(`[ShiftDelete] Fallback Hit params:`, req.params);
+    try {
+        const shift = await Shift.findById(req.params.shiftId);
+        if (!shift) {
+            return res.status(404).json({ message: 'Shift not found' });
+        }
+
+        const membership = await Membership.findOne({ userId: req.user.id, orgId: shift.orgId });
+        if (!membership || membership.status !== 'active') {
+            return res.status(403).json({ message: 'Not authorized for this organization' });
+        }
+
+        // Only Creator or Admin can delete
+        const isCreator = shift.createdById.toString() === req.user.id;
+        const isAdmin = membership.role === OrgRole.ADMIN || membership.role === OrgRole.OWNER;
+
+        if (!isCreator && !isAdmin) {
+            return res.status(403).json({ message: 'Insufficient permissions' });
+        }
+
+        await Promise.all([
+            Timesheet.deleteMany({ shiftId: shift._id }),
+            MaterialMovement.deleteMany({ shiftId: shift._id })
+        ]);
+
+        await shift.deleteOne();
+        res.json({ message: 'Shift deleted successfully (fallback)' });
+    } catch (error: any) {
+        console.error('Delete Fallback Error:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
 export default router;

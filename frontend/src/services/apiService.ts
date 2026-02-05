@@ -159,8 +159,9 @@ export const apiService = {
   },
 
   deleteShift: async (orgId: string, shiftId: string) => {
-    console.log(`[API] Deleting shift. Org: ${orgId}, Shift: ${shiftId}, URL: /orgs/${orgId}/shifts/${shiftId}`);
-    const response = await api.delete(`/orgs/${orgId}/shifts/${shiftId}`);
+    console.log(`[API] Deleting shift (Fallback). Shift: ${shiftId}, URL: /shifts/${shiftId}`);
+    // Use the reliable /shifts/:id endpoint which mirrors getShiftDetails
+    const response = await api.delete(`/shifts/${shiftId}`);
     return response.data;
   },
 
