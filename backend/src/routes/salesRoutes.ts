@@ -35,7 +35,7 @@ const checkMembership = (allowedRoles: OrgRole[] = []) => {
  * @desc    Record a new sale
  * @access  Private (Miner+)
  */
-router.post('/:orgId/sales', authenticate, checkMembership([OrgRole.MINER, OrgRole.ADMIN]), async (req: any, res) => {
+router.post('/:orgId/sales', authenticate, checkMembership([OrgRole.MINER, OrgRole.ADMIN]), async (req: any, res: any) => {
     try {
         const { buyerName, quantity, pricePerUnit, unit, receiptNumber, notes, date } = req.body;
         const orgId = req.params.orgId;
@@ -82,7 +82,7 @@ router.post('/:orgId/sales', authenticate, checkMembership([OrgRole.MINER, OrgRo
  * @desc    Get sales history
  * @access  Private
  */
-router.get('/:orgId/sales', authenticate, checkMembership(), async (req, res) => {
+router.get('/:orgId/sales', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const sales = await SalesTransaction.find({ orgId: req.params.orgId })
             .sort({ date: -1 })
@@ -98,7 +98,7 @@ router.get('/:orgId/sales', authenticate, checkMembership(), async (req, res) =>
  * @desc    Delete a sale
  * @access  Private (Admin/Owner)
  */
-router.delete('/:orgId/sales/:id', authenticate, checkMembership([OrgRole.ADMIN, OrgRole.OWNER]), async (req: any, res) => {
+router.delete('/:orgId/sales/:id', authenticate, checkMembership([OrgRole.ADMIN, OrgRole.OWNER]), async (req: any, res: any) => {
     try {
         const sale = await SalesTransaction.findById(req.params.id);
         if (!sale) return res.status(404).json({ message: 'Sale not found' });
@@ -121,7 +121,7 @@ router.delete('/:orgId/sales/:id', authenticate, checkMembership([OrgRole.ADMIN,
  * @desc    Update a sale
  * @access  Private (Admin/Owner)
  */
-router.patch('/:orgId/sales/:id', authenticate, checkMembership([OrgRole.ADMIN, OrgRole.OWNER]), async (req: any, res) => {
+router.patch('/:orgId/sales/:id', authenticate, checkMembership([OrgRole.ADMIN, OrgRole.OWNER]), async (req: any, res: any) => {
     try {
         const sale = await SalesTransaction.findById(req.params.id);
         if (!sale) return res.status(404).json({ message: 'Sale not found' });
@@ -148,7 +148,7 @@ router.patch('/:orgId/sales/:id', authenticate, checkMembership([OrgRole.ADMIN, 
 });
 
 // Stats endpoint
-router.get('/:orgId/sales/stats', authenticate, checkMembership(), async (req, res) => {
+router.get('/:orgId/sales/stats', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         // Aggregation logic (similar to dashboard but specific to sales page if needed)
         // For now, frontend calculates from list or dashboard uses its own.

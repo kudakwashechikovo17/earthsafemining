@@ -257,7 +257,7 @@ router.get('/shifts/:shiftId', authenticate, async (req: any, res) => {
  * @desc    Update shift details
  * @access  Private
  */
-router.patch('/:orgId/shifts/:shiftId', authenticate, checkMembership(), async (req: any, res) => {
+router.patch('/:orgId/shifts/:shiftId', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const { notes, status, endTime, weatherCondition } = req.body;
         const shift = await Shift.findById(req.params.shiftId);
@@ -288,7 +288,7 @@ router.patch('/:orgId/shifts/:shiftId', authenticate, checkMembership(), async (
  * @desc    Delete shift and all associated data
  * @access  Private (Admin/Owner/Supervisor)
  */
-router.delete('/:orgId/shifts/:shiftId', authenticate, checkMembership(), async (req: any, res) => {
+router.delete('/:orgId/shifts/:shiftId', authenticate, checkMembership(), async (req: any, res: any) => {
     console.log(`[ShiftDelete] Hit with params:`, req.params);
     try {
         const shift = await Shift.findById(req.params.shiftId);
@@ -328,7 +328,7 @@ router.delete('/:orgId/shifts/:shiftId', authenticate, checkMembership(), async 
  * @desc    Delete shift (fallback endpoint matching getDetails pattern)
  * @access  Private
  */
-router.delete('/shifts/:shiftId', authenticate, async (req: any, res) => {
+router.delete('/shifts/:shiftId', authenticate, async (req: any, res: any) => {
     console.log(`[ShiftDelete] Fallback Hit params:`, req.params);
     try {
         const shift = await Shift.findById(req.params.shiftId);

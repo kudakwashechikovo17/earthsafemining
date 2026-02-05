@@ -29,7 +29,7 @@ const checkMembership = () => {
  * @desc    Get all receipts for an organization
  * @access  Private
  */
-router.get('/:orgId/receipts', authenticate, checkMembership(), async (req, res) => {
+router.get('/:orgId/receipts', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const receipts = await Receipt.find({ orgId: req.params.orgId })
             .populate('uploadedBy', 'firstName lastName')
@@ -86,7 +86,7 @@ router.post('/:orgId/receipts', authenticate, checkMembership(), async (req: any
  * @desc    Update receipt
  * @access  Private
  */
-router.patch('/:orgId/receipts/:id', authenticate, checkMembership(), async (req, res) => {
+router.patch('/:orgId/receipts/:id', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const updates = req.body;
 
@@ -114,7 +114,7 @@ router.patch('/:orgId/receipts/:id', authenticate, checkMembership(), async (req
  * @desc    Delete receipt
  * @access  Private
  */
-router.delete('/:orgId/receipts/:id', authenticate, checkMembership(), async (req, res) => {
+router.delete('/:orgId/receipts/:id', authenticate, checkMembership(), async (req: any, res: any) => {
     try {
         const receipt = await Receipt.findOneAndDelete({
             _id: req.params.id,
