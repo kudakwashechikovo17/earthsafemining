@@ -71,20 +71,31 @@ router.get('/:orgId/compliance/incidents', authenticate, checkMembership(), asyn
 });
 
 /**
- * @route   PATCH /api/compliance/incidents/:id
+ * @route   PATCH /api/orgs/:orgId/compliance/incidents/:id
  * @desc    Update incident report
  * @access  Private
  */
-router.patch('/compliance/incidents/:id', authenticate, async (req: any, res) => {
+router.patch('/:orgId/compliance/incidents/:id', authenticate, checkMembership(), async (req: any, res) => {
     try {
         const incident = await IncidentReport.findById(req.params.id);
         if (!incident) return res.status(404).json({ message: 'Incident not found' });
 
+        if (incident.orgId.toString() !== req.params.orgId) {
+            return res.status(400).json({ message: 'Incident does not belong to this organization' });
+        }
+
         const membership = await Membership.findOne({ userId: req.user.id, orgId: incident.orgId });
-        if (!membership) return res.status(403).json({ message: 'Not authorized' });
+        // checkMembership middleware already puts membership in req, but we double check logic here if needed
+        // Since we use checkMembership() middleware now, we can rely on it for basic auth
+        // But we need to check edit permissions specifically
+
+        // Use the membership found by middleware if available, or fetch
+        // (req as any).membership is set by checkMembership
+
+        const userMembership = (req as any).membership;
 
         // Only reporter or Admin can edit
-        const canEdit = incident.reporterId.toString() === req.user.id || membership.role === OrgRole.ADMIN || membership.role === OrgRole.OWNER;
+        const canEdit = incident.reporterId.toString() === req.user.id || userMembership.role === OrgRole.ADMIN || userMembership.role === OrgRole.OWNER;
         if (!canEdit) return res.status(403).json({ message: 'Insufficient permissions' });
 
         const { type, severity, description, location, status, resolutionNotes } = req.body;
@@ -104,14 +115,19 @@ router.patch('/compliance/incidents/:id', authenticate, async (req: any, res) =>
 });
 
 /**
- * @route   DELETE /api/compliance/incidents/:id
+ * @route   DELETE /api/orgs/:orgId/compliance/incidents/:id
  * @desc    Delete incident report
  * @access  Private
  */
-router.delete('/compliance/incidents/:id', authenticate, async (req: any, res) => {
+router.delete('/:orgId/compliance/incidents/:id', authenticate, checkMembership(), async (req: any, res) => {
     try {
         const incident = await IncidentReport.findById(req.params.id);
         if (!incident) return res.status(404).json({ message: 'Incident not found' });
+
+        // Check if incident belongs to org in params (security check)
+        if (incident.orgId.toString() !== req.params.orgId) {
+            return res.status(400).json({ message: 'Incident does not belong to this organization' });
+        }
 
         const membership = await Membership.findOne({ userId: req.user.id, orgId: incident.orgId });
         if (!membership) return res.status(403).json({ message: 'Not authorized' });
