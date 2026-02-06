@@ -10,6 +10,8 @@ import { Payroll } from '../models/Payroll';
 import { Compliance, ComplianceStatus, ComplianceType } from '../models/Compliance';
 import { Loan, LoanStatus, LoanType } from '../models/Loan';
 import { Membership } from '../models/Membership';
+import { Timesheet } from '../models/Timesheet';
+import { MaterialMovement, MaterialType } from '../models/MaterialMovement';
 import { logger } from '../utils/logger';
 
 // Helper to generate random date within range
@@ -79,13 +81,17 @@ export const seedDemoData = async (req: Request, res: Response): Promise<void> =
         const orgId = org._id;
         const userId = user._id;
 
-        // 3. Clear existing data for this org (Optional, but good for "reset")
-        // await Shift.deleteMany({ orgId }).session(session);
-        // await Production.deleteMany({ minerId: userId }).session(session); 
-        // ... (Decided not to delete to be safe, just append or only delete if explicitly requested. 
-        // actually, user asked to "fill all part", might imply fresh start or adding to it. 
-        // Let's safe-guard by checking if data exists, but user wants "full data". 
-        // Simplest is to just generate. Duplicates might be okay if they run it once.)
+        // 3. Clear existing data for this org (RESET for clean demo)
+        // This ensures re-running the seeder doesn't just pile up duplicates
+        await Shift.deleteMany({ orgId });
+        await Production.deleteMany({ minerId: userId }); // Assuming single user for demo
+        await SalesTransaction.deleteMany({ orgId });
+        await Expense.deleteMany({ orgId });
+        await Payroll.deleteMany({ orgId });
+        await Compliance.deleteMany({ orgId });
+        await Loan.deleteMany({ orgId });
+        await Timesheet.deleteMany({ orgId });
+        await MaterialMovement.deleteMany({ orgId });
 
         // 4. Generate Data (2 Years Back)
         const endDate = new Date();
@@ -94,14 +100,11 @@ export const seedDemoData = async (req: Request, res: Response): Promise<void> =
 
         // -- Employees (Miners) --
         const employees: any[] = [];
-        for (let i = 0; i < 10; i++) {
-            // Create fake miner users or just list names? 
-            // Payroll needs names. Shift needs supervisor.
-            // We can use the main user as supervisor.
+        for (let i = 0; i < 8; i++) {
             employees.push({
                 _id: new mongoose.Types.ObjectId(), // Fake ID for reference
                 name: getRandomName(),
-                role: 'miner'
+                role: i < 2 ? 'driller' : (i < 5 ? 'hauler' : 'general')
             });
         }
 
@@ -111,9 +114,14 @@ export const seedDemoData = async (req: Request, res: Response): Promise<void> =
         const processingBatches = [];
 
         while (currentDate <= endDate) {
-            // 80% chance of operation per day
-            if (Math.random() > 0.2) {
+            // 85% chance of operation per day
+            if (Math.random() > 0.15) {
                 // Day Shift
+                const startTime = new Date(currentDate);
+                startTime.setHours(6, 0, 0);
+                const endTime = new Date(currentDate);
+                endTime.setHours(18, 0, 0);
+
                 const shift = new Shift({
                     orgId,
                     date: new Date(currentDate),
@@ -123,15 +131,58 @@ export const seedDemoData = async (req: Request, res: Response): Promise<void> =
                     status: ShiftStatus.APPROVED,
                     goldRecovered: 0, // Will update
                     oreMined: Math.floor(Math.random() * 50) + 10, // 10-60 tons
-                    startTime: new Date(currentDate.setHours(6, 0, 0)),
-                    endTime: new Date(currentDate.setHours(18, 0, 0)),
-                    notes: 'Routine operations.'
+                    startTime: startTime,
+                    endTime: endTime,
+                    notes: 'Routine operations. Equipment running smoothly.',
+                    weatherCondition: Math.random() > 0.8 ? 'Cloudy' : 'Sunny'
                 });
 
                 // Production log
                 const grams = Math.random() * 15 + 5; // 5-20g
                 shift.goldRecovered = parseFloat(grams.toFixed(2));
                 await shift.save();
+
+                // -- Timesheets for this shift --
+                // 5-8 workers per shift
+                const workersToday = employees.sort(() => 0.5 - Math.random()).slice(0, Math.floor(Math.random() * 3) + 5);
+                for (const worker of workersToday) {
+                    await new Timesheet({
+                        shiftId: shift._id,
+                        orgId,
+                        workerName: worker.name,
+                        role: worker.role,
+                        hoursWorked: 12,
+                        ratePerShift: 10, // $10 per shift
+                        totalPay: 10,
+                        notes: 'Full shift'
+                    }).save();
+                }
+
+                // -- Material Movement --
+                // Ore moved
+                await new MaterialMovement({
+                    shiftId: shift._id,
+                    orgId,
+                    type: MaterialType.ORE,
+                    quantity: shift.oreMined,
+                    unit: 'tons',
+                    source: 'Shaft 1',
+                    destination: 'Crusher',
+                    notes: 'High grade ore'
+                }).save();
+
+                // Waste moved
+                await new MaterialMovement({
+                    shiftId: shift._id,
+                    orgId,
+                    type: MaterialType.WASTE,
+                    quantity: Math.floor(Math.random() * 20) + 5,
+                    unit: 'tons',
+                    source: 'Shaft 1',
+                    destination: 'Dump',
+                    notes: 'Overburden removal'
+                }).save();
+
 
                 const production = new Production({
                     minerId: userId, // Using admin as main miner for simplicity or loop employees
@@ -163,7 +214,9 @@ export const seedDemoData = async (req: Request, res: Response): Promise<void> =
                         pricePerGram: parseFloat(price.toFixed(2)),
                         totalValue: parseFloat((totalGrams * price).toFixed(2)),
                         currency: 'USD',
-                        status: SaleStatus.VERIFIED
+                        status: SaleStatus.VERIFIED,
+                        buyerName: 'Fidelity Printers',
+                        receiptUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80&w=1000' // Demo receipt image
                     });
                     await sale.save();
                     processingBatches.length = 0; // Clear
@@ -183,10 +236,12 @@ export const seedDemoData = async (req: Request, res: Response): Promise<void> =
                 orgId,
                 date: new Date(expenseDate),
                 category: ExpenseCategory.FUEL,
-                description: 'Diesel for Generator',
-                amount: 450,
+                description: 'Diesel for Generator (200L)',
+                amount: 320,
                 currency: 'USD',
-                enteredBy: userId
+                enteredBy: userId,
+                supplier: 'Zuva Petroleum',
+                receiptUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80&w=1000'
             }).save();
 
             // Random Maintenance
@@ -195,10 +250,11 @@ export const seedDemoData = async (req: Request, res: Response): Promise<void> =
                     orgId,
                     date: randomDate(expenseDate, new Date(expenseDate.getTime() + 86400000 * 30)),
                     category: ExpenseCategory.MAINTENANCE,
-                    description: 'Crusher Repairs',
+                    description: 'Crusher Jaw Replacement',
                     amount: Math.floor(Math.random() * 200) + 50,
                     currency: 'USD',
-                    enteredBy: userId
+                    enteredBy: userId,
+                    supplier: 'Mine & Industrial Suppliers'
                 }).save();
             }
 
@@ -221,7 +277,8 @@ export const seedDemoData = async (req: Request, res: Response): Promise<void> =
                     payPeriodEnd: new Date(payrollDate.getFullYear(), payrollDate.getMonth() + 1, 0),
                     netPay: 350,
                     paidBy: userId,
-                    status: 'paid'
+                    status: 'paid',
+                    receiptUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80&w=1000'
                 }).save();
             }
             payrollDate.setMonth(payrollDate.getMonth() + 1);
@@ -232,10 +289,12 @@ export const seedDemoData = async (req: Request, res: Response): Promise<void> =
             orgId,
             type: ComplianceType.MINING_LICENSE,
             title: 'Mining License 2024',
+            documentNumber: 'ML-2024-001',
             status: ComplianceStatus.APPROVED,
             expiryDate: new Date('2025-12-31'),
             issuedDate: new Date('2024-01-01'),
-            documentNumber: 'ML-2024-001'
+            fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', // Demo PDF
+            notes: 'Verified by Ministry of Mines'
         }).save();
 
         await new Compliance({
@@ -243,20 +302,25 @@ export const seedDemoData = async (req: Request, res: Response): Promise<void> =
             type: ComplianceType.EMA_CERTIFICATE,
             title: 'EMA EIA Certificate',
             status: ComplianceStatus.APPROVED,
-            expiryDate: new Date('2026-06-30')
+            expiryDate: new Date('2026-06-30'),
+            fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
         }).save();
 
         // -- Loans --
         await new Loan({
             orgId,
             applicantId: userId,
-            amount: 5000,
-            purpose: 'New Ball Mill',
-            termMonths: 12,
+            amount: 15000,
+            purpose: 'Excavator Purchase',
+            termMonths: 24,
             status: LoanStatus.ACTIVE,
-            interestRate: 5,
-            monthlyPayment: 440,
-            approvedAt: new Date(endDate.getTime() - 86400000 * 60) // 2 months ago
+            interestRate: 8,
+            monthlyPayment: 750,
+            approvedAt: new Date(endDate.getTime() - 86400000 * 120), // 4 months ago
+            documents: ['https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'],
+            collateral: 'Equipment (Crusher)',
+            institution: 'EarthSafe Finance',
+            notes: 'Demo active loan'
         }).save();
 
         // await session.commitTransaction();
