@@ -61,21 +61,23 @@ const LoginScreen = () => {
 
               {/* LEFT SIDE: Brand & Value Prop */}
               <View style={[styles.leftSide, isDesktop ? { maxWidth: 600, paddingRight: 60 } : { marginBottom: 40 }]}>
-                {/* Brand */}
+                {/* Brand Logo - Using Text instead of Image to avoid web crash */}
                 <View style={styles.brandContainer}>
-                  <Image
-                    source={require('../../../assets/images/brand-logo-full.png')}
-                    style={{ width: 180, height: 50 }}
-                    resizeMode="contain"
-                  />
+                  <View style={styles.logoBox}>
+                    <Text style={styles.logoText}>ES</Text>
+                  </View>
+                  <View>
+                    <Text style={styles.brandName}>EARTHSAFE</Text>
+                    <Text style={styles.brandTag}>MineTrack</Text>
+                  </View>
                 </View>
 
                 <Text style={styles.heroHeadline}>
-                  Unlock Equipment Financing with Mining Data That Works for You
+                  Explore EarthSafe MineTrack
                 </Text>
 
                 <Text style={styles.heroSubtext}>
-                  Earthsafe MineTrack transforms production logs, receipts, and compliance records into a lender-trusted credit score.
+                  Transform your mining operations with data-driven insights. Digitize production logs, track compliance, and unlock equipment financing opportunities.
                 </Text>
 
                 <View style={styles.stepsRow}>
@@ -104,12 +106,12 @@ const LoginScreen = () => {
                     </TouchableOpacity>
                   </View>
 
-                  {/* New Wording */}
-                  <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginBottom: 16, textAlign: 'center' }}>
-                    Professional access: Log in or Register to explore the program.
+                  {/* Welcome Text */}
+                  <Text style={styles.welcomeText}>
+                    Welcome back! Log in to access your mining dashboard.
                   </Text>
 
-                  <Text style={styles.inputLabel}>Email Identity</Text>
+                  <Text style={styles.inputLabel}>Email Address</Text>
                   <TextInput
                     mode="flat"
                     value={email}
@@ -125,7 +127,7 @@ const LoginScreen = () => {
                     theme={{ colors: { onSurfaceVariant: 'rgba(255,255,255,0.5)' } }}
                   />
 
-                  <Text style={styles.inputLabel}>Security Code</Text>
+                  <Text style={styles.inputLabel}>Password</Text>
                   <TextInput
                     mode="flat"
                     value={password}
@@ -155,19 +157,35 @@ const LoginScreen = () => {
                     disabled={isLoading}
                     textColor="#1B5E20"
                   >
-                    Continue
+                    Sign In
                   </Button>
 
                   <View style={styles.cardFooter}>
                     <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
                       <Text style={styles.linkText}>Forgot password?</Text>
                     </TouchableOpacity>
-                    <Text style={styles.mutedText}>Need help? support@earthsafe.com</Text>
                   </View>
+
+                  <View style={styles.divider}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerText}>or</Text>
+                    <View style={styles.dividerLine} />
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.registerButton}
+                    onPress={() => navigation.navigate('Register')}
+                  >
+                    <Text style={styles.registerButtonText}>Create New Account</Text>
+                  </TouchableOpacity>
                 </View>
 
                 <Text style={styles.legalText}>
                   By continuing, you agree to our <Text style={styles.linkText}>Terms</Text> and <Text style={styles.linkText}>Privacy Policy</Text>.
+                </Text>
+
+                <Text style={styles.supportText}>
+                  Need help? Contact us at support@earthsafe.com
                 </Text>
               </View>
 
@@ -190,7 +208,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.65)', // Dark overlay for readability
+    backgroundColor: 'rgba(0,0,0,0.65)',
     paddingTop: Platform.OS === 'android' ? 25 : 0,
   },
   scrollContent: {
@@ -212,38 +230,38 @@ const styles = StyleSheet.create({
   brandContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 32,
   },
   logoBox: {
-    width: 44,
-    height: 44,
+    width: 50,
+    height: 50,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: '#1B5E20',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   logoText: {
     color: '#fff',
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
   },
   brandName: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
+    letterSpacing: 1,
   },
   brandTag: {
     color: 'rgba(255,255,255,0.85)',
-    fontSize: 13,
+    fontSize: 14,
+    fontWeight: '500',
   },
   heroHeadline: {
     color: '#fff',
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: 'bold',
-    lineHeight: 40,
+    lineHeight: 44,
     marginBottom: 16,
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: -1, height: 1 },
@@ -261,12 +279,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   stepBadge: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.10)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.16)',
+    borderColor: 'rgba(255,255,255,0.18)',
   },
   stepText: {
     color: '#fff',
@@ -277,9 +295,9 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   glassCard: {
-    backgroundColor: 'rgba(20, 20, 20, 0.75)',
+    backgroundColor: 'rgba(20, 20, 20, 0.80)',
     borderRadius: 24,
-    padding: 24,
+    padding: 28,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
     shadowColor: '#000',
@@ -290,11 +308,11 @@ const styles = StyleSheet.create({
   },
   tabRow: {
     flexDirection: 'row',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   tab: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 12,
     alignItems: 'center',
     borderRadius: 12,
     borderWidth: 1,
@@ -307,15 +325,24 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: '#fff',
     fontWeight: 'bold',
+    fontSize: 15,
   },
   inactiveTabText: {
     color: 'rgba(255,255,255,0.6)',
+    fontSize: 15,
+  },
+  welcomeText: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+    marginBottom: 20,
+    textAlign: 'center',
   },
   inputLabel: {
     color: 'rgba(255,255,255,0.9)',
-    fontSize: 12,
-    marginBottom: 6,
+    fontSize: 13,
+    marginBottom: 8,
     marginLeft: 4,
+    fontWeight: '500',
   },
   glassInput: {
     backgroundColor: 'rgba(255,255,255,0.08)',
@@ -325,7 +352,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 12,
     borderBottomRightRadius: 12,
     marginBottom: 16,
-    height: 50,
+    height: 52,
     fontSize: 16,
     color: '#fff',
     borderWidth: 1,
@@ -343,8 +370,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 16,
   },
@@ -353,14 +378,44 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
     fontWeight: '600',
   },
-  mutedText: {
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  dividerText: {
     color: 'rgba(255,255,255,0.5)',
-    fontSize: 12,
+    marginHorizontal: 12,
+    fontSize: 13,
+  },
+  registerButton: {
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  registerButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
   },
   legalText: {
     marginTop: 16,
     textAlign: 'center',
     color: 'rgba(255,255,255,0.6)',
+    fontSize: 12,
+  },
+  supportText: {
+    marginTop: 8,
+    textAlign: 'center',
+    color: 'rgba(255,255,255,0.5)',
     fontSize: 12,
   },
 });
