@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Text, Divider, List, useTheme, TextInput, Button, Card, HelperText, Snackbar, Switch } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
+import { Text, Divider, List, useTheme, TextInput, Button, Card, HelperText, Snackbar, Switch, ActivityIndicator, Portal, Modal, ProgressBar } from 'react-native-paper';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
 import { apiService } from '../services/apiService';
 import ScreenWrapper from '../components/ScreenWrapper';
+import { colors } from '../theme/darkTheme';
 
 const SettingsScreen = ({ navigation }: any) => {
   const theme = useTheme();
@@ -62,14 +63,15 @@ const SettingsScreen = ({ navigation }: any) => {
     }
   };
 
+
+
   const APP_MODE = process.env.EXPO_PUBLIC_APP_MODE || 'normal';
-  const BUILD_DATE = new Date().toLocaleDateString();
 
   if (!currentOrg) {
     return (
       <ScreenWrapper>
         <View style={styles.centerContainer}>
-          <Text>No Organization Selected</Text>
+          <Text style={{ color: colors.textPrimary }}>No Organization Selected</Text>
         </View>
       </ScreenWrapper>
     );
@@ -90,6 +92,8 @@ const SettingsScreen = ({ navigation }: any) => {
             onChangeText={setName}
             mode="outlined"
             style={styles.input}
+            textColor={colors.textPrimary}
+            theme={{ colors: { onSurfaceVariant: colors.textMuted, background: colors.inputBackground } }}
             disabled={!isAdmin}
           />
 
@@ -99,6 +103,8 @@ const SettingsScreen = ({ navigation }: any) => {
             onChangeText={setLicense}
             mode="outlined"
             style={styles.input}
+            textColor={colors.textPrimary}
+            theme={{ colors: { onSurfaceVariant: colors.textMuted, background: colors.inputBackground } }}
             disabled={!isAdmin}
           />
 
@@ -108,6 +114,8 @@ const SettingsScreen = ({ navigation }: any) => {
             onChangeText={setPhone}
             mode="outlined"
             style={styles.input}
+            textColor={colors.textPrimary}
+            theme={{ colors: { onSurfaceVariant: colors.textMuted, background: colors.inputBackground } }}
             disabled={!isAdmin}
             keyboardType="phone-pad"
           />
@@ -118,6 +126,8 @@ const SettingsScreen = ({ navigation }: any) => {
             onChangeText={setEmail}
             mode="outlined"
             style={styles.input}
+            textColor={colors.textPrimary}
+            theme={{ colors: { onSurfaceVariant: colors.textMuted, background: colors.inputBackground } }}
             disabled={!isAdmin}
             keyboardType="email-address"
             autoCapitalize="none"
@@ -129,6 +139,8 @@ const SettingsScreen = ({ navigation }: any) => {
             onChangeText={setAddress}
             mode="outlined"
             style={styles.input}
+            textColor={colors.textPrimary}
+            theme={{ colors: { onSurfaceVariant: colors.textMuted, background: colors.inputBackground } }}
             disabled={!isAdmin}
           />
 
@@ -138,6 +150,8 @@ const SettingsScreen = ({ navigation }: any) => {
               onPress={handleSave}
               loading={loading}
               style={styles.button}
+              buttonColor={colors.gold}
+              textColor="#121212"
             >
               Save Changes
             </Button>
@@ -151,9 +165,11 @@ const SettingsScreen = ({ navigation }: any) => {
 
           <List.Item
             title="Manage Team Members"
+            titleStyle={{ color: colors.textPrimary }}
             description="Invite, remove, or change roles of members"
-            left={props => <List.Icon {...props} icon="account-group" />}
-            right={props => <List.Icon {...props} icon="chevron-right" />}
+            descriptionStyle={{ color: colors.textMuted }}
+            left={props => <List.Icon {...props} icon="account-group" color={colors.gold} />}
+            right={props => <List.Icon {...props} icon="chevron-right" color={colors.textMuted} />}
             onPress={() => navigation.navigate('OrgMembers')}
             style={styles.listItem}
           />
@@ -166,14 +182,18 @@ const SettingsScreen = ({ navigation }: any) => {
 
           <List.Item
             title="Version"
+            titleStyle={{ color: colors.textPrimary }}
             description="1.0.0 (Professional Build)"
-            left={props => <List.Icon {...props} icon="information-outline" />}
+            descriptionStyle={{ color: colors.textMuted }}
+            left={props => <List.Icon {...props} icon="information-outline" color={colors.gold} />}
           />
 
           <List.Item
             title="Environment"
+            titleStyle={{ color: colors.textPrimary }}
             description={APP_MODE === 'production' ? 'Production' : 'Development'}
-            left={props => <List.Icon {...props} icon="server-network" />}
+            descriptionStyle={{ color: colors.textMuted }}
+            left={props => <List.Icon {...props} icon="server-network" color={colors.gold} />}
           />
         </View>
 
@@ -185,8 +205,9 @@ const SettingsScreen = ({ navigation }: any) => {
         visible={visible}
         onDismiss={() => setVisible(false)}
         duration={3000}
+        style={{ backgroundColor: colors.cardBackgroundSolid }}
       >
-        {message}
+        <Text style={{ color: colors.textPrimary }}>{message}</Text>
       </Snackbar>
     </ScreenWrapper>
   );
@@ -195,7 +216,7 @@ const SettingsScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
   centerContainer: {
     flex: 1,
@@ -203,25 +224,27 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   section: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.cardBackground,
     marginTop: 16,
     marginHorizontal: 16,
-    borderRadius: 8,
-    padding: 16,
-    elevation: 2,
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 8,
-    color: '#2E7D32',
+    color: colors.gold,
   },
   divider: {
     marginBottom: 16,
+    backgroundColor: colors.divider,
   },
   input: {
     marginBottom: 12,
-    backgroundColor: '#fff'
+    backgroundColor: colors.inputBackground,
   },
   button: {
     marginTop: 8,

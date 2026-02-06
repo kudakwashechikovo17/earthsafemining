@@ -92,18 +92,19 @@ router.get('/dashboard', authenticate, authorize(['miner', 'cooperative', 'admin
       ]), [], 'MonthlySales'),
 
       // 4. Production Chart Data (Last 6 Months)
-      safeExec(MaterialMovement.aggregate([
+      // 4. Production Chart Data (Last 6 Months)
+      safeExec(Shift.aggregate([
         {
           $match: {
             orgId: new mongoose.Types.ObjectId(orgId),
-            type: MaterialType.ORE,
-            createdAt: { $gte: new Date(new Date().setMonth(new Date().getMonth() - 5)) }
+            status: { $ne: 'rejected' },
+            date: { $gte: new Date(new Date().setMonth(new Date().getMonth() - 5)) }
           }
         },
         {
           $group: {
-            _id: { month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
-            total: { $sum: "$quantity" }
+            _id: { month: { $month: "$date" }, year: { $year: "$date" } },
+            total: { $sum: "$goldRecovered" }
           }
         },
         { $sort: { "_id.year": 1, "_id.month": 1 } }

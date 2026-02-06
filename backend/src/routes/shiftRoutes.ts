@@ -41,7 +41,7 @@ const checkMembership = (role?: OrgRole) => {
  */
 router.post('/:orgId/shifts', authenticate, checkMembership(OrgRole.MINER), async (req: any, res) => {
     try {
-        const { type, supervisorId, notes, startTime, weatherCondition, timesheets, materials } = req.body;
+        const { type, supervisorId, notes, startTime, weatherCondition, timesheets, materials, goldRecovered, oreMined } = req.body;
         const orgId = req.params.orgId;
 
         // 1. Create Shift
@@ -54,7 +54,9 @@ router.post('/:orgId/shifts', authenticate, checkMembership(OrgRole.MINER), asyn
             status: ShiftStatus.OPEN,
             startTime: startTime || new Date(),
             notes,
-            weatherCondition
+            weatherCondition,
+            goldRecovered: goldRecovered || 0,
+            oreMined: oreMined || 0
         });
 
         const shiftId = shift._id;

@@ -2,6 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Create API service with axios
+// const API_URL = 'http://localhost:5000/api'; // Forced local for dev
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://earthsafe-backend.onrender.com/api';
 // Force normal mode for professional build
 const APP_MODE = 'normal';
@@ -20,6 +21,9 @@ api.interceptors.request.use(
     const token = await AsyncStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      // console.log(`[API] Request to ${config.url} with token: ${token.substring(0, 10)}...`);
+    } else {
+      console.warn(`[API] Request to ${config.url} MISSING TOKEN`);
     }
     return config;
   },

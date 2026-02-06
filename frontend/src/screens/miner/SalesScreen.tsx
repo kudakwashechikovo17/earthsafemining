@@ -1,23 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, Alert, TouchableOpacity, RefreshControl, Image, Platform } from 'react-native';
-import {
-  Card,
-  Title,
-  Text,
-  FAB,
-  Portal,
-  Modal,
-  TextInput,
-  Button,
-  List,
-  Avatar,
-  Divider,
-  SegmentedButtons,
-  Surface,
-  useTheme,
-  ActivityIndicator,
-  IconButton
-} from 'react-native-paper';
+import { Text, Portal, Modal, TextInput, Button, ActivityIndicator } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as ImagePicker from 'expo-image-picker';
@@ -25,9 +8,9 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { apiService } from '../../services/apiService';
 import ScreenWrapper from '../../components/ScreenWrapper';
+import { colors } from '../../theme/darkTheme';
 
 const SalesScreen = ({ route }: any) => {
-  const theme = useTheme();
   const navigation = useNavigation();
   const { currentOrg } = useSelector((state: RootState) => state.auth);
 
@@ -36,12 +19,9 @@ const SalesScreen = ({ route }: any) => {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [visible, setVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-
   const [editingSaleId, setEditingSaleId] = useState<string | null>(null);
 
-  // New Sale Form State
-
-  // New Sale Form State
+  // Form State
   const [buyer, setBuyer] = useState('Fidelity Printers');
   const [quantity, setQuantity] = useState('');
   const [pricePerUnit, setPricePerUnit] = useState('');
@@ -49,11 +29,10 @@ const SalesScreen = ({ route }: any) => {
   const [notes, setNotes] = useState('');
   const [receiptImage, setReceiptImage] = useState<string | null>(null);
 
-  // Effect to handle params from Marketplace
   useEffect(() => {
     if (route.params?.prefilledBuyer) {
       setBuyer(route.params.prefilledBuyer);
-      setVisible(true); // Open modal immediately
+      setVisible(true);
     }
     if (route.params?.prefilledPrice) {
       setPricePerUnit(route.params.prefilledPrice);
@@ -86,7 +65,7 @@ const SalesScreen = ({ route }: any) => {
   const hideModal = () => {
     setVisible(false);
     resetForm();
-  }
+  };
 
   const resetForm = () => {
     setEditingSaleId(null);
@@ -96,7 +75,7 @@ const SalesScreen = ({ route }: any) => {
     setReceiptNumber('');
     setNotes('');
     setReceiptImage(null);
-  }
+  };
 
   const handleEditSale = (sale: any) => {
     setEditingSaleId(sale._id);
@@ -105,25 +84,21 @@ const SalesScreen = ({ route }: any) => {
     setPricePerUnit(sale.pricePerUnit?.toString() || '');
     setReceiptNumber(sale.receiptNumber || '');
     setNotes(sale.notes || '');
-    // setReceiptImage(sale.receiptUrl); // Handle if exists
     setVisible(true);
   };
 
   const handleImagePicker = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
     if (permissionResult.granted === false) {
       Alert.alert('Permission Required', 'Permission to access camera roll is required!');
       return;
     }
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.8,
     });
-
     if (!result.canceled) {
       setReceiptImage(result.assets[0].uri);
     }
@@ -134,16 +109,10 @@ const SalesScreen = ({ route }: any) => {
       Alert.alert('Missing Fields', 'Please fill in Buyer, Quantity, and Price.');
       return;
     }
-
     setSubmitting(true);
-
     try {
-      if (!currentOrg?._id) {
-        throw new Error('No organization selected');
-      }
-
+      if (!currentOrg?._id) throw new Error('No organization selected');
       const finalReceiptNumber = receiptNumber || `REC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-
       const payload = {
         buyerName: buyer,
         quantity: parseFloat(quantity),
@@ -151,9 +120,7 @@ const SalesScreen = ({ route }: any) => {
         unit: 'grams',
         receiptNumber: finalReceiptNumber,
         notes,
-        // receiptImage todo: upload logic
       };
-
       if (editingSaleId) {
         await apiService.updateSale(currentOrg._id, editingSaleId, payload);
         Alert.alert('Success', 'Sale updated successfully');
@@ -161,11 +128,9 @@ const SalesScreen = ({ route }: any) => {
         await apiService.createSale(currentOrg._id, payload);
         Alert.alert('Success', 'Sale recorded successfully');
       }
-
       hideModal();
       fetchSales();
     } catch (error: any) {
-      console.error('Save Sale Error:', error);
       const msg = error.response?.data?.message || error.message || 'Failed to save sale';
       Alert.alert('Error', msg);
     } finally {
@@ -174,276 +139,203 @@ const SalesScreen = ({ route }: any) => {
   };
 
   const handleDeleteSale = async (saleId: string) => {
+    const doDelete = async () => {
+      try {
+        if (!currentOrg) return;
+        setLoading(true);
+        await apiService.deleteSale(currentOrg._id, saleId);
+        hideModal();
+        fetchSales();
+      } catch (error: any) {
+        Alert.alert('Error', 'Failed to delete sale');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (Platform.OS === 'web') {
       if (window.confirm('Are you sure you want to delete this sale record?')) {
-        try {
-          if (!currentOrg) return;
-          setLoading(true);
-          await apiService.deleteSale(currentOrg._id, saleId);
-          hideModal();
-          fetchSales();
-        } catch (error: any) {
-          alert('Failed to delete sale');
-        } finally {
-          setLoading(false);
-        }
+        doDelete();
       }
-      return;
-    }
-
-    Alert.alert(
-      'Delete Sale',
-      'Are you sure you want to delete this sale record?',
-      [
+    } else {
+      Alert.alert('Delete Sale', 'Are you sure you want to delete this sale record?', [
         { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              if (!currentOrg) return;
-              setLoading(true);
-              await apiService.deleteSale(currentOrg._id, saleId);
-              hideModal(); // Hide modal if open
-              fetchSales(); // Reload list
-            } catch (error: any) {
-              Alert.alert('Error', 'Failed to delete sale');
-            } finally {
-              setLoading(false);
-            }
-          }
-        }
-      ]
-    );
+        { text: 'Delete', style: 'destructive', onPress: doDelete },
+      ]);
+    }
   };
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'verified':
       case 'completed':
-        return theme.colors.primary;
+        return colors.success;
       case 'pending':
-        return theme.colors.tertiary; // Orange/Gold-ish
+        return colors.gold;
       case 'rejected':
-        return theme.colors.error;
+        return colors.error;
       default:
-        return theme.colors.outline;
+        return colors.textMuted;
     }
   };
 
-  const calculateTotalSales = () => {
-    return transactions.reduce((total, t) => total + (t.totalValue || 0), 0);
-  };
-
-  const calculateTotalWeight = () => {
-    return transactions.reduce((total, t) => total + (t.grams || 0), 0);
-  };
+  const calculateTotalSales = () => transactions.reduce((t, s) => t + (s.totalValue || 0), 0);
+  const calculateTotalWeight = () => transactions.reduce((t, s) => t + (s.grams || 0), 0);
 
   if (loading && !refreshing) {
     return (
       <ScreenWrapper>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ActivityIndicator size="large" color={colors.gold} />
         </View>
       </ScreenWrapper>
-    )
+    );
   }
 
   return (
     <ScreenWrapper>
       <ScrollView
-        contentContainerStyle={styles.container}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.gold} />}
       >
-
-        {/* Sales Summary Card */}
-        <Surface style={[styles.summaryCard, { backgroundColor: theme.colors.secondaryContainer }]} elevation={2}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
+        {/* Summary Card */}
+        <View style={styles.summaryCard}>
+          <View style={styles.summaryHeader}>
             <View>
-              <Text variant="titleMedium" style={{ fontWeight: 'bold', color: theme.colors.secondary }}>Total Revenue</Text>
-              <Text variant="headlineMedium" style={{ fontWeight: 'bold', color: theme.colors.primary }}>
-                ${calculateTotalSales().toLocaleString()}
-              </Text>
+              <Text style={styles.summaryLabel}>Total Revenue</Text>
+              <Text style={styles.summaryValue}>${calculateTotalSales().toLocaleString()}</Text>
             </View>
-            <Avatar.Icon size={48} icon="cash-multiple" style={{ backgroundColor: theme.colors.background }} color={theme.colors.primary} />
-          </View>
-          <Divider style={{ backgroundColor: theme.colors.outline, opacity: 0.2, marginBottom: 12 }} />
-          <View style={{ flexDirection: 'row', gap: 24 }}>
-            <View>
-              <Text variant="labelMedium" style={{ opacity: 0.7 }}>Gold Sold</Text>
-              <Text variant="titleMedium" style={{ fontWeight: 'bold' }}>{calculateTotalWeight()}g</Text>
-            </View>
-            <View>
-              <Text variant="labelMedium" style={{ opacity: 0.7 }}>Transactions</Text>
-              <Text variant="titleMedium" style={{ fontWeight: 'bold' }}>{transactions.length}</Text>
+            <View style={styles.summaryIcon}>
+              <Icon name="cash-multiple" size={28} color={colors.gold} />
             </View>
           </View>
-        </Surface>
+          <View style={styles.divider} />
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryItem}>
+              <Text style={styles.itemLabel}>Gold Sold</Text>
+              <Text style={styles.itemValue}>{calculateTotalWeight()}g</Text>
+            </View>
+            <View style={styles.summaryItem}>
+              <Text style={styles.itemLabel}>Transactions</Text>
+              <Text style={styles.itemValue}>{transactions.length}</Text>
+            </View>
+          </View>
+        </View>
 
-        {/* Marketplace Link */}
-        <Button
-          mode="contained-tonal"
-          icon="store-search"
-          onPress={() => navigation.navigate('BuyersList' as any)}
-          style={{ marginBottom: 24, borderColor: theme.colors.tertiary, borderWidth: 1 }}
-          textColor={theme.colors.tertiary}
-        >
-          Find Buyers in Marketplace
-        </Button>
+        {/* Marketplace Button */}
+        <TouchableOpacity style={styles.marketplaceButton} onPress={() => navigation.navigate('BuyersList' as any)}>
+          <Icon name="store-search" size={20} color={colors.gold} />
+          <Text style={styles.marketplaceText}>Find Buyers in Marketplace</Text>
+        </TouchableOpacity>
 
         {/* Transactions List */}
-        <Text variant="titleMedium" style={{ fontWeight: 'bold', marginBottom: 12, marginLeft: 4 }}>Recent Sales</Text>
+        <Text style={styles.sectionTitle}>Recent Sales</Text>
 
         {transactions.length === 0 ? (
-          <Surface style={styles.emptyState} elevation={0}>
-            <Icon name="file-document-outline" size={48} color={theme.colors.outline} />
-            <Text style={{ color: theme.colors.outline, marginTop: 8 }}>No sales recorded yet.</Text>
-          </Surface>
+          <View style={styles.emptyState}>
+            <Icon name="file-document-outline" size={48} color={colors.textMuted} />
+            <Text style={styles.emptyText}>No sales recorded yet.</Text>
+          </View>
         ) : (
           transactions.map((t) => (
-            <TouchableOpacity key={t._id} onPress={() => handleEditSale(t)} activeOpacity={0.7}>
-              <Surface style={styles.transactionCard} elevation={1}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Avatar.Icon
-                      size={40}
-                      icon="sale"
-                      style={{ backgroundColor: `${getStatusColor(t.status)}20` }}
-                      color={getStatusColor(t.status)}
-                    />
-                    <View style={{ marginLeft: 12 }}>
-                      <Text variant="titleSmall" style={{ fontWeight: 'bold' }}>{t.buyerName}</Text>
-                      <Text variant="labelSmall" style={{ color: theme.colors.outline }}>{new Date(t.date).toLocaleDateString()}</Text>
-                    </View>
-                  </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text variant="titleMedium" style={{ fontWeight: 'bold', color: theme.colors.primary }}>+${t.totalValue?.toLocaleString()}</Text>
-                    <Text variant="labelSmall">{t.grams}g @ ${t.pricePerGram}/g</Text>
-                  </View>
-                </View>
-
-                {t.referenceId && (
-                  <View style={{ flexDirection: 'row', justifyContent: 'flex-start', marginTop: 12 }}>
-                    <View style={{ padding: 4, backgroundColor: '#f5f5f5', borderRadius: 4 }}>
-                      <Text variant="labelSmall" style={{ color: theme.colors.outline }}>Ref: {t.referenceId}</Text>
-                    </View>
-                  </View>
-                )}
-              </Surface>
+            <TouchableOpacity key={t._id} style={styles.transactionCard} onPress={() => handleEditSale(t)}>
+              <View style={[styles.txIcon, { backgroundColor: `${getStatusColor(t.status)}20` }]}>
+                <Icon name="sale" size={22} color={getStatusColor(t.status)} />
+              </View>
+              <View style={styles.txContent}>
+                <Text style={styles.txTitle}>{t.buyerName}</Text>
+                <Text style={styles.txDate}>{new Date(t.date).toLocaleDateString()}</Text>
+              </View>
+              <View style={styles.txRight}>
+                <Text style={styles.txAmount}>+${t.totalValue?.toLocaleString()}</Text>
+                <Text style={styles.txDetail}>{t.grams}g @ ${t.pricePerGram}/g</Text>
+              </View>
             </TouchableOpacity>
           ))
         )}
 
+        <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Add Transaction FAB */}
-      <FAB
-        icon="plus"
-        label="Record Sale"
-        style={[styles.fab, { backgroundColor: theme.colors.primary }]}
-        color={theme.colors.onPrimary}
-        onPress={showModal}
-      />
+      {/* FAB */}
+      <TouchableOpacity style={styles.fab} onPress={showModal}>
+        <Icon name="plus" size={28} color="#121212" />
+      </TouchableOpacity>
 
-      {/* Add Transaction Modal */}
+      {/* Modal */}
       <Portal>
-        <Modal
-          visible={visible}
-          onDismiss={hideModal}
-          contentContainerStyle={styles.modalContainer}
-        >
+        <Modal visible={visible} onDismiss={hideModal} contentContainerStyle={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Title style={styles.modalTitle}>{editingSaleId ? 'Edit Sale' : 'Record New Sale'}</Title>
+            <Text style={styles.modalTitle}>{editingSaleId ? 'Edit Sale' : 'Record New Sale'}</Text>
             <ScrollView showsVerticalScrollIndicator={false}>
-
+              <Text style={styles.inputLabel}>Buyer Name</Text>
               <TextInput
-                label="Buyer Name"
                 value={buyer}
                 onChangeText={setBuyer}
-                mode="outlined"
-                style={styles.input}
+                mode="flat"
                 placeholder="e.g. Fidelity Printers"
+                style={styles.input}
+                textColor={colors.textPrimary}
+                placeholderTextColor={colors.textPlaceholder}
               />
 
-              <View style={{ flexDirection: 'row', gap: 12 }}>
-                <TextInput
-                  label="Weight (g)"
-                  value={quantity}
-                  onChangeText={setQuantity}
-                  keyboardType="numeric"
-                  mode="outlined"
-                  style={[styles.input, { flex: 1 }]}
-                />
-                <TextInput
-                  label="Price ($/g)"
-                  value={pricePerUnit}
-                  onChangeText={setPricePerUnit}
-                  keyboardType="numeric"
-                  mode="outlined"
-                  style={[styles.input, { flex: 1 }]}
-                  left={<TextInput.Affix text="$" />}
-                />
+              <View style={styles.inputRow}>
+                <View style={{ flex: 1, marginRight: 8 }}>
+                  <Text style={styles.inputLabel}>Weight (g)</Text>
+                  <TextInput
+                    value={quantity}
+                    onChangeText={setQuantity}
+                    keyboardType="numeric"
+                    mode="flat"
+                    style={styles.input}
+                    textColor={colors.textPrimary}
+                  />
+                </View>
+                <View style={{ flex: 1, marginLeft: 8 }}>
+                  <Text style={styles.inputLabel}>Price ($/g)</Text>
+                  <TextInput
+                    value={pricePerUnit}
+                    onChangeText={setPricePerUnit}
+                    keyboardType="numeric"
+                    mode="flat"
+                    style={styles.input}
+                    textColor={colors.textPrimary}
+                  />
+                </View>
               </View>
 
               {quantity && pricePerUnit && (
-                <Surface style={{ padding: 12, backgroundColor: theme.colors.primaryContainer, borderRadius: 8, marginBottom: 16 }}>
-                  <Text style={{ textAlign: 'center', fontWeight: 'bold' }}>
-                    Total Value: ${(parseFloat(quantity) * parseFloat(pricePerUnit)).toLocaleString()}
-                  </Text>
-                </Surface>
+                <View style={styles.totalBox}>
+                  <Text style={styles.totalText}>Total: ${(parseFloat(quantity) * parseFloat(pricePerUnit)).toLocaleString()}</Text>
+                </View>
               )}
 
-              <TextInput
-                label="Receipt / Ref Number"
-                value={receiptNumber}
-                onChangeText={setReceiptNumber}
-                mode="outlined"
-                style={styles.input}
-              />
+              <Text style={styles.inputLabel}>Receipt/Ref Number</Text>
+              <TextInput value={receiptNumber} onChangeText={setReceiptNumber} mode="flat" style={styles.input} textColor={colors.textPrimary} />
 
-              <TextInput
-                label="Notes"
-                value={notes}
-                onChangeText={setNotes}
-                multiline
-                numberOfLines={3}
-                mode="outlined"
-                style={styles.input}
-              />
+              <Text style={styles.inputLabel}>Notes</Text>
+              <TextInput value={notes} onChangeText={setNotes} multiline numberOfLines={3} mode="flat" style={styles.input} textColor={colors.textPrimary} />
 
-              <Button
-                mode="outlined"
-                onPress={handleImagePicker}
-                style={styles.imageButton}
-                icon="camera"
-              >
-                {receiptImage ? 'Change Receipt Photo' : 'Attach Receipt Photo'}
-              </Button>
+              <TouchableOpacity style={styles.imageButton} onPress={handleImagePicker}>
+                <Icon name="camera" size={20} color={colors.textSecondary} />
+                <Text style={styles.imageButtonText}>{receiptImage ? 'Change Receipt Photo' : 'Attach Receipt Photo'}</Text>
+              </TouchableOpacity>
 
-              {receiptImage && (
-                <Image source={{ uri: receiptImage }} style={{ width: '100%', height: 150, borderRadius: 8, marginBottom: 16 }} />
-              )}
+              {receiptImage && <Image source={{ uri: receiptImage }} style={styles.receiptPreview} />}
 
               <View style={styles.modalActions}>
                 {editingSaleId && (
-                  <Button
-                    mode="outlined"
-                    textColor={theme.colors.error}
-                    style={{ borderColor: theme.colors.error, marginRight: 'auto' }}
-                    onPress={() => handleDeleteSale(editingSaleId)}
-                  >
-                    Delete
-                  </Button>
+                  <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteSale(editingSaleId)}>
+                    <Text style={styles.deleteText}>Delete</Text>
+                  </TouchableOpacity>
                 )}
-                <Button onPress={hideModal} style={{ marginRight: 8 }} textColor={theme.colors.secondary}>Cancel</Button>
-                <Button
-                  mode="contained"
-                  onPress={handleSubmit}
-                  loading={submitting}
-                  contentStyle={{ paddingHorizontal: 24 }}
-                >
-                  {editingSaleId ? "Update" : "Save Record"}
-                </Button>
+                <TouchableOpacity style={styles.cancelButton} onPress={hideModal}>
+                  <Text style={styles.cancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.saveButton} onPress={handleSubmit} disabled={submitting}>
+                  {submitting ? <ActivityIndicator size="small" color="#121212" /> : <Text style={styles.saveText}>{editingSaleId ? 'Update' : 'Save'}</Text>}
+                </TouchableOpacity>
               </View>
             </ScrollView>
           </View>
@@ -454,9 +346,8 @@ const SalesScreen = ({ route }: any) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-    paddingBottom: 80,
+  scrollContent: {
+    paddingVertical: 16,
   },
   loadingContainer: {
     flex: 1,
@@ -464,54 +355,243 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   summaryCard: {
+    backgroundColor: colors.cardBackground,
+    borderRadius: 20,
     padding: 20,
-    borderRadius: 16,
-    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    marginBottom: 16,
   },
-  transactionCard: {
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: '#fff',
+  summaryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  summaryLabel: {
+    color: colors.textMuted,
+    fontSize: 14,
+  },
+  summaryValue: {
+    color: colors.textPrimary,
+    fontSize: 32,
+    fontWeight: 'bold',
+    marginTop: 4,
+  },
+  summaryIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: colors.goldLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.divider,
+    marginVertical: 16,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    gap: 24,
+  },
+  summaryItem: {},
+  itemLabel: {
+    color: colors.textMuted,
+    fontSize: 12,
+  },
+  itemValue: {
+    color: colors.textPrimary,
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  marketplaceButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.goldLight,
+    borderRadius: 14,
+    paddingVertical: 14,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: colors.gold,
+  },
+  marketplaceText: {
+    color: colors.gold,
+    fontSize: 15,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  sectionTitle: {
+    color: colors.textPrimary,
+    fontSize: 18,
+    fontWeight: '700',
     marginBottom: 12,
   },
   emptyState: {
-    padding: 32,
-    alignItems: 'center',
-    backgroundColor: '#f9f9f9',
+    backgroundColor: colors.inputBackground,
     borderRadius: 16,
-    marginTop: 20,
+    padding: 40,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+  },
+  emptyText: {
+    color: colors.textMuted,
+    marginTop: 12,
+  },
+  transactionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.inputBackground,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+  },
+  txIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  txContent: {
+    flex: 1,
+  },
+  txTitle: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  txDate: {
+    color: colors.textMuted,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  txRight: {
+    alignItems: 'flex-end',
+  },
+  txAmount: {
+    color: colors.success,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  txDetail: {
+    color: colors.textMuted,
+    fontSize: 11,
   },
   fab: {
     position: 'absolute',
-    margin: 16,
-    right: 0,
-    bottom: 0,
+    bottom: 24,
+    right: 24,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.gold,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
   },
   modalContainer: {
-    backgroundColor: 'white',
+    backgroundColor: colors.cardBackgroundSolid,
     margin: 20,
-    borderRadius: 16,
+    borderRadius: 20,
     maxHeight: '90%',
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
   modalContent: {
     padding: 24,
   },
   modalTitle: {
-    marginBottom: 20,
+    color: colors.textPrimary,
+    fontSize: 22,
     fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  inputLabel: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    marginBottom: 6,
   },
   input: {
+    backgroundColor: colors.inputBackground,
+    borderRadius: 12,
     marginBottom: 16,
-    backgroundColor: '#fff',
+    height: 52,
+  },
+  inputRow: {
+    flexDirection: 'row',
+  },
+  totalBox: {
+    backgroundColor: colors.goldLight,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  totalText: {
+    color: colors.gold,
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   imageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.inputBackground,
+    borderRadius: 12,
+    paddingVertical: 14,
     marginBottom: 16,
-    borderColor: '#ccc',
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+  },
+  imageButtonText: {
+    color: colors.textSecondary,
+    marginLeft: 8,
+  },
+  receiptPreview: {
+    width: '100%',
+    height: 150,
+    borderRadius: 12,
+    marginBottom: 16,
   },
   modalActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     marginTop: 8,
+  },
+  deleteButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginRight: 'auto',
+    borderWidth: 1,
+    borderColor: colors.error,
+    borderRadius: 10,
+  },
+  deleteText: {
+    color: colors.error,
+    fontWeight: '600',
+  },
+  cancelButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginRight: 8,
+  },
+  cancelText: {
+    color: colors.textSecondary,
+  },
+  saveButton: {
+    backgroundColor: colors.gold,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 10,
+  },
+  saveText: {
+    color: '#121212',
+    fontWeight: 'bold',
   },
 });
 

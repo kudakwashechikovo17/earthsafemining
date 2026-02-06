@@ -1,717 +1,380 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, Image, ScrollView } from 'react-native';
-import {
-  Text,
-  Title,
-  Card,
-  Button,
-  Divider,
-  List,
-  Avatar,
-  Portal,
-  Modal,
-  TextInput,
-  IconButton,
-  ProgressBar,
-} from 'react-native-paper';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, Image, ScrollView, TouchableOpacity } from 'react-native';
+import { Text, Portal, Modal, TextInput, ProgressBar, ActivityIndicator } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-
 import { useNavigation } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import { colors } from '../../theme/darkTheme';
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
+  const { user, currentOrg } = useSelector((state: RootState) => state.auth);
+
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [currentSection, setCurrentSection] = useState('');
 
-  // Mock miner data - would come from API in real implementation
+  // Initial stats are now defaulted to 0 or empty for new accounts
+  // In a real app, you would fetch this from an API endpoint like /miners/profile
   const [minerProfile, setMinerProfile] = useState({
-    name: 'John Doe',
+    name: '', // Will be populated from user
     profileImage: null,
-    nationalId: 'ZW12345678X',
-    address: {
-      street: '123 Mining Avenue',
-      city: 'Harare',
-      province: 'Harare Province',
-      postalCode: '00263',
-    },
-    miningLocation: {
-      name: 'Eastern Gold Fields',
-      coordinates: {
-        latitude: -17.824858,
-        longitude: 31.053028,
-      },
-      province: 'Mashonaland East',
-      district: 'Goromonzi',
-    },
-    permitNumber: 'MIN2023-45678',
-    permitExpiryDate: '2024-12-31',
-    taxNumber: 'TAX8765432',
-    creditScore: 740,
-    miningType: ['gold', 'chrome'],
-    yearsOfExperience: 7,
-    employeeCount: 12,
-    cooperativeName: 'Eastern Miners Cooperative',
-    bankDetails: {
-      bankName: 'Zimbabwe National Bank',
-      accountNumber: '******4567',
-      branchCode: 'HRE001',
-    },
+    nationalId: '', // Empty default
+    address: { street: '', city: '', province: '', postalCode: '' },
+    miningLocation: { name: '', coordinates: { latitude: 0, longitude: 0 }, province: '', district: '' },
+    permitNumber: '',
+    permitExpiryDate: '',
+    taxNumber: '',
+    creditScore: 0, // Default to 0 (no score)
+    miningType: [] as string[],
+    yearsOfExperience: 0,
+    employeeCount: 0,
+    cooperativeName: '',
+    bankDetails: { bankName: '', accountNumber: '', branchCode: '' },
     stats: {
-      totalProduction: 875, // grams
-      productionThisMonth: 42, // grams
-      totalSales: 48750, // USD
-      salesThisMonth: 2310, // USD
-      activeLoans: 1,
-      totalDebt: 3500, // USD
+      totalProduction: 0,
+      productionThisMonth: 0,
+      totalSales: 0,
+      salesThisMonth: 0,
+      activeLoans: 0,
+      totalDebt: 0
     }
   });
 
-  // Define types for the form state
-  interface EditFormState {
-    // Personal information
-    name?: string;
-    nationalId?: string;
+  // Effect to sync Redux user data to local profile state on mount
+  useEffect(() => {
+    if (user) {
+      setMinerProfile(prev => ({
+        ...prev,
+        name: `${user.firstName} ${user.lastName}`,
+        // If currentOrg has location data, we could pre-fill it here too
+        miningLocation: {
+          ...prev.miningLocation,
+          name: currentOrg?.name || prev.miningLocation.name,
+          // Default location could be pulled from org settings if available
+        }
+      }));
+    }
+  }, [user, currentOrg]);
 
-    // Address information
-    street?: string;
-    city?: string;
-    province?: string;
-    postalCode?: string;
-
-    // Mining information
-    locationName?: string;
-    district?: string;
-    permitNumber?: string;
-    miningType?: string;
-    yearsOfExperience?: string;
-    employeeCount?: string;
-
-    // Banking information
-    bankName?: string;
-    accountNumber?: string;
-    branchCode?: string;
-  }
-
+  interface EditFormState { name?: string; nationalId?: string; street?: string; city?: string; province?: string; postalCode?: string; locationName?: string; district?: string; permitNumber?: string; miningType?: string; yearsOfExperience?: string; employeeCount?: string; bankName?: string; accountNumber?: string; branchCode?: string; }
   const [editForm, setEditForm] = useState<EditFormState>({});
 
   const showEditModal = (section: string) => {
     setCurrentSection(section);
-
-    // Set initial form values based on section
     switch (section) {
-      case 'personal':
-        setEditForm({
-          name: minerProfile.name,
-          nationalId: minerProfile.nationalId,
-        });
-        break;
-      case 'address':
-        setEditForm({
-          street: minerProfile.address.street,
-          city: minerProfile.address.city,
-          province: minerProfile.address.province,
-          postalCode: minerProfile.address.postalCode,
-        });
-        break;
-      case 'mining':
-        setEditForm({
-          locationName: minerProfile.miningLocation.name,
-          province: minerProfile.miningLocation.province,
-          district: minerProfile.miningLocation.district,
-          permitNumber: minerProfile.permitNumber,
-          miningType: minerProfile.miningType.join(', '),
-          yearsOfExperience: minerProfile.yearsOfExperience.toString(),
-          employeeCount: minerProfile.employeeCount.toString(),
-        });
-        break;
-      case 'banking':
-        setEditForm({
-          bankName: minerProfile.bankDetails.bankName,
-          accountNumber: minerProfile.bankDetails.accountNumber,
-          branchCode: minerProfile.bankDetails.branchCode,
-        });
-        break;
+      case 'personal': setEditForm({ name: minerProfile.name, nationalId: minerProfile.nationalId }); break;
+      case 'address': setEditForm({ street: minerProfile.address.street, city: minerProfile.address.city, province: minerProfile.address.province, postalCode: minerProfile.address.postalCode }); break;
+      case 'mining': setEditForm({ locationName: minerProfile.miningLocation.name, province: minerProfile.miningLocation.province, district: minerProfile.miningLocation.district, permitNumber: minerProfile.permitNumber, miningType: minerProfile.miningType.join(', '), yearsOfExperience: minerProfile.yearsOfExperience.toString(), employeeCount: minerProfile.employeeCount.toString() }); break;
+      case 'banking': setEditForm({ bankName: minerProfile.bankDetails.bankName, accountNumber: minerProfile.bankDetails.accountNumber, branchCode: minerProfile.bankDetails.branchCode }); break;
     }
-
     setEditModalVisible(true);
   };
 
-  const hideEditModal = () => {
-    setEditModalVisible(false);
-  };
+  const hideEditModal = () => setEditModalVisible(false);
 
   const handleUpdateProfile = () => {
-    // In a real app, this would make an API call
-    // For now, just update the local state
-
     switch (currentSection) {
-      case 'personal':
-        setMinerProfile({
-          ...minerProfile,
-          name: editForm.name || minerProfile.name,
-          nationalId: editForm.nationalId || minerProfile.nationalId,
-        });
-        break;
-      case 'address':
-        setMinerProfile({
-          ...minerProfile,
-          address: {
-            street: editForm.street || minerProfile.address.street,
-            city: editForm.city || minerProfile.address.city,
-            province: editForm.province || minerProfile.address.province,
-            postalCode: editForm.postalCode || minerProfile.address.postalCode,
-          }
-        });
-        break;
-      case 'mining':
-        setMinerProfile({
-          ...minerProfile,
-          miningLocation: {
-            ...minerProfile.miningLocation,
-            name: editForm.locationName || minerProfile.miningLocation.name,
-            province: editForm.province || minerProfile.miningLocation.province,
-            district: editForm.district || minerProfile.miningLocation.district,
-          },
-          permitNumber: editForm.permitNumber || minerProfile.permitNumber,
-          miningType: editForm.miningType
-            ? editForm.miningType.split(',').map(type => type.trim())
-            : minerProfile.miningType,
-          yearsOfExperience: editForm.yearsOfExperience
-            ? parseInt(editForm.yearsOfExperience)
-            : minerProfile.yearsOfExperience,
-          employeeCount: editForm.employeeCount
-            ? parseInt(editForm.employeeCount)
-            : minerProfile.employeeCount,
-        });
-        break;
-      case 'banking':
-        setMinerProfile({
-          ...minerProfile,
-          bankDetails: {
-            bankName: editForm.bankName || minerProfile.bankDetails.bankName,
-            accountNumber: editForm.accountNumber || minerProfile.bankDetails.accountNumber,
-            branchCode: editForm.branchCode || minerProfile.bankDetails.branchCode,
-          }
-        });
-        break;
+      case 'personal': setMinerProfile({ ...minerProfile, name: editForm.name || minerProfile.name, nationalId: editForm.nationalId || minerProfile.nationalId }); break;
+      case 'address': setMinerProfile({ ...minerProfile, address: { street: editForm.street!, city: editForm.city!, province: editForm.province!, postalCode: editForm.postalCode! } }); break;
+      case 'mining': setMinerProfile({ ...minerProfile, miningLocation: { ...minerProfile.miningLocation, name: editForm.locationName!, province: editForm.province!, district: editForm.district! }, permitNumber: editForm.permitNumber!, miningType: editForm.miningType!.split(',').map(t => t.trim()), yearsOfExperience: parseInt(editForm.yearsOfExperience!), employeeCount: parseInt(editForm.employeeCount!) }); break;
+      case 'banking': setMinerProfile({ ...minerProfile, bankDetails: { bankName: editForm.bankName!, accountNumber: editForm.accountNumber!, branchCode: editForm.branchCode! } }); break;
     }
-
     hideEditModal();
   };
 
-  const handleFormChange = (key: string, value: string) => {
-    setEditForm({
-      ...editForm,
-      [key]: value,
-    });
+  const handleFormChange = (key: string, value: string) => setEditForm({ ...editForm, [key]: value });
+
+  const getCreditScoreColor = () => {
+    if (minerProfile.creditScore === 0) return colors.textMuted; // No score color
+    if (minerProfile.creditScore >= 700) return colors.success;
+    if (minerProfile.creditScore >= 600) return colors.gold;
+    return colors.error;
+  };
+
+  const renderEditForm = () => {
+    switch (currentSection) {
+      case 'personal':
+        return (
+          <>
+            <Text style={styles.inputLabel}>Full Name</Text>
+            <TextInput value={editForm.name} onChangeText={v => handleFormChange('name', v)} mode="flat" style={styles.input} textColor={colors.textPrimary} />
+            <Text style={styles.inputLabel}>National ID</Text>
+            <TextInput value={editForm.nationalId} onChangeText={v => handleFormChange('nationalId', v)} mode="flat" style={styles.input} textColor={colors.textPrimary} />
+          </>
+        );
+      case 'address':
+        return (
+          <>
+            <Text style={styles.inputLabel}>Street</Text>
+            <TextInput value={editForm.street} onChangeText={v => handleFormChange('street', v)} mode="flat" style={styles.input} textColor={colors.textPrimary} />
+            <Text style={styles.inputLabel}>City</Text>
+            <TextInput value={editForm.city} onChangeText={v => handleFormChange('city', v)} mode="flat" style={styles.input} textColor={colors.textPrimary} />
+            <Text style={styles.inputLabel}>Province</Text>
+            <TextInput value={editForm.province} onChangeText={v => handleFormChange('province', v)} mode="flat" style={styles.input} textColor={colors.textPrimary} />
+          </>
+        );
+      case 'mining':
+        return (
+          <>
+            <Text style={styles.inputLabel}>Location Name</Text>
+            <TextInput value={editForm.locationName} onChangeText={v => handleFormChange('locationName', v)} mode="flat" style={styles.input} textColor={colors.textPrimary} />
+            <Text style={styles.inputLabel}>Permit Number</Text>
+            <TextInput value={editForm.permitNumber} onChangeText={v => handleFormChange('permitNumber', v)} mode="flat" style={styles.input} textColor={colors.textPrimary} />
+            <Text style={styles.inputLabel}>Mining Type</Text>
+            <TextInput value={editForm.miningType} onChangeText={v => handleFormChange('miningType', v)} mode="flat" style={styles.input} textColor={colors.textPrimary} />
+          </>
+        );
+      case 'banking':
+        return (
+          <>
+            <Text style={styles.inputLabel}>Bank Name</Text>
+            <TextInput value={editForm.bankName} onChangeText={v => handleFormChange('bankName', v)} mode="flat" style={styles.input} textColor={colors.textPrimary} />
+            <Text style={styles.inputLabel}>Account Number</Text>
+            <TextInput value={editForm.accountNumber} onChangeText={v => handleFormChange('accountNumber', v)} mode="flat" style={styles.input} textColor={colors.textPrimary} />
+            <Text style={styles.inputLabel}>Branch Code</Text>
+            <TextInput value={editForm.branchCode} onChangeText={v => handleFormChange('branchCode', v)} mode="flat" style={styles.input} textColor={colors.textPrimary} />
+          </>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Profile Header */}
-      <View style={styles.profileHeader}>
-        <View style={styles.headerButtons}>
-          <IconButton
-            icon="cog"
-            size={24}
-            onPress={() => (navigation as any).navigate('Settings')}
-          />
-          <IconButton
-            icon="account-group"
-            size={24}
-            onPress={() => (navigation as any).navigate('OrgMembers')}
-          />
+    <ScreenWrapper>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Header Actions */}
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.headerBtn} onPress={() => (navigation as any).navigate('Settings')}>
+            <Icon name="cog" size={22} color={colors.textMuted} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerBtn} onPress={() => (navigation as any).navigate('OrgMembers')}>
+            <Icon name="account-group" size={22} color={colors.textMuted} />
+          </TouchableOpacity>
         </View>
-        <View style={styles.avatarContainer}>
-          <Image
-            source={require('../../assets/adaptive-icon.png')}
-            style={styles.avatar}
-          />
-          <IconButton
-            icon="camera"
-            size={20}
-            style={styles.editAvatarButton}
-            onPress={() => console.log('Edit avatar')}
-          />
-        </View>
-        <Text style={styles.name}>{minerProfile.name}</Text>
-        <Text style={styles.role}>Artisanal Miner</Text>
 
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{minerProfile.stats.totalProduction}g</Text>
-            <Text style={styles.statLabel}>Total Production</Text>
+        {/* Profile Card */}
+        <View style={styles.profileCard}>
+          <View style={styles.avatarContainer}>
+            {user?.firstName ? (
+              <View style={[styles.avatar, { backgroundColor: colors.gold, justifyContent: 'center', alignItems: 'center' }]}>
+                <Text style={{ fontSize: 40, fontWeight: 'bold', color: '#121212' }}>
+                  {user.firstName.charAt(0)}
+                </Text>
+              </View>
+            ) : (
+              <Image source={require('../../assets/adaptive-icon.png')} style={styles.avatar} />
+            )}
+            <TouchableOpacity style={styles.editAvatarBtn}>
+              <Icon name="camera" size={16} color={colors.textPrimary} />
+            </TouchableOpacity>
           </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>${minerProfile.stats.totalSales}</Text>
-            <Text style={styles.statLabel}>Total Sales</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{minerProfile.yearsOfExperience}</Text>
-            <Text style={styles.statLabel}>Years Experience</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Credit Score Card */}
-      <Card style={styles.card}>
-        <Card.Content>
-          <View style={styles.cardHeaderRow}>
-            <Title>Credit Score</Title>
-            <Text style={styles.scoreValue}>{minerProfile.creditScore}</Text>
-          </View>
-          <ProgressBar
-            progress={minerProfile.creditScore / 1000}
-            color={getCreditScoreColor(minerProfile.creditScore)}
-            style={styles.progressBar}
-          />
-          <Text style={styles.creditRating}>
-            Rating: {getCreditRating(minerProfile.creditScore)}
-          </Text>
-        </Card.Content>
-      </Card>
-
-      {/* Personal Information Card */}
-      <Card style={styles.card}>
-        <Card.Content>
-          <View style={styles.cardHeaderRow}>
-            <Title>Personal Information</Title>
-            <IconButton
-              icon="pencil"
-              size={20}
-              onPress={() => showEditModal('personal')}
-            />
-          </View>
-          <Divider style={styles.divider} />
-
-          <List.Item
-            title="National ID"
-            description={minerProfile.nationalId}
-            left={props => <List.Icon {...props} icon="card-account-details" />}
-          />
-          <List.Item
-            title="Tax Number"
-            description={minerProfile.taxNumber}
-            left={props => <List.Icon {...props} icon="file-document" />}
-          />
-        </Card.Content>
-      </Card>
-
-      {/* Address Card */}
-      <Card style={styles.card}>
-        <Card.Content>
-          <View style={styles.cardHeaderRow}>
-            <Title>Address</Title>
-            <IconButton
-              icon="pencil"
-              size={20}
-              onPress={() => showEditModal('address')}
-            />
-          </View>
-          <Divider style={styles.divider} />
-
-          <List.Item
-            title="Street"
-            description={minerProfile.address.street}
-            left={props => <List.Icon {...props} icon="map-marker" />}
-          />
-          <List.Item
-            title="City"
-            description={minerProfile.address.city}
-            left={props => <List.Icon {...props} icon="city" />}
-          />
-          <List.Item
-            title="Province"
-            description={minerProfile.address.province}
-            left={props => <List.Icon {...props} icon="map" />}
-          />
-          <List.Item
-            title="Postal Code"
-            description={minerProfile.address.postalCode}
-            left={props => <List.Icon {...props} icon="mailbox" />}
-          />
-        </Card.Content>
-      </Card>
-
-      {/* Mining Information Card */}
-      <Card style={styles.card}>
-        <Card.Content>
-          <View style={styles.cardHeaderRow}>
-            <Title>Mining Information</Title>
-            <IconButton
-              icon="pencil"
-              size={20}
-              onPress={() => showEditModal('mining')}
-            />
-          </View>
-          <Divider style={styles.divider} />
-
-          <List.Item
-            title="Mining Location"
-            description={minerProfile.miningLocation.name}
-            left={props => <List.Icon {...props} icon="terrain" />}
-          />
-          <List.Item
-            title="District"
-            description={`${minerProfile.miningLocation.district}, ${minerProfile.miningLocation.province}`}
-            left={props => <List.Icon {...props} icon="map-marker-radius" />}
-          />
-          <List.Item
-            title="Permit Number"
-            description={minerProfile.permitNumber}
-            left={props => <List.Icon {...props} icon="license" />}
-          />
-          <List.Item
-            title="Permit Expiry"
-            description={minerProfile.permitExpiryDate}
-            left={props => <List.Icon {...props} icon="calendar" />}
-          />
-          <List.Item
-            title="Mining Types"
-            description={minerProfile.miningType.join(', ')}
-            left={props => <List.Icon {...props} icon="gold" />}
-          />
-          <List.Item
-            title="Employees"
-            description={`${minerProfile.employeeCount} people`}
-            left={props => <List.Icon {...props} icon="account-group" />}
-          />
-          {minerProfile.cooperativeName && (
-            <List.Item
-              title="Cooperative"
-              description={minerProfile.cooperativeName}
-              left={props => <List.Icon {...props} icon="handshake" />}
-            />
-          )}
-        </Card.Content>
-      </Card>
-
-      {/* Banking Details Card */}
-      <Card style={styles.card}>
-        <Card.Content>
-          <View style={styles.cardHeaderRow}>
-            <Title>Banking Details</Title>
-            <IconButton
-              icon="pencil"
-              size={20}
-              onPress={() => showEditModal('banking')}
-            />
-          </View>
-          <Divider style={styles.divider} />
-
-          <List.Item
-            title="Bank Name"
-            description={minerProfile.bankDetails.bankName}
-            left={props => <List.Icon {...props} icon="bank" />}
-          />
-          <List.Item
-            title="Account Number"
-            description={minerProfile.bankDetails.accountNumber}
-            left={props => <List.Icon {...props} icon="credit-card" />}
-          />
-          <List.Item
-            title="Branch Code"
-            description={minerProfile.bankDetails.branchCode}
-            left={props => <List.Icon {...props} icon="code-braces" />}
-          />
-        </Card.Content>
-      </Card>
-
-      {/* Monthly Stats Card */}
-      <Card style={styles.card}>
-        <Card.Content>
-          <Title>This Month</Title>
-          <Divider style={styles.divider} />
-
+          <Text style={styles.name}>{minerProfile.name || 'Set Name'}</Text>
+          <Text style={styles.role}>{currentOrg?.name || 'Artisanal Miner'}</Text>
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{minerProfile.stats.productionThisMonth}g</Text>
+              <Text style={styles.statValue}>{minerProfile.stats.totalProduction}g</Text>
               <Text style={styles.statLabel}>Production</Text>
             </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>${minerProfile.stats.salesThisMonth}</Text>
+            <View style={[styles.statItem, styles.statBorder]}>
+              <Text style={styles.statValue}>${minerProfile.stats.totalSales.toLocaleString()}</Text>
               <Text style={styles.statLabel}>Sales</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>${minerProfile.stats.totalDebt}</Text>
-              <Text style={styles.statLabel}>Debt</Text>
+              <Text style={styles.statValue}>{minerProfile.yearsOfExperience}y</Text>
+              <Text style={styles.statLabel}>Experience</Text>
             </View>
           </View>
-        </Card.Content>
-      </Card>
+        </View>
+
+        {/* Credit Score */}
+        <View style={styles.creditCard}>
+          <View style={styles.creditHeader}>
+            <View>
+              <Text style={styles.creditTitle}>Credit Score</Text>
+              <Text style={[styles.creditScore, { color: getCreditScoreColor() }]}>
+                {minerProfile.creditScore > 0 ? minerProfile.creditScore : 'N/A'}
+              </Text>
+            </View>
+            <View style={[styles.creditBadge, { backgroundColor: `${getCreditScoreColor()}20` }]}>
+              <Icon name="star" size={24} color={getCreditScoreColor()} />
+              <Text style={[styles.creditGrade, { color: getCreditScoreColor() }]}>
+                {minerProfile.creditScore === 0 ? 'Not Rated' :
+                  minerProfile.creditScore >= 700 ? 'Excellent' :
+                    minerProfile.creditScore >= 600 ? 'Good' : 'Fair'}
+              </Text>
+            </View>
+          </View>
+          <ProgressBar progress={minerProfile.creditScore / 850} color={getCreditScoreColor()} style={styles.creditProgress} />
+          {minerProfile.creditScore === 0 && (
+            <Text style={styles.noScoreText}>Start digitizing data to build your score.</Text>
+          )}
+        </View>
+
+        {/* Quick Stats */}
+        <View style={styles.quickStats}>
+          <View style={styles.quickStatCard}>
+            <View style={[styles.quickStatIcon, { backgroundColor: colors.goldLight }]}>
+              <Icon name="gold" size={22} color={colors.gold} />
+            </View>
+            <Text style={styles.quickStatValue}>{minerProfile.stats.productionThisMonth}g</Text>
+            <Text style={styles.quickStatLabel}>This Month</Text>
+          </View>
+          <View style={styles.quickStatCard}>
+            <View style={[styles.quickStatIcon, { backgroundColor: 'rgba(76, 175, 80, 0.15)' }]}>
+              <Icon name="cash" size={22} color={colors.success} />
+            </View>
+            <Text style={styles.quickStatValue}>${minerProfile.stats.salesThisMonth}</Text>
+            <Text style={styles.quickStatLabel}>Sales MTD</Text>
+          </View>
+          <View style={styles.quickStatCard}>
+            <View style={[styles.quickStatIcon, { backgroundColor: 'rgba(33, 150, 243, 0.15)' }]}>
+              <Icon name="account-group" size={22} color="#2196F3" />
+            </View>
+            <Text style={styles.quickStatValue}>{minerProfile.employeeCount}</Text>
+            <Text style={styles.quickStatLabel}>Team</Text>
+          </View>
+        </View>
+
+        {/* Info Sections */}
+        <Text style={styles.sectionTitle}>Personal Information</Text>
+        <TouchableOpacity style={styles.infoCard} onPress={() => showEditModal('personal')}>
+          <View style={styles.infoRow}>
+            <Icon name="account" size={20} color={colors.gold} />
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Full Name</Text>
+              <Text style={styles.infoValue}>{minerProfile.name || 'Tap to add'}</Text>
+            </View>
+            <Icon name="pencil" size={18} color={colors.textMuted} />
+          </View>
+          <View style={styles.infoDivider} />
+          <View style={styles.infoRow}>
+            <Icon name="card-account-details" size={20} color={colors.gold} />
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>National ID</Text>
+              <Text style={styles.infoValue}>{minerProfile.nationalId || 'Tap to add'}</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        <Text style={styles.sectionTitle}>Mining Information</Text>
+        <TouchableOpacity style={styles.infoCard} onPress={() => showEditModal('mining')}>
+          <View style={styles.infoRow}>
+            <Icon name="pickaxe" size={20} color={colors.gold} />
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Mining Location</Text>
+              <Text style={styles.infoValue}>{minerProfile.miningLocation.name || 'Tap to add'}</Text>
+            </View>
+            <Icon name="pencil" size={18} color={colors.textMuted} />
+          </View>
+          <View style={styles.infoDivider} />
+          <View style={styles.infoRow}>
+            <Icon name="license" size={20} color={colors.gold} />
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Permit Number</Text>
+              <Text style={styles.infoValue}>{minerProfile.permitNumber || 'Tap to add'}</Text>
+            </View>
+          </View>
+          <View style={styles.infoDivider} />
+          <View style={styles.infoRow}>
+            <Icon name="gold" size={20} color={colors.gold} />
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Mining Type</Text>
+              <Text style={styles.infoValue}>{minerProfile.miningType.length > 0 ? minerProfile.miningType.join(', ') : 'Tap to add'}</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        <Text style={styles.sectionTitle}>Banking Details</Text>
+        <TouchableOpacity style={styles.infoCard} onPress={() => showEditModal('banking')}>
+          <View style={styles.infoRow}>
+            <Icon name="bank" size={20} color={colors.gold} />
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Bank</Text>
+              <Text style={styles.infoValue}>{minerProfile.bankDetails.bankName || 'Tap to add'}</Text>
+            </View>
+            <Icon name="pencil" size={18} color={colors.textMuted} />
+          </View>
+          <View style={styles.infoDivider} />
+          <View style={styles.infoRow}>
+            <Icon name="credit-card" size={20} color={colors.gold} />
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Account</Text>
+              <Text style={styles.infoValue}>{minerProfile.bankDetails.accountNumber || 'Tap to add'}</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
 
       {/* Edit Modal */}
       <Portal>
-        <Modal
-          visible={editModalVisible}
-          onDismiss={hideEditModal}
-          contentContainerStyle={styles.modalContainer}
-        >
+        <Modal visible={editModalVisible} onDismiss={hideEditModal} contentContainerStyle={styles.modalContainer}>
           <ScrollView>
-            <Title style={styles.modalTitle}>
-              {currentSection === 'personal' && 'Edit Personal Information'}
-              {currentSection === 'address' && 'Edit Address'}
-              {currentSection === 'mining' && 'Edit Mining Information'}
-              {currentSection === 'banking' && 'Edit Banking Details'}
-            </Title>
-
-            {currentSection === 'personal' && (
-              <>
-                <TextInput
-                  label="Full Name"
-                  value={editForm.name}
-                  onChangeText={(text) => handleFormChange('name', text)}
-                  style={styles.input}
-                />
-                <TextInput
-                  label="National ID"
-                  value={editForm.nationalId}
-                  onChangeText={(text) => handleFormChange('nationalId', text)}
-                  style={styles.input}
-                />
-              </>
-            )}
-
-            {currentSection === 'address' && (
-              <>
-                <TextInput
-                  label="Street"
-                  value={editForm.street}
-                  onChangeText={(text) => handleFormChange('street', text)}
-                  style={styles.input}
-                />
-                <TextInput
-                  label="City"
-                  value={editForm.city}
-                  onChangeText={(text) => handleFormChange('city', text)}
-                  style={styles.input}
-                />
-                <TextInput
-                  label="Province"
-                  value={editForm.province}
-                  onChangeText={(text) => handleFormChange('province', text)}
-                  style={styles.input}
-                />
-                <TextInput
-                  label="Postal Code"
-                  value={editForm.postalCode}
-                  onChangeText={(text) => handleFormChange('postalCode', text)}
-                  style={styles.input}
-                />
-              </>
-            )}
-
-            {currentSection === 'mining' && (
-              <>
-                <TextInput
-                  label="Mining Location Name"
-                  value={editForm.locationName}
-                  onChangeText={(text) => handleFormChange('locationName', text)}
-                  style={styles.input}
-                />
-                <TextInput
-                  label="Province"
-                  value={editForm.province}
-                  onChangeText={(text) => handleFormChange('province', text)}
-                  style={styles.input}
-                />
-                <TextInput
-                  label="District"
-                  value={editForm.district}
-                  onChangeText={(text) => handleFormChange('district', text)}
-                  style={styles.input}
-                />
-                <TextInput
-                  label="Permit Number"
-                  value={editForm.permitNumber}
-                  onChangeText={(text) => handleFormChange('permitNumber', text)}
-                  style={styles.input}
-                />
-                <TextInput
-                  label="Mining Types (comma separated)"
-                  value={editForm.miningType}
-                  onChangeText={(text) => handleFormChange('miningType', text)}
-                  style={styles.input}
-                />
-                <TextInput
-                  label="Years of Experience"
-                  value={editForm.yearsOfExperience}
-                  onChangeText={(text) => handleFormChange('yearsOfExperience', text)}
-                  keyboardType="numeric"
-                  style={styles.input}
-                />
-                <TextInput
-                  label="Number of Employees"
-                  value={editForm.employeeCount}
-                  onChangeText={(text) => handleFormChange('employeeCount', text)}
-                  keyboardType="numeric"
-                  style={styles.input}
-                />
-              </>
-            )}
-
-            {currentSection === 'banking' && (
-              <>
-                <TextInput
-                  label="Bank Name"
-                  value={editForm.bankName}
-                  onChangeText={(text) => handleFormChange('bankName', text)}
-                  style={styles.input}
-                />
-                <TextInput
-                  label="Account Number"
-                  value={editForm.accountNumber}
-                  onChangeText={(text) => handleFormChange('accountNumber', text)}
-                  style={styles.input}
-                />
-                <TextInput
-                  label="Branch Code"
-                  value={editForm.branchCode}
-                  onChangeText={(text) => handleFormChange('branchCode', text)}
-                  style={styles.input}
-                />
-              </>
-            )}
-
+            <Text style={styles.modalTitle}>Edit {currentSection}</Text>
+            {renderEditForm()}
             <View style={styles.modalActions}>
-              <Button onPress={hideEditModal} style={styles.modalButton}>
-                Cancel
-              </Button>
-              <Button
-                mode="contained"
-                onPress={handleUpdateProfile}
-                style={styles.modalButton}
-              >
-                Save
-              </Button>
+              <TouchableOpacity style={styles.cancelBtn} onPress={hideEditModal}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleUpdateProfile}>
+                <Text style={styles.saveText}>Save</Text>
+              </TouchableOpacity>
             </View>
           </ScrollView>
         </Modal>
       </Portal>
-    </ScrollView>
+    </ScreenWrapper>
   );
 };
 
-const getCreditScoreColor = (score: number): string => {
-  if (score >= 750) return '#2E7D32'; // Good
-  if (score >= 650) return '#FFA000'; // Fair
-  return '#D32F2F'; // Poor
-};
-
-const getCreditRating = (score: number): string => {
-  if (score >= 750) return 'Excellent';
-  if (score >= 700) return 'Good';
-  if (score >= 650) return 'Fair';
-  if (score >= 600) return 'Poor';
-  return 'Very Poor';
-};
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
-  profileHeader: {
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#ffffff',
-    marginBottom: 8,
-  },
-  headerButtons: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    flexDirection: 'row',
-  },
-  avatarContainer: {
-    position: 'relative',
-    marginBottom: 10,
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-  },
-  editAvatarButton: {
-    position: 'absolute',
-    right: -5,
-    bottom: -5,
-    backgroundColor: '#2E7D32',
-  },
-  name: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  role: {
-    fontSize: 16,
-    color: '#666666',
-    marginBottom: 16,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
-    marginTop: 10,
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2E7D32',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#666666',
-  },
-  card: {
-    margin: 8,
-    elevation: 2,
-  },
-  cardHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  divider: {
-    marginVertical: 10,
-  },
-  progressBar: {
-    height: 10,
-    borderRadius: 5,
-    marginVertical: 10,
-  },
-  scoreValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  creditRating: {
-    textAlign: 'right',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  modalContainer: {
-    backgroundColor: 'white',
-    padding: 20,
-    margin: 20,
-    borderRadius: 8,
-    maxHeight: '80%',
-  },
-  modalTitle: {
-    marginBottom: 16,
-  },
-  input: {
-    marginBottom: 16,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 16,
-  },
-  modalButton: {
-    marginLeft: 8,
-  },
+  scrollContent: { paddingVertical: 16 },
+  headerActions: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 8 },
+  headerBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: colors.inputBackground, justifyContent: 'center', alignItems: 'center', marginLeft: 8 },
+  profileCard: { backgroundColor: colors.cardBackground, borderRadius: 24, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: colors.cardBorder, marginBottom: 16 },
+  avatarContainer: { position: 'relative', marginBottom: 16 },
+  avatar: { width: 100, height: 100, borderRadius: 50, borderWidth: 3, borderColor: colors.gold },
+  editAvatarBtn: { position: 'absolute', bottom: 0, right: 0, width: 32, height: 32, borderRadius: 16, backgroundColor: colors.gold, justifyContent: 'center', alignItems: 'center' },
+  name: { color: colors.textPrimary, fontSize: 24, fontWeight: 'bold' },
+  role: { color: colors.textMuted, fontSize: 14, marginTop: 4 },
+  statsRow: { flexDirection: 'row', marginTop: 20, width: '100%', justifyContent: 'space-around' },
+  statItem: { alignItems: 'center', paddingHorizontal: 16 },
+  statBorder: { borderLeftWidth: 1, borderRightWidth: 1, borderColor: colors.divider },
+  statValue: { color: colors.gold, fontSize: 20, fontWeight: 'bold' },
+  statLabel: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
+  creditCard: { backgroundColor: colors.cardBackground, borderRadius: 20, padding: 20, borderWidth: 1, borderColor: colors.cardBorder, marginBottom: 16 },
+  creditHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  creditTitle: { color: colors.textMuted, fontSize: 14 },
+  creditScore: { fontSize: 36, fontWeight: 'bold' },
+  creditBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12 },
+  creditGrade: { fontSize: 14, fontWeight: '600', marginLeft: 6 },
+  creditProgress: { height: 8, borderRadius: 4, backgroundColor: colors.inputBackground },
+  noScoreText: { color: colors.textMuted, fontSize: 12, marginTop: 12, textAlign: 'center', fontStyle: 'italic' },
+  quickStats: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
+  quickStatCard: { flex: 1, backgroundColor: colors.cardBackground, borderRadius: 16, padding: 16, marginHorizontal: 4, alignItems: 'center', borderWidth: 1, borderColor: colors.cardBorder },
+  quickStatIcon: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
+  quickStatValue: { color: colors.textPrimary, fontSize: 18, fontWeight: 'bold' },
+  quickStatLabel: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
+  sectionTitle: { color: colors.textPrimary, fontSize: 18, fontWeight: '700', marginBottom: 12, marginTop: 8 },
+  infoCard: { backgroundColor: colors.cardBackground, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.cardBorder, marginBottom: 16 },
+  infoRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
+  infoContent: { flex: 1, marginLeft: 14 },
+  infoLabel: { color: colors.textMuted, fontSize: 12 },
+  infoValue: { color: colors.textPrimary, fontSize: 15, fontWeight: '500', marginTop: 2 },
+  infoDivider: { height: 1, backgroundColor: colors.divider, marginVertical: 8 },
+  modalContainer: { backgroundColor: colors.cardBackgroundSolid, margin: 20, borderRadius: 20, padding: 24, maxHeight: '80%', borderWidth: 1, borderColor: colors.cardBorder },
+  modalTitle: { color: colors.textPrimary, fontSize: 22, fontWeight: 'bold', marginBottom: 20, textTransform: 'capitalize' },
+  inputLabel: { color: colors.textSecondary, fontSize: 13, marginBottom: 6 },
+  input: { backgroundColor: colors.inputBackground, borderRadius: 12, marginBottom: 16, height: 52 },
+  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8 },
+  cancelBtn: { paddingVertical: 12, paddingHorizontal: 20 },
+  cancelText: { color: colors.textSecondary },
+  saveBtn: { backgroundColor: colors.gold, paddingVertical: 12, paddingHorizontal: 24, borderRadius: 10 },
+  saveText: { color: '#121212', fontWeight: 'bold' },
 });
 
-export default ProfileScreen; 
+export default ProfileScreen;

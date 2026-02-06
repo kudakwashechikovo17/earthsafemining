@@ -28,6 +28,10 @@ export interface IShift extends Document {
     approvalDate?: Date;
     createdAt: Date;
     updatedAt: Date;
+
+    // Key Production Stats
+    goldRecovered: number;
+    oreMined: number;
 }
 
 const shiftSchema = new Schema<IShift>(
@@ -67,6 +71,11 @@ const shiftSchema = new Schema<IShift>(
         weatherCondition: String,
         startTime: Date,
         endTime: Date,
+
+        // Key Production Stats (Denormalized for easy access)
+        goldRecovered: { type: Number, default: 0 },
+        oreMined: { type: Number, default: 0 },
+
         approvedBy: {
             type: Schema.Types.ObjectId,
             ref: 'User',

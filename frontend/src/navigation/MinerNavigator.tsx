@@ -1,6 +1,7 @@
 import React from 'react';
+import { TouchableOpacity, View, StyleSheet, Platform, Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createStackNavigator, StackNavigationOptions } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 // Import screens
@@ -30,22 +31,84 @@ import FinancialDashboardScreen from '../screens/miner/FinancialDashboardScreen'
 import PayrollScreen from '../screens/miner/PayrollScreen';
 import ReceiptScreen from '../screens/miner/ReceiptScreen';
 
+// Dark theme colors
+const colors = {
+  background: '#121212',
+  cardBackground: '#1e1e1e',
+  gold: '#D4AF37',
+  textPrimary: '#ffffff',
+  textMuted: 'rgba(255,255,255,0.5)',
+  border: 'rgba(255,255,255,0.1)',
+};
+
+// Custom Header Logo Component
+const HeaderLogo = () => (
+  <View style={styles.headerLogoContainer}>
+    <View style={styles.logoBox}>
+      <Text style={styles.logoText}>EM</Text>
+    </View>
+    <View>
+      <Text style={styles.brandName}>EARTHSAFE</Text>
+      <Text style={styles.brandTag}>MineTrack</Text>
+    </View>
+  </View>
+);
+
 // Create navigators
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
+// Professional dark header styling for all screens - WITH LOGO
+const screenOptions: StackNavigationOptions = {
+  headerStyle: {
+    backgroundColor: colors.cardBackground,
+    elevation: 0,
+    shadowOpacity: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  headerTintColor: colors.textPrimary,
+  headerTitleStyle: {
+    fontWeight: '600',
+    fontSize: 18,
+    color: colors.textPrimary,
+  },
+  headerBackTitleVisible: false,
+  headerLeftContainerStyle: {
+    paddingLeft: Platform.OS === 'ios' ? 10 : 0,
+  },
+  headerLeft: ({ canGoBack, onPress }) =>
+    canGoBack ? (
+      <TouchableOpacity
+        onPress={onPress}
+        style={styles.backButton}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <Icon name="arrow-left" size={24} color={colors.textPrimary} />
+      </TouchableOpacity>
+    ) : null,
+};
+
+// Screen options with logo instead of title (for main tab screens)
+const mainScreenOptions: StackNavigationOptions = {
+  ...screenOptions,
+  headerTitle: () => <HeaderLogo />,
+  headerTitleAlign: 'left',
+  headerLeft: () => null,
+};
+
 // Create stack navigators for each tab
 const DashboardStack = () => (
-  <Stack.Navigator>
-    <Stack.Screen name="MinerDashboard" component={MinerDashboardScreen} options={{ title: 'Dashboard' }} />
+  <Stack.Navigator screenOptions={screenOptions}>
+    <Stack.Screen name="MinerDashboard" component={MinerDashboardScreen} options={mainScreenOptions} />
     <Stack.Screen name="BuyersList" component={BuyersListScreen} options={{ title: 'Available Buyers' }} />
     <Stack.Screen name="ShiftDetails" component={ShiftDetailsScreen} options={{ title: 'Shift Details' }} />
   </Stack.Navigator>
 );
 
 const ProductionStack = () => (
-  <Stack.Navigator>
-    <Stack.Screen name="Production" component={ProductionScreen} options={{ title: 'Production' }} />
+  <Stack.Navigator screenOptions={screenOptions}>
+    <Stack.Screen name="Production" component={ProductionScreen} options={mainScreenOptions} />
     <Stack.Screen name="ShiftLog" component={ShiftLogScreen} options={{ title: 'Log Daily Shift' }} />
     <Stack.Screen name="ShiftDetails" component={ShiftDetailsScreen} options={{ title: 'Shift Details' }} />
     <Stack.Screen name="TimesheetList" component={TimesheetListScreen} options={{ title: 'Timesheets' }} />
@@ -57,22 +120,22 @@ const ProductionStack = () => (
 );
 
 const SalesStack = () => (
-  <Stack.Navigator>
-    <Stack.Screen name="Sales" component={SalesScreen} options={{ title: 'Sales' }} />
+  <Stack.Navigator screenOptions={screenOptions}>
+    <Stack.Screen name="Sales" component={SalesScreen} options={mainScreenOptions} />
   </Stack.Navigator>
 );
 
 const ComplianceStack = () => (
-  <Stack.Navigator>
-    <Stack.Screen name="Compliance" component={ComplianceScreen} options={{ title: 'Compliance' }} />
+  <Stack.Navigator screenOptions={screenOptions}>
+    <Stack.Screen name="Compliance" component={ComplianceScreen} options={mainScreenOptions} />
     <Stack.Screen name="IncidentReport" component={IncidentReportScreen} options={{ title: 'Report Incident' }} />
     <Stack.Screen name="SafetyChecklist" component={SafetyChecklistScreen} options={{ title: 'Daily Safety Checklist' }} />
   </Stack.Navigator>
 );
 
 const LoansStack = () => (
-  <Stack.Navigator>
-    <Stack.Screen name="Loans" component={LoansScreen} options={{ title: 'Loans & Investments' }} />
+  <Stack.Navigator screenOptions={screenOptions}>
+    <Stack.Screen name="Loans" component={LoansScreen} options={mainScreenOptions} />
     <Stack.Screen name="LoanPreparation" component={LoanPreparationScreen} options={{ title: 'Get Loan Ready' }} />
     <Stack.Screen name="FinancialMarketplace" component={FinancialMarketplaceScreen} options={{ title: 'Financial Marketplace' }} />
     <Stack.Screen name="LoanRepayment" component={LoanRepaymentScreen} options={{ title: 'Loan Repayments' }} />
@@ -80,8 +143,8 @@ const LoansStack = () => (
 );
 
 const FinancialsStack = () => (
-  <Stack.Navigator>
-    <Stack.Screen name="FinancialDashboard" component={FinancialDashboardScreen} options={{ title: 'Financials' }} />
+  <Stack.Navigator screenOptions={screenOptions}>
+    <Stack.Screen name="FinancialDashboard" component={FinancialDashboardScreen} options={mainScreenOptions} />
     <Stack.Screen name="Expenses" component={ExpenseScreen} options={{ title: 'Expenses' }} />
     <Stack.Screen name="Receipts" component={ReceiptScreen} options={{ title: 'Receipts' }} />
     <Stack.Screen name="Payroll" component={PayrollScreen} options={{ title: 'Payroll' }} />
@@ -89,18 +152,19 @@ const FinancialsStack = () => (
 );
 
 const ProfileStack = () => (
-  <Stack.Navigator>
-    <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
+  <Stack.Navigator screenOptions={screenOptions}>
+    <Stack.Screen name="Profile" component={ProfileScreen} options={mainScreenOptions} />
     <Stack.Screen name="OrgMembers" component={OrgMembersScreen} options={{ title: 'Team Members' }} />
     <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
   </Stack.Navigator>
 );
 
-// Main miner navigator
+// Main miner navigator with dark theme tab bar
 const MinerNavigator = () => {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
+        headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: string = 'home';
 
@@ -122,8 +186,20 @@ const MinerNavigator = () => {
 
           return <Icon name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#2E7D32',
-        tabBarInactiveTintColor: 'gray',
+        tabBarActiveTintColor: colors.gold,
+        tabBarInactiveTintColor: colors.textMuted,
+        tabBarStyle: {
+          backgroundColor: colors.cardBackground,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+          paddingTop: 5,
+          paddingBottom: Platform.OS === 'ios' ? 20 : 8,
+          height: Platform.OS === 'ios' ? 85 : 65,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+        },
       })}
     >
       <Tab.Screen name="Dashboard" component={DashboardStack} options={{ title: 'Dashboard' }} />
@@ -137,4 +213,44 @@ const MinerNavigator = () => {
   );
 };
 
-export default MinerNavigator; 
+const styles = StyleSheet.create({
+  backButton: {
+    marginLeft: 16,
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  headerLogoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logoBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: colors.gold,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  logoText: {
+    color: '#121212',
+    fontSize: 14,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+  },
+  brandName: {
+    color: colors.textPrimary,
+    fontSize: 14,
+    fontWeight: 'bold',
+    letterSpacing: 2,
+  },
+  brandTag: {
+    color: colors.gold,
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 1,
+  },
+});
+
+export default MinerNavigator;

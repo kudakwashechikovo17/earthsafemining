@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
 import { View, StyleSheet, SafeAreaView, StatusBar, Platform } from 'react-native';
-import { useTheme } from 'react-native-paper';
+import { colors } from '../theme/darkTheme';
 
 interface ScreenWrapperProps {
     children: ReactNode;
@@ -9,13 +9,11 @@ interface ScreenWrapperProps {
 }
 
 const ScreenWrapper: React.FC<ScreenWrapperProps> = ({ children, style }) => {
-    const theme = useTheme();
-
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <SafeAreaView style={styles.container}>
             <StatusBar
-                backgroundColor={theme.colors.background}
-                barStyle="dark-content"
+                backgroundColor={colors.background}
+                barStyle="light-content"
             />
             <View style={[styles.content, style]}>
                 {children}
@@ -27,6 +25,7 @@ const ScreenWrapper: React.FC<ScreenWrapperProps> = ({ children, style }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: colors.background,
         paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     },
     content: {

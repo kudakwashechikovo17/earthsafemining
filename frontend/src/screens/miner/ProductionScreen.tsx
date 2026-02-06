@@ -1,30 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, Alert } from 'react-native';
-import {
-  Card,
-  Title,
-  FAB,
-  Text,
-  Divider,
-  List,
-  Avatar,
-  ActivityIndicator,
-  Chip,
-  useTheme,
-  IconButton,
-  TextInput, // Add this
-  Button, // Add this
-  Portal, // Add this
-  Modal // Add this
-} from 'react-native-paper';
+import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
+import { Text, ActivityIndicator } from 'react-native-paper';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { apiService } from '../../services/apiService';
 import ScreenWrapper from '../../components/ScreenWrapper';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { colors } from '../../theme/darkTheme';
 
 const ProductionScreen = () => {
-  const theme = useTheme();
   const navigation = useNavigation();
   const { currentOrg } = useSelector((state: RootState) => state.auth);
 
@@ -46,8 +31,6 @@ const ProductionScreen = () => {
       ]);
       setShifts(data);
       setProductionStats(stats);
-
-      // Calculate stats
       setTotalShifts(data.length);
       setActiveShifts(data.filter((s: any) => s.status === 'open').length);
     } catch (error) {
@@ -67,11 +50,10 @@ const ProductionScreen = () => {
     setRefreshing(false);
   };
 
-  // Reload when screen comes into focus (e.g. after logging a shift)
   useFocusEffect(
     useCallback(() => {
       if (currentOrg) {
-        fetchShifts(); // Silent update
+        fetchShifts();
       }
     }, [currentOrg])
   );
@@ -95,185 +77,283 @@ const ProductionScreen = () => {
   return (
     <ScreenWrapper>
       <ScrollView
-        style={styles.container}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.gold} />}
       >
         {/* Summary Card */}
-        <Card style={styles.card}>
-          <Card.Content>
-            <Title>Production Overview</Title>
-            <View style={styles.summaryContainer}>
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryValue}>{activeShifts}</Text>
-                <Text style={styles.summaryLabel}>Active Shifts</Text>
-              </View>
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryValue}>{totalShifts}</Text>
-                <Text style={styles.summaryLabel}>Total Logged</Text>
-              </View>
-              {/* Placeholder for actual production vol - requires aggregation endpoint */}
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryValue}>{productionStats.ore}t</Text>
-                <Text style={styles.summaryLabel}>Ore Mined</Text>
-              </View>
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryValue}>{productionStats.waste}t</Text>
-                <Text style={styles.summaryLabel}>Waste Moved</Text>
-              </View>
+        <View style={styles.summaryCard}>
+          <Text style={styles.cardTitle}>Production Overview</Text>
+          <View style={styles.statsGrid}>
+            <View style={styles.statBox}>
+              <Text style={styles.statValue}>{activeShifts}</Text>
+              <Text style={styles.statLabel}>Active Shifts</Text>
             </View>
-          </Card.Content>
-        </Card>
-
-        {/* Quick Access Buttons */}
-        <View style={styles.quickAccessContainer}>
-          <Card style={styles.quickAccessCard} onPress={() => (navigation as any).navigate('Equipment')}>
-            <Card.Content style={styles.quickAccessContent}>
-              <Avatar.Icon size={40} icon="tools" style={{ backgroundColor: '#1976D2' }} />
-              <Text style={styles.quickAccessText}>Equipment</Text>
-            </Card.Content>
-          </Card>
-          <Card style={styles.quickAccessCard} onPress={() => (navigation as any).navigate('Inventory')}>
-            <Card.Content style={styles.quickAccessContent}>
-              <Avatar.Icon size={40} icon="package-variant" style={{ backgroundColor: '#F57C00' }} />
-              <Text style={styles.quickAccessText}>Inventory</Text>
-            </Card.Content>
-          </Card>
-          <Card style={styles.quickAccessCard} onPress={() => (navigation as any).navigate('TimesheetList')}>
-            <Card.Content style={styles.quickAccessContent}>
-              <Avatar.Icon size={40} icon="clock-outline" style={{ backgroundColor: '#7B1FA2' }} />
-              <Text style={styles.quickAccessText}>Timesheets</Text>
-            </Card.Content>
-          </Card>
+            <View style={styles.statBox}>
+              <Text style={styles.statValue}>{totalShifts}</Text>
+              <Text style={styles.statLabel}>Total Logged</Text>
+            </View>
+            <View style={styles.statBox}>
+              <Text style={styles.statValue}>{productionStats.ore}t</Text>
+              <Text style={styles.statLabel}>Ore Mined</Text>
+            </View>
+            <View style={styles.statBox}>
+              <Text style={styles.statValue}>{productionStats.waste}t</Text>
+              <Text style={styles.statLabel}>Waste Moved</Text>
+            </View>
+          </View>
         </View>
 
-        {/* Recent Shifts List */}
-        <Card style={styles.card}>
-          <Card.Content>
-            <Title>Recent Shifts</Title>
-            <Divider style={styles.divider} />
+        {/* Quick Access */}
+        <View style={styles.quickAccessRow}>
+          <TouchableOpacity style={styles.quickAccessCard} onPress={() => (navigation as any).navigate('Equipment')}>
+            <View style={[styles.quickAccessIcon, { backgroundColor: 'rgba(33, 150, 243, 0.15)' }]}>
+              <Icon name="tools" size={24} color="#2196F3" />
+            </View>
+            <Text style={styles.quickAccessText}>Equipment</Text>
+          </TouchableOpacity>
 
-            {loading && <ActivityIndicator style={{ margin: 20 }} />}
+          <TouchableOpacity style={styles.quickAccessCard} onPress={() => (navigation as any).navigate('Inventory')}>
+            <View style={[styles.quickAccessIcon, { backgroundColor: 'rgba(255, 152, 0, 0.15)' }]}>
+              <Icon name="package-variant" size={24} color="#FF9800" />
+            </View>
+            <Text style={styles.quickAccessText}>Inventory</Text>
+          </TouchableOpacity>
 
-            {!loading && shifts.length === 0 && (
-              <Text style={{ textAlign: 'center', margin: 20, color: '#666' }}>
-                No shifts logged yet. Start a new shift to track production.
+          <TouchableOpacity style={styles.quickAccessCard} onPress={() => (navigation as any).navigate('TimesheetList')}>
+            <View style={[styles.quickAccessIcon, { backgroundColor: 'rgba(156, 39, 176, 0.15)' }]}>
+              <Icon name="clock-outline" size={24} color="#9C27B0" />
+            </View>
+            <Text style={styles.quickAccessText}>Timesheets</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Recent Shifts */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Recent Shifts</Text>
+        </View>
+
+        {loading && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.gold} />
+          </View>
+        )}
+
+        {!loading && shifts.length === 0 && (
+          <View style={styles.emptyState}>
+            <Icon name="pickaxe" size={48} color={colors.textMuted} />
+            <Text style={styles.emptyText}>No shifts logged yet.</Text>
+            <Text style={styles.emptySubtext}>Start a new shift to track production.</Text>
+          </View>
+        )}
+
+        {shifts.map((shift) => (
+          <TouchableOpacity
+            key={shift._id}
+            style={styles.shiftCard}
+            onPress={() => (navigation as any).navigate('ShiftDetails', { shiftId: shift._id })}
+          >
+            <View style={[styles.shiftIcon, shift.status === 'open' && styles.shiftIconActive]}>
+              <Icon
+                name={shift.type === 'day' ? 'weather-sunny' : 'weather-night'}
+                size={24}
+                color={shift.status === 'open' ? colors.gold : colors.textMuted}
+              />
+            </View>
+            <View style={styles.shiftContent}>
+              <Text style={styles.shiftTitle}>
+                {shift.type === 'day' ? 'Day' : 'Night'} Shift - {formatDate(shift.date)}
               </Text>
-            )}
+              <Text style={styles.shiftNotes}>{shift.notes || 'No notes'}</Text>
+            </View>
+            <View style={[styles.statusBadge, shift.status === 'open' && styles.statusBadgeActive]}>
+              <Text style={[styles.statusText, shift.status === 'open' && styles.statusTextActive]}>
+                {shift.status.toUpperCase()}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        ))}
 
-            {shifts.map((shift) => (
-              <View key={shift._id}>
-                <List.Item
-                  onPress={() => (navigation as any).navigate('ShiftDetails', { shiftId: shift._id })}
-                  title={`${shift.type === 'day' ? 'Day' : 'Night'} Shift - ${formatDate(shift.date)}`}
-                  description={shift.notes || 'No notes'}
-                  left={props => (
-                    <Avatar.Icon
-                      {...props}
-                      icon={shift.type === 'day' ? 'weather-sunny' : 'weather-night'}
-                      style={{ backgroundColor: shift.status === 'open' ? theme.colors.primary : '#ccc' }}
-                    />
-                  )}
-                  right={props => (
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <Chip
-                        mode="outlined"
-                        compact
-                        textStyle={{ fontSize: 10 }}
-                        style={{ borderColor: shift.status === 'open' ? theme.colors.primary : '#666', marginRight: 8 }}
-                      >
-                        {shift.status.toUpperCase()}
-                      </Chip>
-                    </View>
-                  )}
-                />
-                <Divider />
-              </View>
-            ))}
-          </Card.Content>
-        </Card>
-
-        <View style={{ height: 80 }} />
+        <View style={{ height: 100 }} />
       </ScrollView>
 
-      <FAB
-        icon="plus"
-        label="Log Shift"
-        style={styles.fab}
-        onPress={handleStartShift}
-      />
+      {/* FAB */}
+      <TouchableOpacity style={styles.fab} onPress={handleStartShift}>
+        <Icon name="plus" size={28} color="#121212" />
+      </TouchableOpacity>
     </ScreenWrapper>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
+  scrollContent: {
+    paddingVertical: 16,
   },
-  card: {
-    margin: 8,
-    elevation: 2,
-    backgroundColor: 'white'
+  summaryCard: {
+    backgroundColor: colors.cardBackground,
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    marginBottom: 16,
   },
-  summaryContainer: {
+  cardTitle: {
+    color: colors.textPrimary,
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 16,
+  },
+  statsGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginTop: 16,
-    marginBottom: 8
   },
-  summaryItem: {
+  statBox: {
+    width: '48%',
+    backgroundColor: colors.inputBackground,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 10,
     alignItems: 'center',
-    flex: 1
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
   },
-  summaryValue: {
-    fontSize: 24,
+  statValue: {
+    fontSize: 26,
     fontWeight: 'bold',
-    color: '#2E7D32',
+    color: colors.gold,
   },
-  summaryLabel: {
+  statLabel: {
     fontSize: 12,
-    color: '#666666',
+    color: colors.textMuted,
     marginTop: 4,
   },
-  divider: {
-    marginBottom: 0,
-    marginTop: 8
-  },
-  fab: {
-    position: 'absolute',
-    margin: 16,
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#2E7D32',
-  },
-  quickAccessContainer: {
+  quickAccessRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginHorizontal: 8,
-    marginBottom: 8,
+    marginBottom: 20,
   },
   quickAccessCard: {
     flex: 1,
+    backgroundColor: colors.cardBackground,
+    borderRadius: 16,
+    padding: 16,
     marginHorizontal: 4,
-    elevation: 2,
-  },
-  quickAccessContent: {
     alignItems: 'center',
-    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  quickAccessIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   quickAccessText: {
-    marginTop: 8,
-    fontSize: 14,
+    color: colors.textSecondary,
+    fontSize: 12,
     fontWeight: '600',
   },
-  modalContainer: {
-    backgroundColor: 'white',
-    padding: 20,
-    margin: 20,
+  sectionHeader: {
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    color: colors.textPrimary,
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyState: {
+    backgroundColor: colors.inputBackground,
+    borderRadius: 16,
+    padding: 40,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+  },
+  emptyText: {
+    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 12,
+  },
+  emptySubtext: {
+    color: colors.textMuted,
+    fontSize: 14,
+    marginTop: 4,
+  },
+  shiftCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.inputBackground,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+  },
+  shiftIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: colors.cardBackground,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  shiftIconActive: {
+    backgroundColor: colors.goldLight,
+  },
+  shiftContent: {
+    flex: 1,
+  },
+  shiftTitle: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  shiftNotes: {
+    color: colors.textMuted,
+    fontSize: 13,
+    marginTop: 2,
+  },
+  statusBadge: {
+    backgroundColor: colors.cardBackground,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 8,
   },
-  modalTitle: {
-    marginBottom: 16,
+  statusBadgeActive: {
+    backgroundColor: colors.goldLight,
+  },
+  statusText: {
+    color: colors.textMuted,
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  statusTextActive: {
+    color: colors.gold,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.gold,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
 });
 

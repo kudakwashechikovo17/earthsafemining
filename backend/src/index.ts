@@ -51,21 +51,49 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Routes
 // Mount specific org sub-routes FIRST to ensure they are matched before generic org routes
-console.log('Mounting salesRoutes at /api/orgs');
+console.log('Mounting shiftRoutes...');
 app.use('/api/orgs', shiftRoutes);
+
+console.log('Mounting financeRoutes...');
 app.use('/api/orgs', financeRoutes);
+
+console.log('Mounting creditRoutes...');
 app.use('/api/orgs', creditRoutes);
+
+console.log('Mounting salesRoutes...');
 app.use('/api/orgs', salesRoutes); // Base route involves orgs
+
+console.log('Mounting complianceRoutes...');
 app.use('/api/orgs', complianceRoutes);
+
+console.log('Mounting complianceDocumentRoutes...');
 app.use('/api/orgs', complianceDocumentRoutes); // NEW: Compliance documents
+
+console.log('Mounting equipmentRoutes...');
 app.use('/api/orgs', equipmentRoutes); // NEW: Equipment tracking
+
+console.log('Mounting expenseRoutes...');
 app.use('/api/orgs', expenseRoutes); // NEW: Expense tracking
+
+console.log('Mounting receiptRoutes...');
 app.use('/api/orgs', receiptRoutes); // NEW: Receipt management
+
+console.log('Mounting inventoryRoutes...');
 app.use('/api/orgs', inventoryRoutes); // NEW: Inventory management
+
+console.log('Mounting loanRepaymentRoutes...');
 app.use('/api/orgs', loanRepaymentRoutes); // NEW: Loan repayments
+
+console.log('Mounting payrollRoutes...');
 app.use('/api/orgs', payrollRoutes); // NEW: Payroll management
+
+console.log('Mounting timesheetRoutes...');
 app.use('/api/orgs', timesheetRoutes); // Timesheet management
+
+console.log('Mounting loanRoutes...');
 app.use('/api/orgs', loanRoutes);
+
+console.log('Mounting orgRoutes...');
 app.use('/api/orgs', orgRoutes); // Generic org routes last
 
 app.use('/api/users', userRoutes);

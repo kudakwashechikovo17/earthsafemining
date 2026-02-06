@@ -21,7 +21,7 @@ const LoginScreen = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
   const dispatch = useDispatch();
   const theme = useTheme();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const isDesktop = width > 900;
 
   const [email, setEmail] = useState('');
@@ -56,27 +56,29 @@ const LoginScreen = () => {
         resizeMode="cover"
       >
         <View style={styles.overlay}>
+          {/* TOP CORNER LOGO */}
+          <View style={styles.topHeader}>
+            <View style={styles.brandContainer}>
+              <View style={styles.logoBox}>
+                <Text style={styles.logoText}>EM</Text>
+              </View>
+              <View>
+                <Text style={styles.brandName}>EARTHSAFE</Text>
+                <Text style={styles.brandTag}>MineTrack</Text>
+              </View>
+            </View>
+          </View>
+
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
             <ScrollView contentContainerStyle={[styles.scrollContent, isDesktop && styles.desktopContent]} showsVerticalScrollIndicator={false}>
 
-              {/* LEFT SIDE: Brand & Value Prop */}
-              <View style={[styles.leftSide, isDesktop ? { maxWidth: 600, paddingRight: 60 } : { marginBottom: 40 }]}>
-                {/* Brand Logo - Using Text instead of Image to avoid web crash */}
-                <View style={styles.brandContainer}>
-                  <View style={styles.logoBox}>
-                    <Text style={styles.logoText}>ES</Text>
-                  </View>
-                  <View>
-                    <Text style={styles.brandName}>EARTHSAFE</Text>
-                    <Text style={styles.brandTag}>MineTrack</Text>
-                  </View>
-                </View>
-
-                <Text style={styles.heroHeadline}>
-                  Explore EarthSafe MineTrack
+              {/* LEFT SIDE: Value Prop */}
+              <View style={[styles.leftSide, isDesktop ? { flex: 1, maxWidth: 750, paddingRight: 80 } : { marginBottom: 40 }]}>
+                <Text style={[styles.heroHeadline, !isDesktop && styles.heroHeadlineMobile]}>
+                  Explore EarthSafe{'\n'}MineTrack
                 </Text>
 
-                <Text style={styles.heroSubtext}>
+                <Text style={[styles.heroSubtext, !isDesktop && styles.heroSubtextMobile]}>
                   Transform your mining operations with data-driven insights. Digitize production logs, track compliance, and unlock equipment financing opportunities.
                 </Text>
 
@@ -94,7 +96,7 @@ const LoginScreen = () => {
               </View>
 
               {/* RIGHT SIDE: Glass Login Card */}
-              <View style={[styles.rightSide, isDesktop ? { maxWidth: 450 } : { width: '100%' }]}>
+              <View style={[styles.rightSide, isDesktop ? { maxWidth: 480, minWidth: 400 } : { width: '100%' }]}>
                 <View style={styles.glassCard}>
                   {/* Tabs */}
                   <View style={styles.tabRow}>
@@ -151,8 +153,8 @@ const LoginScreen = () => {
                     mode="contained"
                     onPress={handleLogin}
                     style={styles.primaryButton}
-                    contentStyle={{ height: 50 }}
-                    labelStyle={{ fontSize: 16, fontWeight: 'bold' }}
+                    contentStyle={{ height: 54 }}
+                    labelStyle={{ fontSize: 17, fontWeight: 'bold' }}
                     loading={isLoading}
                     disabled={isLoading}
                     textColor="#1B5E20"
@@ -208,21 +210,29 @@ const styles = StyleSheet.create({
   },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.65)',
+    backgroundColor: 'rgba(0,0,0,0.55)',
     paddingTop: Platform.OS === 'android' ? 25 : 0,
+  },
+  topHeader: {
+    position: 'absolute',
+    top: Platform.OS === 'android' ? 35 : 20,
+    left: 24,
+    zIndex: 10,
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 24,
+    padding: 32,
     justifyContent: 'center',
     display: 'flex',
     flexDirection: 'column',
+    minHeight: '100%',
   },
   desktopContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 60,
+    paddingHorizontal: 100,
+    paddingVertical: 50,
   },
   leftSide: {
     width: '100%',
@@ -230,91 +240,105 @@ const styles = StyleSheet.create({
   brandContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 32,
   },
   logoBox: {
-    width: 50,
-    height: 50,
-    borderRadius: 12,
-    backgroundColor: '#1B5E20',
+    width: 60,
+    height: 60,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    borderWidth: 2,
+    borderColor: '#D4AF37',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 16,
   },
   logoText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
+    color: '#D4AF37',
+    fontSize: 26,
+    fontWeight: '900',
+    letterSpacing: 1,
   },
   brandName: {
     color: '#fff',
-    fontSize: 20,
+    fontSize: 26,
     fontWeight: '800',
-    letterSpacing: 1,
+    letterSpacing: 1.5,
   },
   brandTag: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 14,
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 18,
     fontWeight: '500',
   },
   heroHeadline: {
     color: '#fff',
-    fontSize: 36,
+    fontSize: 64,
     fontWeight: 'bold',
-    lineHeight: 44,
-    marginBottom: 16,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: -1, height: 1 },
-    textShadowRadius: 10,
+    lineHeight: 76,
+    marginBottom: 28,
+    textShadowColor: 'rgba(0, 0, 0, 0.85)',
+    textShadowOffset: { width: -1, height: 2 },
+    textShadowRadius: 20,
+    letterSpacing: -1,
+  },
+  heroHeadlineMobile: {
+    fontSize: 44,
+    lineHeight: 52,
+    marginBottom: 24,
   },
   heroSubtext: {
-    color: 'rgba(255,255,255,0.9)',
-    fontSize: 16,
-    lineHeight: 24,
-    marginBottom: 24,
+    color: 'rgba(255,255,255,0.95)',
+    fontSize: 22,
+    lineHeight: 34,
+    marginBottom: 36,
+    maxWidth: 650,
+  },
+  heroSubtextMobile: {
+    fontSize: 18,
+    lineHeight: 28,
+    marginBottom: 28,
   },
   stepsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 16,
   },
   stepBadge: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 16,
     backgroundColor: 'rgba(255,255,255,0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
+    borderColor: 'rgba(255,255,255,0.22)',
   },
   stepText: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
   },
   rightSide: {
     marginTop: 20,
   },
   glassCard: {
-    backgroundColor: 'rgba(20, 20, 20, 0.80)',
-    borderRadius: 24,
-    padding: 28,
+    backgroundColor: 'rgba(20, 20, 20, 0.82)',
+    borderRadius: 28,
+    padding: 32,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.35,
+    shadowRadius: 25,
+    elevation: 12,
   },
   tabRow: {
     flexDirection: 'row',
-    marginBottom: 20,
+    marginBottom: 24,
   },
   tab: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 14,
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: 'transparent',
   },
@@ -325,34 +349,34 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 15,
+    fontSize: 16,
   },
   inactiveTabText: {
     color: 'rgba(255,255,255,0.6)',
-    fontSize: 15,
+    fontSize: 16,
   },
   welcomeText: {
     color: 'rgba(255,255,255,0.8)',
-    fontSize: 14,
-    marginBottom: 20,
+    fontSize: 15,
+    marginBottom: 24,
     textAlign: 'center',
   },
   inputLabel: {
     color: 'rgba(255,255,255,0.9)',
-    fontSize: 13,
+    fontSize: 14,
     marginBottom: 8,
     marginLeft: 4,
     fontWeight: '500',
   },
   glassInput: {
     backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 12,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
-    marginBottom: 16,
-    height: 52,
+    borderRadius: 14,
+    borderTopLeftRadius: 14,
+    borderTopRightRadius: 14,
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 14,
+    marginBottom: 18,
+    height: 56,
     fontSize: 16,
     color: '#fff',
     borderWidth: 1,
@@ -366,12 +390,13 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#ff6b6b',
-    marginBottom: 10,
+    marginBottom: 12,
     textAlign: 'center',
+    fontSize: 14,
   },
   cardFooter: {
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: 18,
   },
   linkText: {
     color: '#fff',
@@ -381,7 +406,7 @@ const styles = StyleSheet.create({
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 20,
+    marginVertical: 22,
   },
   dividerLine: {
     flex: 1,
@@ -390,33 +415,33 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     color: 'rgba(255,255,255,0.5)',
-    marginHorizontal: 12,
-    fontSize: 13,
+    marginHorizontal: 14,
+    fontSize: 14,
   },
   registerButton: {
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)',
     borderRadius: 14,
-    paddingVertical: 14,
+    paddingVertical: 16,
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.05)',
   },
   registerButtonText: {
     color: '#fff',
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
   },
   legalText: {
-    marginTop: 16,
+    marginTop: 20,
     textAlign: 'center',
     color: 'rgba(255,255,255,0.6)',
-    fontSize: 12,
+    fontSize: 13,
   },
   supportText: {
-    marginTop: 8,
+    marginTop: 10,
     textAlign: 'center',
     color: 'rgba(255,255,255,0.5)',
-    fontSize: 12,
+    fontSize: 13,
   },
 });
 
