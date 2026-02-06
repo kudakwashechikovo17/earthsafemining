@@ -63,13 +63,11 @@ const LoginScreen = () => {
               <View style={[styles.leftSide, isDesktop ? { maxWidth: 600, paddingRight: 60 } : { marginBottom: 40 }]}>
                 {/* Brand */}
                 <View style={styles.brandContainer}>
-                  <View style={styles.logoBox}>
-                    <Text style={styles.logoText}>E</Text>
-                  </View>
-                  <View>
-                    <Text style={styles.brandName}>Earthsafe MineTrack</Text>
-                    <Text style={styles.brandTag}>AI-powered credit intelligence</Text>
-                  </View>
+                  <Image
+                    source={require('../../../assets/images/brand-logo-full.png')}
+                    style={{ width: 180, height: 50 }}
+                    resizeMode="contain"
+                  />
                 </View>
 
                 <Text style={styles.heroHeadline}>
@@ -105,6 +103,11 @@ const LoginScreen = () => {
                       <Text style={styles.inactiveTabText}>Register</Text>
                     </TouchableOpacity>
                   </View>
+
+                  {/* New Wording */}
+                  <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginBottom: 16, textAlign: 'center' }}>
+                    Professional access: Log in or Register to explore the program.
+                  </Text>
 
                   <Text style={styles.inputLabel}>Email Identity</Text>
                   <TextInput
