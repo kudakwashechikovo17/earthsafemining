@@ -31,8 +31,8 @@ const getRandomName = () => {
 };
 
 export const seedDemoData = async (req: Request, res: Response): Promise<void> => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    // const session = await mongoose.startSession();
+    // session.startTransaction();
 
     try {
         const { email } = req.body; // Target user email
@@ -44,14 +44,14 @@ export const seedDemoData = async (req: Request, res: Response): Promise<void> =
         logger.info(`Starting demo data seed for ${email}`);
 
         // 1. Find User
-        const user = await User.findOne({ email }).session(session);
+        const user = await User.findOne({ email });
         if (!user) {
             res.status(404).json({ message: 'User not found' });
             return;
         }
 
         // 2. Find or Create Organization
-        let org = await Organization.findOne({ name: 'Star Mining Co.' }).session(session);
+        let org = await Organization.findOne({ name: 'Star Mining Co.' });
         if (!org) {
             org = new Organization({
                 name: 'Star Mining Co.',
@@ -64,7 +64,7 @@ export const seedDemoData = async (req: Request, res: Response): Promise<void> =
                 },
                 status: 'active'
             });
-            await org.save({ session });
+            await org.save();
 
             // Link user to org
             const membership = new Membership({
@@ -73,7 +73,7 @@ export const seedDemoData = async (req: Request, res: Response): Promise<void> =
                 role: 'admin',
                 status: 'active'
             });
-            await membership.save({ session });
+            await membership.save();
         }
 
         const orgId = org._id;
@@ -131,7 +131,7 @@ export const seedDemoData = async (req: Request, res: Response): Promise<void> =
                 // Production log
                 const grams = Math.random() * 15 + 5; // 5-20g
                 shift.goldRecovered = parseFloat(grams.toFixed(2));
-                await shift.save({ session });
+                await shift.save();
 
                 const production = new Production({
                     minerId: userId, // Using admin as main miner for simplicity or loop employees
@@ -144,7 +144,7 @@ export const seedDemoData = async (req: Request, res: Response): Promise<void> =
                     verifiedBy: userId,
                     verificationDate: new Date(currentDate)
                 });
-                await production.save({ session });
+                await production.save();
 
                 // Accumulate for sale (Every ~2 weeks)
                 processingBatches.push(production);
@@ -165,7 +165,7 @@ export const seedDemoData = async (req: Request, res: Response): Promise<void> =
                         currency: 'USD',
                         status: SaleStatus.VERIFIED
                     });
-                    await sale.save({ session });
+                    await sale.save();
                     processingBatches.length = 0; // Clear
                 }
             }
@@ -187,7 +187,7 @@ export const seedDemoData = async (req: Request, res: Response): Promise<void> =
                 amount: 450,
                 currency: 'USD',
                 enteredBy: userId
-            }).save({ session });
+            }).save();
 
             // Random Maintenance
             if (Math.random() > 0.7) {
@@ -199,7 +199,7 @@ export const seedDemoData = async (req: Request, res: Response): Promise<void> =
                     amount: Math.floor(Math.random() * 200) + 50,
                     currency: 'USD',
                     enteredBy: userId
-                }).save({ session });
+                }).save();
             }
 
             expenseDate.setMonth(expenseDate.getMonth() + 1);
@@ -222,7 +222,7 @@ export const seedDemoData = async (req: Request, res: Response): Promise<void> =
                     netPay: 350,
                     paidBy: userId,
                     status: 'paid'
-                }).save({ session });
+                }).save();
             }
             payrollDate.setMonth(payrollDate.getMonth() + 1);
         }
@@ -236,7 +236,7 @@ export const seedDemoData = async (req: Request, res: Response): Promise<void> =
             expiryDate: new Date('2025-12-31'),
             issuedDate: new Date('2024-01-01'),
             documentNumber: 'ML-2024-001'
-        }).save({ session });
+        }).save();
 
         await new Compliance({
             orgId,
@@ -244,7 +244,7 @@ export const seedDemoData = async (req: Request, res: Response): Promise<void> =
             title: 'EMA EIA Certificate',
             status: ComplianceStatus.APPROVED,
             expiryDate: new Date('2026-06-30')
-        }).save({ session });
+        }).save();
 
         // -- Loans --
         await new Loan({
@@ -257,17 +257,17 @@ export const seedDemoData = async (req: Request, res: Response): Promise<void> =
             interestRate: 5,
             monthlyPayment: 440,
             approvedAt: new Date(endDate.getTime() - 86400000 * 60) // 2 months ago
-        }).save({ session });
+        }).save();
 
-        await session.commitTransaction();
-        session.endSession();
+        // await session.commitTransaction();
+        // session.endSession();
 
         logger.info('Demo data seeding completed successfully');
         res.status(200).json({ message: 'Demo data seeded successfully for Star Mining Co.' });
 
     } catch (error) {
-        await session.abortTransaction();
-        session.endSession();
+        // await session.abortTransaction();
+        // session.endSession();
         logger.error('Error seeding demo data:', error);
         res.status(500).json({ message: 'Error seeding data', error: (error as Error).message });
     }
