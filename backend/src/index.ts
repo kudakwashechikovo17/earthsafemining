@@ -105,6 +105,9 @@ app.use('/api/government', governmentRoutes);
 app.use('/api/buyers', buyerRoutes);
 app.use('/api/admin', adminRoutes);
 
+import demoRoutes from './routes/demoRoutes';
+app.use('/api/demo', demoRoutes);
+
 // Mount shiftRoutes at base /api to support /api/shifts/:id/... endpoints
 app.use('/api', shiftRoutes);
 
