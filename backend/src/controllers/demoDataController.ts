@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import { User, UserRole } from '../models/User';
 import { Organization } from '../models/Organization';
 import { Shift, ShiftType, ShiftStatus } from '../models/Shift';
-import { Production } from '../models/Production';
+import Production from '../models/Production';
 import { SalesTransaction, SaleSource, SaleStatus } from '../models/SalesTransaction';
 import { Expense, ExpenseCategory } from '../models/Expense';
 import { Payroll } from '../models/Payroll';
