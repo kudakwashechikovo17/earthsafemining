@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Create API service with axios
 // const API_URL = 'http://localhost:5000/api'; // Forced local for dev
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://earthsafe-backend.onrender.com/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://earthsafe-backend.onrender.com';
 // Force normal mode for professional build
 const APP_MODE = 'normal';
 

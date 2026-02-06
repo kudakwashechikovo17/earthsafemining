@@ -5,7 +5,7 @@ import { User, UserRole, SubscriptionPlan } from '../store/slices/authSlice';
 // Create an axios instance with base URL
 // For mobile development, use your computer's IP address instead of localhost
 const api = axios.create({
-  baseURL: 'https://earthsafe-backend.onrender.com/api', // Updated to match Render service name
+  baseURL: 'https://earthsafe-backend.onrender.com', // Updated to match Render service name
   headers: {
     'Content-Type': 'application/json',
   },
