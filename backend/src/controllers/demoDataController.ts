@@ -407,3 +407,213 @@ export const seedDemoData = async (req: Request, res: Response): Promise<void> =
         res.status(500).json({ message: 'Error seeding data', error: (error as Error).message });
     }
 };
+
+// NEW: Seed only missing data (Expenses, Payroll, Compliance, Loans, Inventory)
+// This is much faster and doesn't touch existing Shifts/Sales data
+export const seedMissingData = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            res.status(400).json({ message: 'Target email is required' });
+            return;
+        }
+
+        logger.info(`Seeding MISSING data for ${email}`);
+
+        // Find user and org
+        const user = await User.findOne({ email });
+        if (!user) {
+            res.status(404).json({ message: 'User not found' });
+            return;
+        }
+        const userId = user._id;
+
+        // Find org via membership
+        const membership = await Membership.findOne({ userId });
+        if (!membership) {
+            res.status(400).json({ message: 'User has no organization membership' });
+            return;
+        }
+        const orgId = membership.orgId;
+
+        // Generate employees for payroll
+        const employees = [
+            { name: 'Tinashe Moyo', role: 'driller' },
+            { name: 'Kudakwashe Ncube', role: 'driller' },
+            { name: 'Farai Dube', role: 'hauler' },
+            { name: 'Tendai Sibanda', role: 'hauler' },
+            { name: 'Blessing Ndlovu', role: 'hauler' },
+            { name: 'Tatenda Gumbo', role: 'general' },
+            { name: 'Simbarashe Chikovo', role: 'general' },
+            { name: 'Rudo Marufu', role: 'general' }
+        ];
+
+        // Date range - last 2 years
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setFullYear(endDate.getFullYear() - 2);
+
+        // EXPENSES (if none exist)
+        const expenseCount = await Expense.countDocuments({ orgId });
+        if (expenseCount === 0) {
+            logger.info('Adding expenses...');
+            let expenseDate = new Date(startDate);
+            while (expenseDate <= endDate) {
+                await new Expense({
+                    orgId,
+                    date: new Date(expenseDate),
+                    category: ExpenseCategory.FUEL,
+                    description: 'Diesel for Generator (200L)',
+                    amount: 320,
+                    currency: 'USD',
+                    enteredBy: userId,
+                    supplier: 'Zuva Petroleum'
+                }).save();
+
+                if (Math.random() > 0.6) {
+                    await new Expense({
+                        orgId,
+                        date: new Date(expenseDate.getTime() + Math.random() * 86400000 * 15),
+                        category: ExpenseCategory.MAINTENANCE,
+                        description: 'Equipment Maintenance',
+                        amount: Math.floor(Math.random() * 150) + 50,
+                        currency: 'USD',
+                        enteredBy: userId,
+                        supplier: 'Mine & Industrial Suppliers'
+                    }).save();
+                }
+
+                expenseDate.setMonth(expenseDate.getMonth() + 1);
+            }
+        }
+
+        // PAYROLL (if none exist)
+        const payrollCount = await Payroll.countDocuments({ orgId });
+        if (payrollCount === 0) {
+            logger.info('Adding payroll...');
+            let payrollDate = new Date(startDate);
+            while (payrollDate <= endDate) {
+                for (const emp of employees) {
+                    await new Payroll({
+                        orgId,
+                        employeeName: emp.name,
+                        paymentDate: new Date(payrollDate),
+                        amount: emp.role === 'driller' ? 350 : (emp.role === 'hauler' ? 300 : 250),
+                        payPeriodStart: new Date(payrollDate.getFullYear(), payrollDate.getMonth(), 1),
+                        payPeriodEnd: new Date(payrollDate.getFullYear(), payrollDate.getMonth() + 1, 0),
+                        hoursWorked: 180,
+                        hourlyRate: 2,
+                        deductions: 20,
+                        bonuses: Math.random() > 0.8 ? 50 : 0,
+                        netPay: emp.role === 'driller' ? 330 : (emp.role === 'hauler' ? 280 : 230),
+                        paymentMethod: 'EcoCash',
+                        status: 'paid'
+                    }).save();
+                }
+                payrollDate.setMonth(payrollDate.getMonth() + 1);
+            }
+        }
+
+        // COMPLIANCE (if none exist)
+        const complianceCount = await Compliance.countDocuments({ orgId });
+        if (complianceCount === 0) {
+            logger.info('Adding compliance documents...');
+            const docs = [
+                { type: ComplianceType.MINING_LICENSE, title: 'Mining License', expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) },
+                { type: ComplianceType.ENVIRONMENTAL_PERMIT, title: 'Environmental Permit', expires: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000) },
+                { type: ComplianceType.EMA_CERTIFICATE, title: 'Safety Certificate', expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) },
+                { type: ComplianceType.TAX_CLEARANCE, title: 'Tax Clearance', expires: new Date(Date.now() + 270 * 24 * 60 * 60 * 1000) },
+            ];
+            for (const doc of docs) {
+                await new Compliance({
+                    orgId,
+                    type: doc.type,
+                    title: doc.title,
+                    status: ComplianceStatus.APPROVED,
+                    issuedDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
+                    expiryDate: doc.expires,
+                    issuedBy: 'Ministry of Mines',
+                    notes: 'Current and valid'
+                }).save();
+            }
+        }
+
+        // LOANS (if none exist)
+        const loanCount = await Loan.countDocuments({ orgId });
+        if (loanCount === 0) {
+            logger.info('Adding loans...');
+            await new Loan({
+                orgId,
+                loanType: LoanType.EQUIPMENT,
+                amount: 15000,
+                interestRate: 12,
+                termMonths: 24,
+                status: LoanStatus.ACTIVE,
+                lender: 'CBZ Bank',
+                purpose: 'Purchase of new crusher',
+                disbursementDate: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000),
+                monthlyPayment: 700,
+                totalPaid: 4200,
+                remainingBalance: 10800
+            }).save();
+
+            await new Loan({
+                orgId,
+                loanType: LoanType.WORKING_CAPITAL,
+                amount: 5000,
+                interestRate: 15,
+                termMonths: 12,
+                status: LoanStatus.PAID,
+                lender: 'CABS',
+                purpose: 'Operational expenses',
+                disbursementDate: new Date(Date.now() - 400 * 24 * 60 * 60 * 1000),
+                monthlyPayment: 450,
+                totalPaid: 5400,
+                remainingBalance: 0
+            }).save();
+        }
+
+        // INVENTORY (if none exist)
+        const inventoryCount = await Inventory.countDocuments({ orgId });
+        if (inventoryCount === 0) {
+            logger.info('Adding inventory...');
+            const items = [
+                { type: 'equipment', name: 'Jaw Crusher', qty: 1, unit: 'units', val: 8000 },
+                { type: 'equipment', name: 'Hammer Mill', qty: 2, unit: 'units', val: 5000 },
+                { type: 'equipment', name: 'Diesel Generator', qty: 1, unit: 'units', val: 3500 },
+                { type: 'consumable', name: 'Diesel Fuel', qty: 500, unit: 'liters', val: 1.60 },
+                { type: 'consumable', name: 'Mercury (Retort)', qty: 5, unit: 'kg', val: 80 },
+                { type: 'ore', name: 'Crushed Ore', qty: 45, unit: 'tons', val: 30 },
+                { type: 'gold', name: 'Gold Bullion', qty: 120, unit: 'grams', val: 65 }
+            ];
+
+            for (const item of items) {
+                await new Inventory({
+                    orgId,
+                    itemType: item.type,
+                    name: item.name,
+                    quantity: item.qty,
+                    unit: item.unit,
+                    valuePerUnit: item.val,
+                    totalValue: item.qty * item.val,
+                    location: 'Site A',
+                    lastUpdated: new Date()
+                }).save();
+            }
+        }
+
+        logger.info('Missing data seeding completed successfully!');
+        res.status(200).json({
+            message: 'Missing demo data seeded successfully!',
+            addedExpenses: expenseCount === 0,
+            addedPayroll: payrollCount === 0,
+            addedCompliance: complianceCount === 0,
+            addedLoans: loanCount === 0,
+            addedInventory: inventoryCount === 0
+        });
+
+    } catch (error) {
+        logger.error('Error seeding missing data:', error);
+        res.status(500).json({ message: 'Error seeding missing data', error: (error as Error).message });
+    }
+};
