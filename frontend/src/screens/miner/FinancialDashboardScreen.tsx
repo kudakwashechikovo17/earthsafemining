@@ -18,6 +18,9 @@ const FinancialDashboardScreen = () => {
         totalReceipts: 0,
         totalPayroll: 0,
         payrollCount: 0,
+        totalIncome: 0,
+        salesCount: 0,
+        netProfit: 0,
     });
 
     useEffect(() => {
@@ -29,18 +32,26 @@ const FinancialDashboardScreen = () => {
     const fetchStats = async () => {
         try {
             setLoading(true);
-            const [expenses, receipts, payroll] = await Promise.all([
+            const [expenses, receipts, payroll, sales] = await Promise.all([
                 apiService.getExpenses(currentOrg!._id),
                 apiService.getReceipts(currentOrg!._id),
                 apiService.getPayroll(currentOrg!._id),
+                apiService.getSales(currentOrg!._id),
             ]);
 
+            const totalExpenses = expenses.reduce((sum: number, e: any) => sum + e.amount, 0);
+            const totalPayroll = payroll.reduce((sum: number, p: any) => sum + p.netPay, 0);
+            const totalIncome = sales.reduce((sum: number, s: any) => sum + s.totalValue, 0);
+
             setStats({
-                totalExpenses: expenses.reduce((sum: number, e: any) => sum + e.amount, 0),
+                totalExpenses,
                 expenseCount: expenses.length,
                 totalReceipts: receipts.length,
-                totalPayroll: payroll.reduce((sum: number, p: any) => sum + p.netPay, 0),
+                totalPayroll,
                 payrollCount: payroll.length,
+                totalIncome,
+                salesCount: sales.length,
+                netProfit: totalIncome - (totalExpenses + totalPayroll),
             });
         } catch (error) {
             console.error('Error fetching financial stats:', error);
@@ -64,10 +75,45 @@ const FinancialDashboardScreen = () => {
             <ScrollView style={styles.container}>
                 <View style={styles.header}>
                     <Title style={styles.title}>Financial Management</Title>
-                    <Text style={styles.subtitle}>Track expenses, receipts, and payroll</Text>
+                    <Text style={styles.subtitle}>Track expenses, receipts, payroll, and profits</Text>
                 </View>
 
-                {/* Summary Cards */}
+                {/* Main Profit Card */}
+                <Card style={[styles.mainCard, { backgroundColor: stats.netProfit >= 0 ? '#E8F5E9' : '#FFEBEE' }]}>
+                    <Card.Content>
+                        <Text style={styles.mainCardLabel}>Net Profit (All Time)</Text>
+                        <Text style={[styles.mainCardValue, { color: stats.netProfit >= 0 ? '#2E7D32' : '#C62828' }]}>
+                            {stats.netProfit >= 0 ? '+' : ''}${stats.netProfit.toLocaleString()}
+                        </Text>
+                        <Text style={styles.mainCardSub}>
+                            Income - (Expenses + Payroll)
+                        </Text>
+                    </Card.Content>
+                </Card>
+
+                {/* Summary Grid */}
+                <View style={styles.summaryGrid}>
+                    <Card style={styles.summaryCard}>
+                        <Card.Content>
+                            <Icon name="cash-multiple" size={32} color="#FBC02D" />
+                            <Text style={styles.summaryValue}>${stats.totalIncome.toLocaleString()}</Text>
+                            <Text style={styles.summaryLabel}>Total Income</Text>
+                            <Text style={styles.summaryCount}>{stats.salesCount} sales</Text>
+                        </Card.Content>
+                    </Card>
+
+                    <Card style={styles.summaryCard}>
+                        <Card.Content>
+                            <Icon name="chart-line" size={32} color="#F57C00" />
+                            <Text style={styles.summaryValue}>
+                                ${(stats.totalExpenses + stats.totalPayroll).toLocaleString()}
+                            </Text>
+                            <Text style={styles.summaryLabel}>Total Outflow</Text>
+                            <Text style={styles.summaryCount}>Combined</Text>
+                        </Card.Content>
+                    </Card>
+                </View>
+
                 <View style={styles.summaryGrid}>
                     <Card style={styles.summaryCard}>
                         <Card.Content>
@@ -80,32 +126,10 @@ const FinancialDashboardScreen = () => {
 
                     <Card style={styles.summaryCard}>
                         <Card.Content>
-                            <Icon name="file-document" size={32} color="#1976D2" />
-                            <Text style={styles.summaryValue}>{stats.totalReceipts}</Text>
-                            <Text style={styles.summaryLabel}>Receipts</Text>
-                            <Text style={styles.summaryCount}>Uploaded</Text>
-                        </Card.Content>
-                    </Card>
-                </View>
-
-                <View style={styles.summaryGrid}>
-                    <Card style={styles.summaryCard}>
-                        <Card.Content>
                             <Icon name="account-cash" size={32} color="#2E7D32" />
                             <Text style={styles.summaryValue}>${stats.totalPayroll.toLocaleString()}</Text>
                             <Text style={styles.summaryLabel}>Total Payroll</Text>
                             <Text style={styles.summaryCount}>{stats.payrollCount} payments</Text>
-                        </Card.Content>
-                    </Card>
-
-                    <Card style={styles.summaryCard}>
-                        <Card.Content>
-                            <Icon name="chart-line" size={32} color="#F57C00" />
-                            <Text style={styles.summaryValue}>
-                                ${(stats.totalExpenses + stats.totalPayroll).toLocaleString()}
-                            </Text>
-                            <Text style={styles.summaryLabel}>Total Outflow</Text>
-                            <Text style={styles.summaryCount}>Combined</Text>
                         </Card.Content>
                     </Card>
                 </View>
@@ -183,6 +207,24 @@ const styles = StyleSheet.create({
         color: '#666',
         marginTop: 4,
     },
+    mainCard: {
+        marginBottom: 20,
+        elevation: 4,
+    },
+    mainCardLabel: {
+        fontSize: 14,
+        color: '#555',
+        marginBottom: 4,
+    },
+    mainCardValue: {
+        fontSize: 32,
+        fontWeight: 'bold',
+        marginBottom: 4,
+    },
+    mainCardSub: {
+        fontSize: 12,
+        color: '#777',
+    },
     summaryGrid: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -194,7 +236,7 @@ const styles = StyleSheet.create({
         elevation: 2,
     },
     summaryValue: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: 'bold',
         color: '#333',
         marginTop: 8,
@@ -205,7 +247,7 @@ const styles = StyleSheet.create({
         marginTop: 4,
     },
     summaryCount: {
-        fontSize: 11,
+        fontSize: 10,
         color: '#999',
         marginTop: 2,
     },
