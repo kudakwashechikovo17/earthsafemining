@@ -8,6 +8,7 @@ import { SalesTransaction, SaleSource, SaleStatus } from '../models/SalesTransac
 import { Expense, ExpenseCategory } from '../models/Expense';
 import { Payroll } from '../models/Payroll';
 import { Compliance, ComplianceStatus, ComplianceType } from '../models/Compliance';
+import { ComplianceDocument } from '../models/ComplianceDocument';
 import { Loan, LoanStatus, LoanType } from '../models/Loan';
 import { Membership } from '../models/Membership';
 import { Timesheet } from '../models/Timesheet';
@@ -710,39 +711,47 @@ export const forceAddLoansCompliance = async (req: Request, res: Response): Prom
         logger.info('Loans added (4 total)');
 
         // ADD COMPLIANCE (Using Title Case to match Frontend requirements)
-        const docs = [
-            { type: ComplianceType.MINING_LICENSE_TITLE, title: 'Mining License 2024', expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), status: ComplianceStatus.APPROVED },
-            { type: ComplianceType.ENVIRONMENTAL_IMPACT_ASSESSMENT, title: 'EMA Certificate', expires: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000), status: ComplianceStatus.APPROVED },
-            { type: ComplianceType.HEALTH_SAFETY, title: 'Health & Safety Cert', expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), status: ComplianceStatus.APPROVED },
-            { type: 'Tax Clearance' as ComplianceType, title: 'ZIMRA Tax Clearance', expires: new Date(Date.now() + 270 * 24 * 60 * 60 * 1000), status: ComplianceStatus.PENDING }, // PENDING example
-        ];
-
-        // Note: Using 'as ComplianceType' for Tax Clearance if it wasn't added to Title Enum, 
-        // but let's stick to what we added. 'Tax Clearance' was not added to Title Enum.
-        // Frontend 'REQUIRED' list doesn't include Tax Clearance.
-        // So let's add 'Local Permit' instead which IS required.
-
         // Re-defining docs properly
         const seedDocs = [
             { type: ComplianceType.MINING_LICENSE_TITLE, title: 'Mining License 2024', expires: new Date(Date.now() + 300 * 24 * 60 * 60 * 1000), status: ComplianceStatus.APPROVED },
             { type: ComplianceType.ENVIRONMENTAL_IMPACT_ASSESSMENT, title: 'EIA Certificate', expires: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000), status: ComplianceStatus.APPROVED },
-            { type: ComplianceType.HEALTH_SAFETY, title: 'Safety Certification', expires: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), status: ComplianceStatus.EXPIRED }, // Expired example
+            { type: ComplianceType.HEALTH_SAFETY, title: 'Safety Certification', expires: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), status: 'expired' }, // Intentionally expired
             { type: ComplianceType.LOCAL_PERMIT, title: 'RDC Operations Permit', expires: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), status: ComplianceStatus.APPROVED },
         ];
 
+        // Seed LEGACY model (Compliance)
         for (const doc of seedDocs) {
             await new Compliance({
                 orgId,
                 type: doc.type,
                 title: doc.title,
-                status: doc.status,
+                status: doc.status === 'expired' ? ComplianceStatus.EXPIRED : doc.status,
                 issuedDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
                 expiryDate: doc.expires,
                 issuedBy: 'Ministry of Mines',
-                notes: 'Seeded Document'
+                notes: 'Seeded Document (Compliance Model)'
             }).save();
         }
-        logger.info('Compliance added');
+
+        // Seed CORRECT model (ComplianceDocument)
+        await ComplianceDocument.deleteMany({ orgId });
+        for (const doc of seedDocs) {
+            let docStatus = doc.status === 'expired' ? 'expired' : 'active';
+            // Adjust status enum for ComplianceDocument
+            if (doc.status === ComplianceStatus.PENDING) docStatus = 'expiring'; // approximate mapping
+
+            await new ComplianceDocument({
+                orgId,
+                type: doc.type, // Title Case string
+                number: 'DOC-' + Math.floor(Math.random() * 10000),
+                issuedDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
+                expiryDate: doc.expires,
+                status: docStatus as any, // 'active' | 'expiring' | 'expired'
+                issuer: 'Ministry of Mines',
+                notes: 'Seeded Document (ComplianceDocument Model)'
+            }).save();
+        }
+        logger.info('Compliance (both models) added');
 
         // CLEAR & ADD INCIDENTS
         await IncidentReport.deleteMany({ orgId });
