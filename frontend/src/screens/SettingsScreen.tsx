@@ -183,7 +183,7 @@ const SettingsScreen = ({ navigation }: any) => {
           <List.Item
             title="Version"
             titleStyle={{ color: colors.textPrimary }}
-            description="1.0.0 (Professional Build)"
+            description="1.0.1 (Professional Build)"
             descriptionStyle={{ color: colors.textMuted }}
             left={props => <List.Icon {...props} icon="information-outline" color={colors.gold} />}
           />
