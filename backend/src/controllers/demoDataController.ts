@@ -649,31 +649,63 @@ export const forceAddLoansCompliance = async (req: Request, res: Response): Prom
         logger.info('Cleared existing loans and compliance');
 
         // ADD LOANS
+        // 1. Active (Approved) Equipment Loan
         await new Loan({
             orgId,
             applicantId: userId,
             amount: 15000,
             purpose: 'Equipment: Purchase of new jaw crusher',
             termMonths: 24,
-            status: LoanStatus.ACTIVE,
+            status: LoanStatus.APPROVED, // Frontend looks for 'approved'
             institution: 'CBZ Bank',
             interestRate: 12,
             monthlyPayment: 700,
-            collateral: 'Mining equipment'
+            collateral: 'Mining equipment',
+            approvedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
         }).save();
 
+        // 2. Active (Approved) Working Capital Loan
+        await new Loan({
+            orgId,
+            applicantId: userId,
+            amount: 8000,
+            purpose: 'Working Capital: Expansion',
+            termMonths: 18,
+            status: LoanStatus.APPROVED,
+            institution: 'BancABC',
+            interestRate: 11,
+            monthlyPayment: 485,
+            collateral: 'Inventory',
+            approvedAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
+        }).save();
+
+        // 3. Paid Loan (History)
         await new Loan({
             orgId,
             applicantId: userId,
             amount: 5000,
-            purpose: 'Working Capital: Operational expenses',
+            purpose: 'Operational expenses',
             termMonths: 12,
             status: LoanStatus.PAID,
             institution: 'CABS',
             interestRate: 15,
             monthlyPayment: 450
         }).save();
-        logger.info('Loans added');
+
+        // 4. Pending Application
+        await new Loan({
+            orgId,
+            applicantId: userId,
+            amount: 25000,
+            purpose: 'Infrastructure: New Washing Plant',
+            termMonths: 36,
+            status: LoanStatus.PENDING,
+            institution: 'ZB Bank',
+            interestRate: 10,
+            monthlyPayment: 850
+        }).save();
+
+        logger.info('Loans added (4 total)');
 
         // ADD COMPLIANCE
         const docs = [
