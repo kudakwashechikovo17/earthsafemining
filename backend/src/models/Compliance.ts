@@ -17,7 +17,13 @@ export enum ComplianceType {
   TAX_CLEARANCE = 'tax_clearance',
   SITE_PLAN = 'site_plan',
   SAFETY_POLICY = 'safety_policy',
-  OTHER = 'other'
+  OTHER = 'other',
+  // Frontend Compatibility
+  MINING_LICENSE_TITLE = 'Mining License',
+  PROSPECTING_LICENSE = 'Prospecting License',
+  ENVIRONMENTAL_IMPACT_ASSESSMENT = 'Environmental Impact Assessment Certificate',
+  HEALTH_SAFETY = 'Health and Safety Certification',
+  LOCAL_PERMIT = 'Local Permit'
 }
 
 // Compliance interface

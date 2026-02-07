@@ -13,6 +13,8 @@ import { Membership } from '../models/Membership';
 import { Timesheet } from '../models/Timesheet';
 import { MaterialMovement, MaterialType } from '../models/MaterialMovement';
 import { Inventory } from '../models/Inventory';
+import { IncidentReport, IncidentType, IncidentSeverity, IncidentStatus } from '../models/IncidentReport';
+import { SafetyChecklist } from '../models/SafetyChecklist';
 import { logger } from '../utils/logger';
 
 // Helper to generate random date within range
@@ -707,31 +709,92 @@ export const forceAddLoansCompliance = async (req: Request, res: Response): Prom
 
         logger.info('Loans added (4 total)');
 
-        // ADD COMPLIANCE
+        // ADD COMPLIANCE (Using Title Case to match Frontend requirements)
         const docs = [
-            { type: ComplianceType.MINING_LICENSE, title: 'Mining License 2024', expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) },
-            { type: ComplianceType.ENVIRONMENTAL_PERMIT, title: 'EMA Environmental Permit', expires: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000) },
-            { type: ComplianceType.EMA_CERTIFICATE, title: 'Safety Certificate', expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) },
-            { type: ComplianceType.TAX_CLEARANCE, title: 'ZIMRA Tax Clearance', expires: new Date(Date.now() + 270 * 24 * 60 * 60 * 1000) },
+            { type: ComplianceType.MINING_LICENSE_TITLE, title: 'Mining License 2024', expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), status: ComplianceStatus.APPROVED },
+            { type: ComplianceType.ENVIRONMENTAL_IMPACT_ASSESSMENT, title: 'EMA Certificate', expires: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000), status: ComplianceStatus.APPROVED },
+            { type: ComplianceType.HEALTH_SAFETY, title: 'Health & Safety Cert', expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), status: ComplianceStatus.APPROVED },
+            { type: 'Tax Clearance' as ComplianceType, title: 'ZIMRA Tax Clearance', expires: new Date(Date.now() + 270 * 24 * 60 * 60 * 1000), status: ComplianceStatus.PENDING }, // PENDING example
         ];
-        for (const doc of docs) {
+
+        // Note: Using 'as ComplianceType' for Tax Clearance if it wasn't added to Title Enum, 
+        // but let's stick to what we added. 'Tax Clearance' was not added to Title Enum.
+        // Frontend 'REQUIRED' list doesn't include Tax Clearance.
+        // So let's add 'Local Permit' instead which IS required.
+
+        // Re-defining docs properly
+        const seedDocs = [
+            { type: ComplianceType.MINING_LICENSE_TITLE, title: 'Mining License 2024', expires: new Date(Date.now() + 300 * 24 * 60 * 60 * 1000), status: ComplianceStatus.APPROVED },
+            { type: ComplianceType.ENVIRONMENTAL_IMPACT_ASSESSMENT, title: 'EIA Certificate', expires: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000), status: ComplianceStatus.APPROVED },
+            { type: ComplianceType.HEALTH_SAFETY, title: 'Safety Certification', expires: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), status: ComplianceStatus.EXPIRED }, // Expired example
+            { type: ComplianceType.LOCAL_PERMIT, title: 'RDC Operations Permit', expires: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), status: ComplianceStatus.APPROVED },
+        ];
+
+        for (const doc of seedDocs) {
             await new Compliance({
                 orgId,
                 type: doc.type,
                 title: doc.title,
-                status: ComplianceStatus.APPROVED,
+                status: doc.status,
                 issuedDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
                 expiryDate: doc.expires,
-                issuedBy: 'Ministry of Mines and Mining Development',
-                notes: 'Current and valid document'
+                issuedBy: 'Ministry of Mines',
+                notes: 'Seeded Document'
             }).save();
         }
         logger.info('Compliance added');
 
+        // CLEAR & ADD INCIDENTS
+        await IncidentReport.deleteMany({ orgId });
+
+        await new IncidentReport({
+            orgId,
+            reporterId: userId,
+            date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+            type: IncidentType.INJURY,
+            severity: IncidentSeverity.MEDIUM,
+            description: 'Minor hand injury during crusher maintenance. First aid administered.',
+            location: 'Crushing Plant B',
+            status: IncidentStatus.RESOLVED,
+            resolutionNotes: 'Worker treated and returned to light duty. Safety gloves re-issued.'
+        }).save();
+
+        await new IncidentReport({
+            orgId,
+            reporterId: userId,
+            date: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
+            type: IncidentType.EQUIPMENT_FAILURE,
+            severity: IncidentSeverity.LOW,
+            description: 'Conveyor belt snap caused production halt for 2 hours.',
+            location: 'Conveyor 3',
+            status: IncidentStatus.CLOSED
+        }).save();
+        logger.info('Incidents added');
+
+        // CLEAR & ADD CHECKLISTS
+        await SafetyChecklist.deleteMany({ orgId });
+
+        await new SafetyChecklist({
+            orgId,
+            inspectorId: userId,
+            date: new Date(),
+            status: 'submitted',
+            items: [
+                { id: '1', label: 'PPE Check', checked: true },
+                { id: '2', label: 'Machinery Guards', checked: true },
+                { id: '3', label: 'Ventilation', checked: true },
+                { id: '4', label: 'First Aid Kit', checked: false, notes: 'Restock needed' }
+            ],
+            notes: 'Morning shift safety check complete.'
+        }).save();
+        logger.info('Checklists added');
+
         res.status(200).json({
-            message: 'Loans and Compliance force-added successfully!',
-            loansAdded: 2,
-            complianceAdded: docs.length
+            message: 'Loans, Compliance, Incidents & Checklists force-added!',
+            loansAdded: 4,
+            complianceAdded: seedDocs.length,
+            incidentsAdded: 2,
+            checklistsAdded: 1
         });
 
     } catch (error) {
