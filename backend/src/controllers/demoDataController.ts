@@ -544,32 +544,27 @@ export const seedMissingData = async (req: Request, res: Response): Promise<void
             logger.info('Adding loans...');
             await new Loan({
                 orgId,
-                loanType: LoanType.EQUIPMENT,
+                applicantId: userId,
                 amount: 15000,
-                interestRate: 12,
+                purpose: 'Equipment: Purchase of new jaw crusher',
                 termMonths: 24,
                 status: LoanStatus.ACTIVE,
-                lender: 'CBZ Bank',
-                purpose: 'Purchase of new crusher',
-                disbursementDate: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000),
+                institution: 'CBZ Bank',
+                interestRate: 12,
                 monthlyPayment: 700,
-                totalPaid: 4200,
-                remainingBalance: 10800
+                collateral: 'Mining equipment'
             }).save();
 
             await new Loan({
                 orgId,
-                loanType: LoanType.WORKING_CAPITAL,
+                applicantId: userId,
                 amount: 5000,
-                interestRate: 15,
+                purpose: 'Working Capital: Operational expenses',
                 termMonths: 12,
                 status: LoanStatus.PAID,
-                lender: 'CABS',
-                purpose: 'Operational expenses',
-                disbursementDate: new Date(Date.now() - 400 * 24 * 60 * 60 * 1000),
-                monthlyPayment: 450,
-                totalPaid: 5400,
-                remainingBalance: 0
+                institution: 'CABS',
+                interestRate: 15,
+                monthlyPayment: 450
             }).save();
         }
 
