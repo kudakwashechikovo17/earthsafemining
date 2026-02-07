@@ -3,6 +3,9 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { User, UserRole, SubscriptionTier } from '../models/User';
 import { Membership } from '../models/Membership';
+import { Shift } from '../models/Shift';
+import { SalesTransaction } from '../models/SalesTransaction';
+import { Loan, LoanStatus } from '../models/Loan';
 import { logger } from '../utils/logger';
 
 // @desc    Register a new user
@@ -375,5 +378,105 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
   } catch (error) {
     logger.error('Error in resetPassword:', error);
     res.status(500).json({ message: 'Server error during password reset' });
+  }
+};
+
+// @desc    Get miner profile stats
+// @route   GET /api/users/stats
+// @access  Private
+export const getMinerStats = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ message: 'User not authenticated' });
+      return;
+    }
+
+    // Get Org ID
+    const membership = await Membership.findOne({ userId });
+    const orgId = membership?.orgId;
+
+    if (!orgId) {
+      // Return empty stats if no org
+      res.status(200).json({
+        totalProduction: 0,
+        productionThisMonth: 0,
+        totalSales: 0,
+        salesThisMonth: 0,
+        activeLoans: 0,
+        totalDebt: 0,
+        employeeCount: 0
+      });
+      return;
+    }
+
+    // Date ranges
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // 1. Production Stats (Gold Recovered from Shifts)
+    // We look at all shifts for this org (since user is likely Admin/Manager of their small mine)
+    const productionStats = await Shift.aggregate([
+      { $match: { orgId: orgId } },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: "$goldRecovered" },
+          thisMonth: {
+            $sum: {
+              $cond: [{ $gte: ["$date", startOfMonth] }, "$goldRecovered", 0]
+            }
+          }
+        }
+      }
+    ]);
+
+    // 2. Sales Stats
+    const salesStats = await SalesTransaction.aggregate([
+      { $match: { orgId: orgId } },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: "$totalValue" },
+          thisMonth: {
+            $sum: {
+              $cond: [{ $gte: ["$date", startOfMonth] }, "$totalValue", 0]
+            }
+          }
+        }
+      }
+    ]);
+
+    // 3. Loan Stats
+    const loanStats = await Loan.aggregate([
+      { $match: { orgId: orgId } },
+      {
+        $group: {
+          _id: null,
+          activeCount: {
+            $sum: { $cond: [{ $eq: ["$status", "active"] }, 1, 0] }
+          },
+          totalDebt: { $sum: "$remainingBalance" }
+        }
+      }
+    ]);
+
+    // 4. Employee Count (approximate via Users or just random for now if not tracking all employees)
+    // For demo, we can count memberships or hardcode
+    const employeeCount = await Membership.countDocuments({ orgId });
+
+    res.status(200).json({
+      totalProduction: parseFloat((productionStats[0]?.total || 0).toFixed(2)),
+      productionThisMonth: parseFloat((productionStats[0]?.thisMonth || 0).toFixed(2)),
+      totalSales: parseFloat((salesStats[0]?.total || 0).toFixed(2)),
+      salesThisMonth: parseFloat((salesStats[0]?.thisMonth || 0).toFixed(2)),
+      activeLoans: loanStats[0]?.activeCount || 0,
+      totalDebt: parseFloat((loanStats[0]?.totalDebt || 0).toFixed(2)),
+      employeeCount: employeeCount || 1 // At least the user themselves
+    });
+
+  } catch (error) {
+    logger.error('Error in getMinerStats:', error);
+    res.status(500).json({ message: 'Server error while fetching stats' });
   }
 }; 
