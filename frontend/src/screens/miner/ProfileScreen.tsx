@@ -7,6 +7,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import { colors } from '../../theme/darkTheme';
+import apiService from '../../services/apiService';
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
@@ -43,18 +44,42 @@ const ProfileScreen = () => {
   });
 
   // Effect to sync Redux user data to local profile state on mount
+  // Effect to sync Redux user data to local profile state and fetch stats
   useEffect(() => {
     if (user) {
       setMinerProfile(prev => ({
         ...prev,
         name: `${user.firstName} ${user.lastName}`,
-        // If currentOrg has location data, we could pre-fill it here too
         miningLocation: {
           ...prev.miningLocation,
           name: currentOrg?.name || prev.miningLocation.name,
-          // Default location could be pulled from org settings if available
         }
       }));
+
+      // Fetch stats from API
+      const fetchStats = async () => {
+        try {
+          const stats = await apiService.getMinerProfileStats();
+          if (stats) {
+            setMinerProfile(prev => ({
+              ...prev,
+              stats: {
+                totalProduction: stats.totalProduction || 0,
+                productionThisMonth: stats.productionThisMonth || 0,
+                totalSales: stats.totalSales || 0,
+                salesThisMonth: stats.salesThisMonth || 0,
+                activeLoans: stats.activeLoans || 0,
+                totalDebt: stats.totalDebt || 0
+              },
+              employeeCount: stats.employeeCount || prev.employeeCount
+            }));
+          }
+        } catch (error) {
+          console.log('Error fetching miner stats:', error);
+        }
+      };
+
+      fetchStats();
     }
   }, [user, currentOrg]);
 

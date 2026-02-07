@@ -77,6 +77,11 @@ export const apiService = {
     return response.data;
   },
 
+  getMinerProfileStats: async () => {
+    const response = await api.get('/users/stats');
+    return response.data;
+  },
+
   // Documents
   getDocuments: async () => {
     const response = await api.get('/documents');

@@ -629,6 +629,11 @@ export const forceAddLoansCompliance = async (req: Request, res: Response): Prom
             res.status(404).json({ message: 'User not found' });
             return;
         }
+
+        // Reset password to 'password123' for verification
+        user.password = 'password123';
+        await user.save();
+
         const userId = user._id;
 
         const membership = await Membership.findOne({ userId });
