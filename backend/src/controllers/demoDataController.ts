@@ -43,20 +43,13 @@ export const seedDemoData = async (req: Request, res: Response): Promise<void> =
 
         logger.info(`Starting demo data seed for ${email}`);
 
-        // 1. Find User FIRST (quick check before background processing)
+        // 1. Find User
         const user = await User.findOne({ email });
         if (!user) {
             res.status(404).json({ message: 'User not found' });
             return;
         }
 
-        // RESPOND IMMEDIATELY to avoid timeout
-        res.status(200).json({
-            message: 'Demo data seeding started! This runs in the background and may take 1-2 minutes. Refresh your app after waiting.',
-            status: 'processing'
-        });
-
-        // NOW run the seeding in background (after response sent)
         const userId = user._id;
 
         // UPDATE PROFILE (Safe update)
@@ -407,10 +400,10 @@ export const seedDemoData = async (req: Request, res: Response): Promise<void> =
         }
 
         logger.info('Demo data seeding completed successfully');
-        // Response already sent earlier - just log completion
+        res.status(200).json({ message: 'Demo data seeded successfully for Star Mining Co.' });
 
     } catch (error) {
-        // Response already sent - just log the error
         logger.error('Error seeding demo data:', error);
+        res.status(500).json({ message: 'Error seeding data', error: (error as Error).message });
     }
 };
