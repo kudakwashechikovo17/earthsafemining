@@ -94,7 +94,7 @@ router.get('/dashboard', authenticate, authorize(['miner', 'cooperative', 'admin
       // 4. Production Chart Data (Last 6 Months)
       // 4. Production Chart Data (Last 6 Months)
       // 4. Production Chart Data (Last 6 Months) - Hybrid Approach
-      safeExec(async () => {
+      safeExec((async () => {
         // Try Aggregation first
         const sixMonthsAgo = new Date();
         sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
@@ -144,7 +144,8 @@ router.get('/dashboard', authenticate, authorize(['miner', 'cooperative', 'admin
         }, {});
 
         return Object.values(grouped);
-      }(), [], 'ProductionStats'),
+      })(), [], 'ProductionStats'),
+
 
       // 5. Recent Transactions
       safeExec(SalesTransaction.find({ orgId })
