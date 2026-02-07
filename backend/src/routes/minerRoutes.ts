@@ -93,22 +93,58 @@ router.get('/dashboard', authenticate, authorize(['miner', 'cooperative', 'admin
 
       // 4. Production Chart Data (Last 6 Months)
       // 4. Production Chart Data (Last 6 Months)
-      safeExec(Shift.aggregate([
-        {
-          $match: {
-            orgId: new mongoose.Types.ObjectId(orgId),
-            status: { $ne: 'rejected' },
-            date: { $gte: new Date(new Date().setMonth(new Date().getMonth() - 5)) }
+      // 4. Production Chart Data (Last 6 Months) - Hybrid Approach
+      safeExec(async () => {
+        // Try Aggregation first
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+        sixMonthsAgo.setHours(0, 0, 0, 0);
+
+        const aggResult = await Shift.aggregate([
+          {
+            $match: {
+              orgId: new mongoose.Types.ObjectId(orgId),
+              status: { $ne: 'rejected' },
+              date: { $gte: sixMonthsAgo }
+            }
+          },
+          {
+            $group: {
+              _id: { month: { $month: "$date" }, year: { $year: "$date" } },
+              total: { $sum: "$goldRecovered" }
+            }
+          },
+          { $sort: { "_id.year": 1, "_id.month": 1 } }
+        ]);
+
+        if (aggResult.length > 0) return aggResult;
+
+        // Fallback: JS Aggregation if Mongo returns empty (e.g. strict type or date issues)
+        console.log('[Dashboard] Production Aggregation returned empty. Trying JS fallback...');
+        const rawShifts = await Shift.find({
+          orgId: orgId, // Mongoose handles casting
+          status: { $ne: 'rejected' },
+          date: { $gte: sixMonthsAgo }
+        }).select('date goldRecovered');
+
+        console.log(`[Dashboard] Fallback found ${rawShifts.length} shifts.`);
+
+        // Aggregate manually
+        const grouped = rawShifts.reduce((acc: any, shift) => {
+          const d = new Date(shift.date);
+          const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+          if (!acc[key]) {
+            acc[key] = {
+              _id: { month: d.getMonth() + 1, year: d.getFullYear() },
+              total: 0
+            };
           }
-        },
-        {
-          $group: {
-            _id: { month: { $month: "$date" }, year: { $year: "$date" } },
-            total: { $sum: "$goldRecovered" }
-          }
-        },
-        { $sort: { "_id.year": 1, "_id.month": 1 } }
-      ]), [], 'ProductionStats'),
+          acc[key].total += (shift.goldRecovered || 0);
+          return acc;
+        }, {});
+
+        return Object.values(grouped);
+      }(), [], 'ProductionStats'),
 
       // 5. Recent Transactions
       safeExec(SalesTransaction.find({ orgId })
