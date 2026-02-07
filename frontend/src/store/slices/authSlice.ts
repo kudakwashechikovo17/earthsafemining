@@ -23,6 +23,16 @@ export interface Organization {
   _id: string;
   name: string;
   role: string; // The user's role in this org
+  miningLicenseNumber?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  location?: {
+    address?: string;
+    coordinates?: {
+      latitude: number;
+      longitude: number;
+    };
+  };
 }
 
 // Define matches User interface from backend
