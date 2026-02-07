@@ -612,3 +612,93 @@ export const seedMissingData = async (req: Request, res: Response): Promise<void
         res.status(500).json({ message: 'Error seeding missing data', error: (error as Error).message });
     }
 };
+
+// Force-add Loans and Compliance (clears existing first)
+export const forceAddLoansCompliance = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            res.status(400).json({ message: 'Target email is required' });
+            return;
+        }
+
+        logger.info(`Force-adding loans/compliance for ${email}`);
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            res.status(404).json({ message: 'User not found' });
+            return;
+        }
+        const userId = user._id;
+
+        const membership = await Membership.findOne({ userId });
+        if (!membership) {
+            res.status(400).json({ message: 'User has no organization membership' });
+            return;
+        }
+        const orgId = membership.orgId;
+
+        // CLEAR existing loans and compliance
+        await Loan.deleteMany({ orgId });
+        await Compliance.deleteMany({ orgId });
+        logger.info('Cleared existing loans and compliance');
+
+        // ADD LOANS
+        await new Loan({
+            orgId,
+            applicantId: userId,
+            amount: 15000,
+            purpose: 'Equipment: Purchase of new jaw crusher',
+            termMonths: 24,
+            status: LoanStatus.ACTIVE,
+            institution: 'CBZ Bank',
+            interestRate: 12,
+            monthlyPayment: 700,
+            collateral: 'Mining equipment'
+        }).save();
+
+        await new Loan({
+            orgId,
+            applicantId: userId,
+            amount: 5000,
+            purpose: 'Working Capital: Operational expenses',
+            termMonths: 12,
+            status: LoanStatus.PAID,
+            institution: 'CABS',
+            interestRate: 15,
+            monthlyPayment: 450
+        }).save();
+        logger.info('Loans added');
+
+        // ADD COMPLIANCE
+        const docs = [
+            { type: ComplianceType.MINING_LICENSE, title: 'Mining License 2024', expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) },
+            { type: ComplianceType.ENVIRONMENTAL_PERMIT, title: 'EMA Environmental Permit', expires: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000) },
+            { type: ComplianceType.EMA_CERTIFICATE, title: 'Safety Certificate', expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) },
+            { type: ComplianceType.TAX_CLEARANCE, title: 'ZIMRA Tax Clearance', expires: new Date(Date.now() + 270 * 24 * 60 * 60 * 1000) },
+        ];
+        for (const doc of docs) {
+            await new Compliance({
+                orgId,
+                type: doc.type,
+                title: doc.title,
+                status: ComplianceStatus.APPROVED,
+                issuedDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
+                expiryDate: doc.expires,
+                issuedBy: 'Ministry of Mines and Mining Development',
+                notes: 'Current and valid document'
+            }).save();
+        }
+        logger.info('Compliance added');
+
+        res.status(200).json({
+            message: 'Loans and Compliance force-added successfully!',
+            loansAdded: 2,
+            complianceAdded: docs.length
+        });
+
+    } catch (error) {
+        logger.error('Error force-adding loans/compliance:', error);
+        res.status(500).json({ message: 'Error force-adding data', error: (error as Error).message });
+    }
+};
