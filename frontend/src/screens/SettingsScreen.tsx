@@ -19,6 +19,7 @@ const SettingsScreen = ({ navigation }: any) => {
   const [address, setAddress] = useState(currentOrg?.location?.address || '');
 
   const [loading, setLoading] = useState(false);
+  const [seeding, setSeeding] = useState(false);
   const [visible, setVisible] = useState(false); // Snackbar
   const [message, setMessage] = useState('');
 
@@ -63,7 +64,44 @@ const SettingsScreen = ({ navigation }: any) => {
     }
   };
 
+  const handleSeedDemo = async () => {
+    if (!user?.email) {
+      Alert.alert('Error', 'User email not found');
+      return;
+    }
 
+    const confirmSeed = () => {
+      return new Promise<boolean>((resolve) => {
+        if (Platform.OS === 'web') {
+          resolve(window.confirm('This will populate demo data for Star Mining Co. This may take a minute. Continue?'));
+        } else {
+          Alert.alert(
+            'Seed Demo Data',
+            'This will populate demo data for Star Mining Co. This may take a minute. Continue?',
+            [
+              { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Seed Data', onPress: () => resolve(true) }
+            ]
+          );
+        }
+      });
+    };
+
+    const confirmed = await confirmSeed();
+    if (!confirmed) return;
+
+    setSeeding(true);
+    try {
+      await apiService.seedDemoData(user.email);
+      setMessage('Demo data seeded successfully! Refresh the app.');
+      setVisible(true);
+    } catch (error: any) {
+      console.error('Seed error:', error);
+      Alert.alert('Error', error.response?.data?.message || 'Failed to seed demo data. Please try again.');
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   const APP_MODE = process.env.EXPO_PUBLIC_APP_MODE || 'normal';
 
@@ -195,6 +233,27 @@ const SettingsScreen = ({ navigation }: any) => {
             descriptionStyle={{ color: colors.textMuted }}
             left={props => <List.Icon {...props} icon="server-network" color={colors.gold} />}
           />
+        </View>
+
+        {/* Developer Tools */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Developer Tools</Text>
+          <Divider style={styles.divider} />
+
+          <Button
+            mode="outlined"
+            onPress={handleSeedDemo}
+            loading={seeding}
+            disabled={seeding}
+            icon="database-refresh"
+            style={{ borderColor: colors.gold }}
+            textColor={colors.gold}
+          >
+            {seeding ? 'Seeding Demo Data...' : 'Seed Demo Data'}
+          </Button>
+          <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 8 }}>
+            Populates 2 years of demo data for Star Mining Co.
+          </Text>
         </View>
 
         <View style={styles.marginBottom} />

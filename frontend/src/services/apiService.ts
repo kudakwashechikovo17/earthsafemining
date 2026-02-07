@@ -449,6 +449,12 @@ export const apiService = {
     return api.post(url, data);
   },
 
+  // Demo Data Seeding
+  seedDemoData: async (email: string) => {
+    const response = await api.post('/demo/seed', { email });
+    return response.data;
+  },
+
   // Add more API methods as needed
 };
 
