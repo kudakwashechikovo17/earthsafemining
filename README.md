@@ -10,7 +10,6 @@ EarthSafe is a mobile application that connects mineral miners with buyers in a 
 - **Loan Management**: View active loans, interest rates, and payment schedules
 - **Compliance Management**: Track compliance status with mining regulations
 - **Profile Management**: Update personal and mining operation information
-- **Find Buyers**: Browse a list of verified buyers, filter by type and price, and initiate contact
 
 ### For Buyers:
 - **Dashboard**: View market insights, recent purchases, and nearby sellers
